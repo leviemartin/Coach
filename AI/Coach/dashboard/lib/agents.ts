@@ -37,6 +37,12 @@ export function buildSharedContext(
   const hevySummary = formatHevySummary(hevyExercises.data);
 
   let context = `# Weekly Check-In Data\n\n`;
+
+  context += `## Athlete Plan Feedback (PRIORITY — Read First)\n`;
+  context += `- Plan satisfaction: ${formData.planSatisfaction}/5 (1=too light, 3=right, 5=too much)\n`;
+  context += `- Feedback: ${formData.planFeedback || 'None provided'}\n`;
+  context += `**Instruction:** The athlete's subjective experience of last week's plan is a primary input. If satisfaction ≤2 (too light), do not reduce volume further unless injury or readiness <30 demands it. If satisfaction ≥4 (too much), consider reducing. If readiness <30 triggered a deload and feedback says "too light," the deload is working as designed — maintain it. If the athlete consistently reports extreme values that contradict objective data, flag the discrepancy rather than blindly adjusting. Address this feedback explicitly in your assessment.\n\n`;
+
   context += `## Athlete Profile\n${profile}\n\n`;
   context += `## Current Phase & Periodization\n${periodization}\n\n`;
   context += `## Active Decisions & Gates\n${decisions}\n\n`;
@@ -161,14 +167,19 @@ export function buildSynthesisPrompt(
 
   prompt += `## Original Check-In Data\n${sharedContext}\n\n`;
 
+  prompt += `## Athlete Plan Feedback (Reminder)\n`;
+  prompt += `- Satisfaction: ${specialistOutputs.length > 0 ? 'See shared context above' : 'N/A'}\n`;
+  prompt += `When athlete feedback conflicts with specialist recommendations, apply the priority hierarchy. Athlete feedback ranks at #3 — above race-specific preparation but below recovery (#2) and injury prevention (#1). Show the debate.\n\n`;
+
   prompt += `## Required Output Format\n`;
   prompt += `1. Start with your synthesis — resolve conflicts between agents with transparency\n`;
   prompt += `2. Show the inter-agent debate where relevant (quote which agents disagree and why)\n`;
-  prompt += `3. End with the weekly schedule as a pipe-separated Markdown table:\n\n`;
+  prompt += `3. Address the athlete's plan feedback directly. If satisfaction was ≤2 or ≥4, explain what changes you're making in response and why. Never ignore this input.\n`;
+  prompt += `4. End with the weekly schedule as a pipe-separated Markdown table:\n\n`;
   prompt += `| Done? | Day | Session Type | Focus | Est. Starting Weight (Hevy) | Detailed Workout Plan | Coach's Cues & Mobility | My Notes |\n`;
   prompt += `|-------|-----|-------------|-------|----------------------------|----------------------|------------------------|----------|\n\n`;
-  prompt += `Include all 7 days. Mark rest days and Family Day.\n`;
-  prompt += `End with your mandated closing phrase.\n`;
+  prompt += `5. Include all 7 days. Mark rest days and Family Day.\n`;
+  prompt += `6. End with your mandated closing phrase.\n`;
 
   return prompt;
 }

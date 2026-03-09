@@ -11,6 +11,8 @@ export interface GarminActivity {
   max_hr?: number;
   training_effect_aerobic?: number;
   training_effect_anaerobic?: number;
+  hr_zones?: Array<{ zone_number: number; seconds_in_zone: number }>;
+  zone_minutes?: Record<string, number>;
   total_sets?: number;
   total_reps?: number;
   total_volume_kg?: number;
@@ -92,6 +94,7 @@ export interface GarminData {
     };
   };
   nutrition_stats_7d?: Record<string, unknown>;
+  weekly_averages_7d?: Record<string, unknown>;
   four_week_context?: Record<string, unknown>;
 }
 
@@ -119,6 +122,8 @@ export interface CheckInFormData {
   upcomingConflicts: string;
   focusNextWeek: string;
   questionsForCoaches: string;
+  planSatisfaction: number;  // 1-5 scale (1=too light, 3=right, 5=too much)
+  planFeedback: string;
   // Model
   model: 'sonnet' | 'opus' | 'mixed';
 }
@@ -173,6 +178,7 @@ export interface WeeklyMetrics {
   sessionsCompleted: number | null;
   bakerCystPain: number;
   pullupCount: number | null;
+  planSatisfaction: number | null;
   modelUsed: string;
 }
 

@@ -48,6 +48,8 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
     upcomingConflicts: '',
     focusNextWeek: '',
     questionsForCoaches: '',
+    planSatisfaction: 3,
+    planFeedback: '',
     model: 'sonnet',
   });
 
@@ -251,6 +253,40 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
                   label="Hydration tracked this week?"
                 />
 
+                <Box sx={{ borderTop: '2px solid', borderColor: 'divider', pt: 3, mt: 1 }}>
+                  <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                    Last Week&apos;s Plan — Your Verdict
+                  </Typography>
+
+                  <Box sx={{ mt: 2 }}>
+                    <Typography gutterBottom>
+                      Plan satisfaction: {formData.planSatisfaction}/5
+                      {formData.planSatisfaction <= 2 ? ' — Too light' : formData.planSatisfaction >= 4 ? ' — Too much' : ' — About right'}
+                    </Typography>
+                    <Slider
+                      aria-label="Plan satisfaction, 1 is too light, 5 is too much"
+                      value={formData.planSatisfaction}
+                      onChange={(_, v) => update('planSatisfaction', v as number)}
+                      min={1} max={5} step={1} marks={[
+                        { value: 1, label: 'Too light' },
+                        { value: 3, label: 'About right' },
+                        { value: 5, label: 'Too much' },
+                      ]}
+                      valueLabelDisplay="auto"
+                    />
+                  </Box>
+
+                  <TextField
+                    label="Plan Feedback"
+                    multiline rows={3} fullWidth
+                    placeholder="How was last week's plan? Think about: volume (too much/little?), intensity, exercise selection, session length, anything you'd change. Be specific — the coaches read this first."
+                    value={formData.planFeedback}
+                    onChange={(e) => update('planFeedback', e.target.value)}
+                    inputProps={{ maxLength: 1000 }}
+                    sx={{ mt: 2 }}
+                  />
+                </Box>
+
                 <TextField
                   label="Upcoming Conflicts Next Week"
                   multiline rows={2} fullWidth
@@ -307,6 +343,9 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Bedtime: {formData.bedtimeCompliance}/7 | Rug: {formData.rugProtocolDays}/7 | Hydration: {formData.hydrationTracked ? 'Yes' : 'No'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Plan satisfaction: {formData.planSatisfaction}/5{formData.planFeedback ? ` — "${formData.planFeedback.slice(0, 80)}${formData.planFeedback.length > 80 ? '...' : ''}"` : ''}
                 </Typography>
               </Box>
 

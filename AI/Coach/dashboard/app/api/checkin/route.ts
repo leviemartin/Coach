@@ -124,6 +124,7 @@ export async function POST(request: Request) {
           sessionsCompleted: formData.sessionsCompleted,
           bakerCystPain: formData.bakerCystPain,
           pullupCount: null, // Extracted from Hevy data if available
+          planSatisfaction: formData.planSatisfaction,
           modelUsed: modelName,
         };
         upsertWeeklyMetrics(metrics);
