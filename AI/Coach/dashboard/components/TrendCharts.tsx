@@ -43,7 +43,7 @@ export default function TrendCharts({
     <Grid container spacing={3}>
       {/* Weight Progression */}
       <Grid size={{ xs: 12, md: 6 }}>
-        <Card>
+        <Card sx={{ height: '100%' }}>
           <CardContent>
             <Typography variant="h6" gutterBottom>Weight Progression</Typography>
             <LineChart
@@ -66,7 +66,7 @@ export default function TrendCharts({
 
       {/* Sleep & Readiness */}
       <Grid size={{ xs: 12, md: 6 }}>
-        <Card>
+        <Card sx={{ height: '100%' }}>
           <CardContent>
             <Typography variant="h6" gutterBottom>Sleep & Readiness</Typography>
             <BarChart
@@ -91,7 +91,7 @@ export default function TrendCharts({
 
       {/* Protocol Compliance */}
       <Grid size={{ xs: 12, md: 6 }}>
-        <Card>
+        <Card sx={{ height: '100%' }}>
           <CardContent>
             <Typography variant="h6" gutterBottom>Protocol Compliance</Typography>
             <BarChart
@@ -121,7 +121,7 @@ export default function TrendCharts({
 
       {/* Strength Ceilings */}
       <Grid size={{ xs: 12, md: 6 }}>
-        <Card>
+        <Card sx={{ height: '100%' }}>
           <CardContent>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
               <Typography variant="h6">Strength Ceilings</Typography>
@@ -159,7 +159,7 @@ export default function TrendCharts({
 
       {/* Pull-Up Progression */}
       <Grid size={{ xs: 12, md: 6 }}>
-        <Card>
+        <Card sx={{ height: '100%' }}>
           <CardContent>
             <Typography variant="h6" gutterBottom>Pull-Up Progression</Typography>
             {metrics.some((m) => m.pullupCount != null) ? (
@@ -183,7 +183,7 @@ export default function TrendCharts({
 
       {/* Nutrition */}
       <Grid size={{ xs: 12, md: 6 }}>
-        <Card>
+        <Card sx={{ height: '100%' }}>
           <CardContent>
             <Typography variant="h6" gutterBottom>Nutrition</Typography>
             <BarChart

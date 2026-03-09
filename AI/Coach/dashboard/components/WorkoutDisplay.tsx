@@ -1,8 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Box, Typography, Chip, Alert } from '@mui/material';
-import TimerIcon from '@mui/icons-material/Timer';
+import { Box, Typography, Chip } from '@mui/material';
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -152,8 +151,9 @@ export function parseWorkoutPlan(text: string): ParsedBlock[] {
         const exerciseText = token.replace(SUPERSET_LABEL_RE, '').trim();
         const parsed = parseExerciseToken(exerciseText);
         if (parsed && parsed.type === 'exercise') {
-          if (!supersetMap.has(groupLetter)) supersetMap.set(groupLetter, []);
-          supersetMap.get(groupLetter)!.push(parsed.data as ParsedExercise);
+          const group = supersetMap.get(groupLetter) ?? [];
+          if (!supersetMap.has(groupLetter)) supersetMap.set(groupLetter, group);
+          group.push(parsed.data);
         } else {
           nonSuperset.push(token);
         }
@@ -201,50 +201,67 @@ function AnnotationBadge({ text }: { text: string }) {
 }
 
 function ExerciseRow({ ex }: { ex: ParsedExercise }) {
+  // Combine sets/reps/weight into one inline string: "3×10 @ 26kg"
+  const setsRepsWeight = [
+    ex.sets != null && ex.reps != null ? `${ex.sets}×${ex.reps}` : null,
+    ex.weight ? `@ ${ex.weight}` : null,
+  ].filter(Boolean).join(' ');
+
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.3 }}>
-      <Typography variant="body2" sx={{ fontWeight: 600, minWidth: 0 }}>
+    <Box
+      sx={{
+        borderLeft: '3px solid',
+        borderColor: 'divider',
+        pl: 1.5,
+        py: 0.5,
+        my: 0.25,
+        display: 'flex',
+        alignItems: 'baseline',
+        gap: 1,
+        flexWrap: 'wrap',
+      }}
+    >
+      <Typography variant="body2" sx={{ fontWeight: 600 }}>
         {ex.name}
       </Typography>
-      {ex.sets != null && ex.reps != null && (
-        <Chip
-          label={`${ex.sets}×${ex.reps}`}
-          size="small"
-          variant="outlined"
-          sx={{ fontSize: '0.7rem', height: 22, fontWeight: 600 }}
-        />
+      {setsRepsWeight && (
+        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+          {setsRepsWeight}
+        </Typography>
       )}
-      {ex.weight && (
-        <Chip
-          label={ex.weight}
-          size="small"
-          color="primary"
-          variant="outlined"
-          sx={{ fontSize: '0.7rem', height: 22, fontWeight: 600 }}
-        />
-      )}
-      {ex.annotations.map((a) => (
-        <AnnotationBadge key={a} text={a} />
+      {ex.annotations.map((a, i) => (
+        <AnnotationBadge key={`${a}-${i}`} text={a} />
       ))}
     </Box>
   );
 }
 
 function CardioRow({ data }: { data: ParsedCardio }) {
+  const restOfDescription = data.duration
+    ? data.description.replace(data.duration, '').trim()
+    : data.description;
+
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.3 }}>
+    <Box
+      sx={{
+        borderLeft: '3px solid',
+        borderColor: 'info.light',
+        pl: 1.5,
+        py: 0.5,
+        my: 0.25,
+        display: 'flex',
+        alignItems: 'baseline',
+        gap: 0.5,
+        flexWrap: 'wrap',
+      }}
+    >
       {data.duration && (
-        <Chip
-          icon={<TimerIcon sx={{ fontSize: 14 }} />}
-          label={data.duration}
-          size="small"
-          color="info"
-          variant="outlined"
-          sx={{ fontSize: '0.7rem', height: 22, fontWeight: 600 }}
-        />
+        <Typography variant="body2" sx={{ fontWeight: 700 }}>
+          {data.duration}
+        </Typography>
       )}
       <Typography variant="body2">
-        {data.duration ? data.description.replace(data.duration, '').trim() : data.description}
+        {restOfDescription}
       </Typography>
     </Box>
   );
@@ -266,8 +283,8 @@ function SupersetBlock({ data }: { data: SupersetGroup }) {
       >
         {data.label}
       </Typography>
-      {data.exercises.map((ex, i) => (
-        <ExerciseRow key={i} ex={ex} />
+      {data.exercises.map((ex) => (
+        <ExerciseRow key={ex.raw} ex={ex} />
       ))}
     </Box>
   );
@@ -295,16 +312,17 @@ export default function WorkoutDisplay({ content, dimmed }: WorkoutDisplayProps)
         switch (block.type) {
           case 'conditional':
             return (
-              <Alert
-                key={i}
-                severity="info"
-                variant="outlined"
-                sx={{ py: 0, px: 1.5, my: 0.5, '& .MuiAlert-message': { py: 0.5 } }}
-              >
+              <Box key={i} sx={{ display: 'flex', alignItems: 'baseline', gap: 1, py: 0.3 }}>
+                <Chip
+                  label="CONDITION"
+                  size="small"
+                  color="info"
+                  sx={{ fontSize: '0.6rem', height: 18, fontWeight: 700 }}
+                />
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
                   {block.data.condition}
                 </Typography>
-              </Alert>
+              </Box>
             );
           case 'exercise':
             return <ExerciseRow key={i} ex={block.data} />;

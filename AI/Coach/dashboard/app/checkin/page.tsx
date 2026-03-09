@@ -18,7 +18,7 @@ export default function CheckInPage() {
   };
 
   return (
-    <Box>
+    <Box sx={{ maxWidth: 900, mx: 'auto' }}>
       <Typography variant="h4" fontWeight={700} sx={{ mb: 3 }}>
         Sunday Check-In
       </Typography>

@@ -3,13 +3,14 @@
 import React, { useState } from 'react';
 import {
   Box, Typography, LinearProgress, Card, CardContent,
-  Checkbox, Chip, Collapse, TextField, IconButton,
-  FormControlLabel,
+  Chip, Collapse, TextField, IconButton,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CheckIcon from '@mui/icons-material/Check';
 import type { PlanItem, SubTask } from '@/lib/types';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
 import WorkoutDisplay from '@/components/WorkoutDisplay';
@@ -55,12 +56,10 @@ function generateDefaultSubTasks(sessionType: string): SubTask[] {
 }
 
 /**
- * Map session type strings to MUI color palette keys + a custom family green.
+ * Map session type strings to MUI color palette keys.
  */
 function getSessionColor(sessionType: string): {
   color: 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
-  custom?: string;
-  bg?: string;
 } {
   const lower = sessionType.toLowerCase();
 
@@ -73,7 +72,7 @@ function getSessionColor(sessionType: string): {
   if (lower.includes('lower body') || lower.includes('upper body'))
     return { color: 'primary' };
   if (lower.includes('family'))
-    return { color: 'success', custom: '#e8f5e9', bg: '#f1f8e9' };
+    return { color: 'success' };
   if (lower.includes('ruck') || lower.includes('long aerobic') || lower.includes('aerobic'))
     return { color: 'success' };
   if (lower.includes('rest'))
@@ -82,13 +81,21 @@ function getSessionColor(sessionType: string): {
   return { color: 'primary' };
 }
 
+/**
+ * Check if a session is a rest or family day (no workout parsing needed).
+ */
+function isRestOrFamilyDay(sessionType: string): boolean {
+  const lower = sessionType.toLowerCase();
+  return lower === 'rest' || lower.includes('rest day') || lower.includes('family');
+}
+
 export default function TrainingPlanTable({
   items,
   readOnly = false,
   onUpdateSubTasks,
   onUpdateNotes,
 }: TrainingPlanTableProps) {
-  const [expandedCards, setExpandedCards] = useState<Set<number | undefined>>(new Set());
+  const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
   const [notes, setNotes] = useState<Record<number, string>>({});
 
   // Sync notes state when items prop changes
@@ -119,7 +126,7 @@ export default function TrainingPlanTable({
     }
   };
 
-  const toggleExpanded = (id: number | undefined) => {
+  const toggleExpanded = (id: number) => {
     setExpandedCards((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
@@ -154,6 +161,7 @@ export default function TrainingPlanTable({
           <LinearProgress
             variant="determinate"
             value={progress}
+            aria-label={`Training plan progress: ${completedCount} of ${total} complete`}
             sx={{
               height: 8,
               borderRadius: 4,
@@ -175,10 +183,16 @@ export default function TrainingPlanTable({
           const hasNotes = item.athleteNotes && item.athleteNotes.trim().length > 0;
           const hasExpandableContent = hasCoachCues || hasNotes || !readOnly;
           const hasStartingWeight = item.startingWeight && item.startingWeight !== 'N/A' && item.startingWeight.trim() !== '';
+          const isSimpleDay = isRestOrFamilyDay(item.sessionType);
 
           const subTasks = getEffectiveSubTasks(item);
           const allDone = subTasks.length > 0 && subTasks.every((s) => s.completed);
           const someDone = subTasks.some((s) => s.completed);
+
+          // Get first sentence of coach cues for preview
+          const cuePreview = hasCoachCues && !isExpanded
+            ? item.coachCues.split(/[.\n]/)[0].trim()
+            : null;
 
           return (
             <Card
@@ -187,8 +201,8 @@ export default function TrainingPlanTable({
               sx={{
                 transition: 'all 0.2s ease',
                 ...(allDone && {
-                  bgcolor: 'rgba(76, 175, 80, 0.06)',
-                  borderColor: 'rgba(76, 175, 80, 0.3)',
+                  bgcolor: (theme) => alpha(theme.palette.success.main, 0.08),
+                  borderColor: (theme) => alpha(theme.palette.success.main, 0.3),
                 }),
                 ...(!allDone && {
                   '&:hover': {
@@ -199,8 +213,8 @@ export default function TrainingPlanTable({
               }}
             >
               <CardContent sx={{ pb: '12px !important', pt: 1.5 }}>
-                {/* Header row: Day + Session Type Chip + Focus + Starting Weight + Status */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                {/* Header row: Day + Session Type Chip + Focus + Sub-tasks + Starting Weight + Status */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5, flexWrap: 'wrap' }}>
                   {allDone && (
                     <CheckCircleIcon sx={{ fontSize: 20, color: 'success.main' }} />
                   )}
@@ -224,10 +238,6 @@ export default function TrainingPlanTable({
                     sx={{
                       fontWeight: 600,
                       fontSize: '0.75rem',
-                      ...(sessionStyle.custom && !allDone && {
-                        bgcolor: sessionStyle.custom,
-                        color: '#2e7d32',
-                      }),
                       ...(allDone && {
                         textDecoration: 'line-through',
                       }),
@@ -247,6 +257,35 @@ export default function TrainingPlanTable({
                     </Typography>
                   )}
 
+                  {/* Sub-task pills — compact inline */}
+                  {subTasks.map((st) => (
+                    <Chip
+                      key={st.key}
+                      label={st.label}
+                      size="small"
+                      role={readOnly ? undefined : 'checkbox'}
+                      aria-checked={readOnly ? undefined : st.completed}
+                      aria-label={readOnly ? undefined : `Mark ${st.label} as ${st.completed ? 'incomplete' : 'complete'}`}
+                      icon={st.completed ? <CheckIcon sx={{ fontSize: '14px !important' }} /> : undefined}
+                      color={st.completed ? 'success' : 'default'}
+                      variant={st.completed ? 'filled' : 'outlined'}
+                      onClick={readOnly ? undefined : () => handleSubTaskToggle(item, st.key)}
+                      sx={{
+                        fontSize: '0.65rem',
+                        height: 22,
+                        fontWeight: 600,
+                        cursor: readOnly ? 'default' : 'pointer',
+                        ...(st.completed && { textDecoration: 'none' }),
+                      }}
+                    />
+                  ))}
+
+                  {someDone && !allDone && (
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+                      {subTasks.filter((s) => s.completed).length}/{subTasks.length}
+                    </Typography>
+                  )}
+
                   {hasStartingWeight && (
                     <Chip
                       icon={<FitnessCenterIcon sx={{ fontSize: 14 }} />}
@@ -261,6 +300,8 @@ export default function TrainingPlanTable({
                   {hasExpandableContent && (
                     <IconButton
                       size="small"
+                      aria-label={isExpanded ? 'Collapse details' : 'Expand details'}
+                      aria-expanded={isExpanded}
                       onClick={() => toggleExpanded(item.id ?? item.dayOrder)}
                       sx={{ ml: hasStartingWeight ? 0 : 'auto' }}
                     >
@@ -269,40 +310,37 @@ export default function TrainingPlanTable({
                   )}
                 </Box>
 
-                {/* Sub-task checkboxes */}
-                <Box sx={{ display: 'flex', gap: 1.5, pl: allDone ? 3.5 : 0, mb: 0.5, flexWrap: 'wrap' }}>
-                  {subTasks.map((st) => (
-                    <FormControlLabel
-                      key={st.key}
-                      control={
-                        <Checkbox
-                          checked={st.completed}
-                          disabled={readOnly}
-                          size="small"
-                          sx={{
-                            p: 0.25,
-                            color: st.completed ? 'success.main' : undefined,
-                            '&.Mui-checked': { color: 'success.main' },
-                          }}
-                          onChange={() => handleSubTaskToggle(item, st.key)}
-                        />
+                {/* Coach cues preview (collapsed) */}
+                {cuePreview && (
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => toggleExpanded(item.id ?? item.dayOrder)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        toggleExpanded(item.id ?? item.dayOrder);
                       }
-                      label={
-                        <Typography variant="caption" sx={{ fontSize: '0.7rem', color: st.completed ? 'text.secondary' : 'text.primary' }}>
-                          {st.label}
-                        </Typography>
-                      }
-                      sx={{ mr: 0, ml: 0 }}
-                    />
-                  ))}
-                  {someDone && !allDone && (
-                    <Typography variant="caption" color="text.secondary" sx={{ alignSelf: 'center', fontSize: '0.65rem' }}>
-                      {subTasks.filter((s) => s.completed).length}/{subTasks.length}
-                    </Typography>
-                  )}
-                </Box>
+                    }}
+                    sx={{
+                      fontStyle: 'italic',
+                      fontSize: '0.8rem',
+                      pl: allDone ? 3.5 : 0,
+                      mb: 0.5,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      cursor: 'pointer',
+                      '&:hover': { color: 'text.primary' },
+                    }}
+                  >
+                    {cuePreview}
+                  </Typography>
+                )}
 
-                {/* Workout plan — structured display */}
+                {/* Workout plan — structured display or simple text for rest/family */}
                 {item.workoutPlan && (
                   <Box
                     sx={{
@@ -310,7 +348,13 @@ export default function TrainingPlanTable({
                       pr: 1,
                     }}
                   >
-                    <WorkoutDisplay content={item.workoutPlan} dimmed={allDone} />
+                    {isSimpleDay ? (
+                      <Typography variant="body2" color="text.secondary" sx={{ ...(allDone && { opacity: 0.7 }) }}>
+                        {item.workoutPlan}
+                      </Typography>
+                    ) : (
+                      <WorkoutDisplay content={item.workoutPlan} dimmed={allDone} />
+                    )}
                   </Box>
                 )}
 

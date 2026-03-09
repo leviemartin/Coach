@@ -26,7 +26,7 @@ import React from 'react';
 import { ThemeModeContext } from './ThemeRegistry';
 import RaceCountdown from './RaceCountdown';
 
-const DRAWER_WIDTH = 260;
+const DRAWER_WIDTH = 220;
 
 const NAV_ITEMS = [
   { label: 'Dashboard', path: '/', icon: <DashboardIcon /> },
@@ -37,29 +37,20 @@ const NAV_ITEMS = [
   { label: 'Profile', path: '/profile', icon: <PersonIcon /> },
 ];
 
-export default function Sidebar() {
+/** Shared drawer content used by both permanent and temporary variants. */
+function DrawerContent({ onItemClick }: { onItemClick?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const { mode, toggleMode } = React.useContext(ThemeModeContext);
 
   return (
-    <Drawer
-      variant="permanent"
-      sx={{
-        width: DRAWER_WIDTH,
-        flexShrink: 0,
-        '& .MuiDrawer-paper': {
-          width: DRAWER_WIDTH,
-          boxSizing: 'border-box',
-        },
-      }}
-    >
+    <>
       <Toolbar>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
           <Typography variant="h6" noWrap sx={{ fontWeight: 700, flex: 1 }}>
             OCR Coach
           </Typography>
-          <IconButton onClick={toggleMode} size="small">
+          <IconButton onClick={toggleMode} size="small" aria-label={mode === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}>
             {mode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
           </IconButton>
         </Box>
@@ -75,7 +66,11 @@ export default function Sidebar() {
             <ListItem key={item.path} disablePadding sx={{ mb: 0.5 }}>
               <ListItemButton
                 selected={isActive}
-                onClick={() => router.push(item.path)}
+                aria-current={isActive ? 'page' : undefined}
+                onClick={() => {
+                  router.push(item.path);
+                  onItemClick?.();
+                }}
                 sx={{
                   borderRadius: 2,
                   '&.Mui-selected': {
@@ -96,7 +91,52 @@ export default function Sidebar() {
       <Box sx={{ mt: 'auto', p: 2 }}>
         <RaceCountdown />
       </Box>
-    </Drawer>
+    </>
+  );
+}
+
+interface SidebarProps {
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
+}
+
+export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
+  const drawerSx = {
+    width: DRAWER_WIDTH,
+    flexShrink: 0,
+    '& .MuiDrawer-paper': {
+      width: DRAWER_WIDTH,
+      boxSizing: 'border-box' as const,
+    },
+  };
+
+  return (
+    <>
+      {/* Mobile: temporary drawer */}
+      <Drawer
+        variant="temporary"
+        open={mobileOpen}
+        onClose={onMobileClose}
+        ModalProps={{ keepMounted: true }}
+        sx={{
+          display: { xs: 'block', md: 'none' },
+          ...drawerSx,
+        }}
+      >
+        <DrawerContent onItemClick={onMobileClose} />
+      </Drawer>
+
+      {/* Desktop: permanent drawer */}
+      <Drawer
+        variant="permanent"
+        sx={{
+          display: { xs: 'none', md: 'block' },
+          ...drawerSx,
+        }}
+      >
+        <DrawerContent />
+      </Drawer>
+    </>
   );
 }
 
