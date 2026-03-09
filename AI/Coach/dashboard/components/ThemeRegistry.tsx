@@ -4,22 +4,44 @@ import * as React from 'react';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { CacheProvider } from '@emotion/react';
+import type { EmotionCache } from '@emotion/cache';
 import createCache from '@emotion/cache';
 import { useServerInsertedHTML } from 'next/navigation';
 import { lightTheme, darkTheme } from '@/lib/theme';
-
-// Emotion cache for App Router SSR
-function createEmotionCache() {
-  return createCache({ key: 'mui' });
-}
 
 interface ThemeRegistryProps {
   children: React.ReactNode;
 }
 
+// Intercept Emotion's insert to track new style names for SSR extraction.
+// This prevents inline <style> tags from appearing in the component tree
+// (which causes hydration mismatches).
+function createEmotionCacheWithFlush() {
+  const cache = createCache({ key: 'mui' });
+  cache.compat = true;
+  const prevInsert = cache.insert;
+  let inserted: string[] = [];
+
+  cache.insert = (...args) => {
+    const serialized = args[1];
+    if (cache.inserted[serialized.name] === undefined) {
+      inserted.push(serialized.name);
+    }
+    return prevInsert(...args);
+  };
+
+  const flush = () => {
+    const prevInserted = inserted;
+    inserted = [];
+    return prevInserted;
+  };
+
+  return { cache, flush };
+}
+
 export default function ThemeRegistry({ children }: ThemeRegistryProps) {
   const [mode, setMode] = React.useState<'light' | 'dark'>('light');
-  const [cache] = React.useState(createEmotionCache);
+  const [{ cache, flush }] = React.useState(createEmotionCacheWithFlush);
 
   React.useEffect(() => {
     const saved = localStorage.getItem('theme-mode');
@@ -39,18 +61,19 @@ export default function ThemeRegistry({ children }: ThemeRegistryProps) {
   }, []);
 
   useServerInsertedHTML(() => {
-    const names = Object.keys(cache.inserted);
+    const names = flush();
     if (names.length === 0) return null;
     let styles = '';
     for (const name of names) {
       const val = cache.inserted[name];
       if (typeof val === 'string') {
         styles += val;
+      } else {
+        // Boolean true means it was already inserted via <style> tag
+        // We still need to include the name in data-emotion for rehydration
       }
     }
-    // Flush cache to prevent duplicate styles on subsequent renders
-    cache.inserted = {};
-
+    if (!styles) return null;
     return (
       <style
         key={cache.key}
