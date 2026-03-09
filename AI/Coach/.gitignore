@@ -1,0 +1,14 @@
+# Environment files
+.env*
+!.env.example
+
+# Node
+node_modules/
+
+# SQLite
+*.db
+*.db-wal
+*.db-shm
+
+# OS
+.DS_Store
