@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Card, CardContent, Typography, LinearProgress, Box } from '@mui/material';
 
 const RACE_ZANDVOORT = new Date('2026-05-09');
@@ -16,13 +17,17 @@ function progressPercent(start: Date, target: Date): number {
   const now = new Date();
   const total = target.getTime() - start.getTime();
   const elapsed = now.getTime() - start.getTime();
-  return Math.min(100, Math.max(0, (elapsed / total) * 100));
+  return Math.min(100, Math.max(0, Math.round((elapsed / total) * 1000) / 10));
 }
 
 export default function RaceCountdown() {
-  const zandvoortDays = daysUntil(RACE_ZANDVOORT);
-  const morzineDays = daysUntil(RACE_MORZINE);
-  const morzineProgress = progressPercent(TRAINING_START, RACE_MORZINE);
+  // Defer date calculations to client to avoid SSR/hydration mismatch
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  const zandvoortDays = mounted ? daysUntil(RACE_ZANDVOORT) : 0;
+  const morzineDays = mounted ? daysUntil(RACE_MORZINE) : 0;
+  const morzineProgress = mounted ? progressPercent(TRAINING_START, RACE_MORZINE) : 0;
 
   return (
     <Card variant="outlined" sx={{ bgcolor: 'background.default' }}>
