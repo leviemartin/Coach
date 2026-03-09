@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { readGarminData, extractGarminSummary } from '@/lib/garmin';
-import { buildSharedContext, runAllSpecialists, streamHeadCoachSynthesis } from '@/lib/agents';
+import { buildSharedContext, runSpecialistsSequentially, streamHeadCoachSynthesis } from '@/lib/agents';
 import { writeWeeklyLog, appendTrainingHistory, readCeilings } from '@/lib/state';
 import { parseScheduleTable } from '@/lib/parse-schedule';
 import {
@@ -47,13 +47,12 @@ export async function POST(request: Request) {
       }
 
       try {
-        // Phase 1: Run 7 specialists in parallel
+        // Phase 1: Run 7 specialists sequentially (avoids rate limits on Pro accounts)
         send('status', { phase: 'specialists', message: 'Running specialist analyses...' });
 
-        const specialistOutputs = await runAllSpecialists(sharedContext, formData.model);
-
-        // Send each specialist result
-        for (const output of specialistOutputs) {
+        const specialistOutputs = [];
+        for await (const output of runSpecialistsSequentially(sharedContext, formData.model)) {
+          specialistOutputs.push(output);
           send('specialist', {
             agentId: output.agentId,
             label: output.label,

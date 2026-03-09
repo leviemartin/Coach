@@ -127,31 +127,20 @@ export async function runSpecialist(
   }
 }
 
-export async function runAllSpecialists(
+/**
+ * Run specialists sequentially to avoid rate limits on Claude Pro accounts.
+ * Yields each result as it completes so the UI can show real-time progress.
+ */
+export async function* runSpecialistsSequentially(
   sharedContext: string,
   model: CheckInFormData['model']
-): Promise<AgentOutput[]> {
-  // Validate API key before firing 7 parallel calls
+): AsyncGenerator<AgentOutput> {
   getClient();
-
   const resolvedModel = resolveModel(model, false);
 
-  const promises = SPECIALIST_IDS.map((id) =>
-    runSpecialist(id, sharedContext, resolvedModel)
-  );
-
-  const results = await Promise.allSettled(promises);
-
-  return results.map((result, index) => {
-    if (result.status === 'fulfilled') return result.value;
-    return {
-      agentId: SPECIALIST_IDS[index],
-      label: AGENT_LABELS[SPECIALIST_IDS[index]],
-      content: '',
-      model: resolvedModel,
-      error: result.reason?.message || 'Promise rejected',
-    };
-  });
+  for (const id of SPECIALIST_IDS) {
+    yield await runSpecialist(id, sharedContext, resolvedModel);
+  }
 }
 
 export function buildSynthesisPrompt(
