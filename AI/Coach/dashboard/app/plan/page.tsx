@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  Typography,
   Box,
   Alert,
   Card,
@@ -14,7 +13,7 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import TrainingPlanTable from '@/components/TrainingPlanTable';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
-import type { PlanItem } from '@/lib/types';
+import type { PlanItem, SubTask } from '@/lib/types';
 
 export default function PlanPage() {
   const [items, setItems] = useState<PlanItem[]>([]);
@@ -56,18 +55,27 @@ export default function PlanPage() {
     loadBriefing();
   }, [loadPlan, loadBriefing]);
 
-  const handleToggle = async (id: number, completed: boolean) => {
+  const handleUpdateSubTasks = async (id: number, subTasks: SubTask[]) => {
+    const allCompleted = subTasks.length > 0 && subTasks.every((st) => st.completed);
+
     // Optimistic update
     setItems((prev) =>
       prev.map((item) =>
-        item.id === id ? { ...item, completed, completedAt: completed ? new Date().toISOString() : null } : item
+        item.id === id
+          ? {
+              ...item,
+              subTasks,
+              completed: allCompleted,
+              completedAt: allCompleted ? new Date().toISOString() : null,
+            }
+          : item
       )
     );
 
     await fetch('/api/plan/complete', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, completed }),
+      body: JSON.stringify({ id, subTasks }),
     });
   };
 
@@ -81,12 +89,8 @@ export default function PlanPage() {
 
   return (
     <Box>
-      <Typography variant="h4" fontWeight={700} sx={{ mb: 3 }}>
-        Training Plan
-      </Typography>
-
       {synthesis && (
-        <Card variant="outlined" sx={{ mb: 3 }}>
+        <Card variant="outlined" sx={{ mb: 2 }}>
           <CardHeader
             title={`Coach Briefing — Week ${weekNumber ?? '?'}`}
             titleTypographyProps={{ variant: 'h6', fontWeight: 600 }}
@@ -120,7 +124,7 @@ export default function PlanPage() {
       ) : (
         <TrainingPlanTable
           items={items}
-          onToggleComplete={handleToggle}
+          onUpdateSubTasks={handleUpdateSubTasks}
           onUpdateNotes={handleUpdateNotes}
         />
       )}

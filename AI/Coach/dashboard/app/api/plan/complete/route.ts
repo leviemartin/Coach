@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { togglePlanItemComplete, updatePlanItemNotes, getPlanItems, getLatestWeekNumber } from '@/lib/db';
+import { togglePlanItemComplete, updatePlanItemNotes, updatePlanItemSubTasks, getPlanItems, getLatestWeekNumber } from '@/lib/db';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -16,7 +16,9 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: 'Missing id' }, { status: 400 });
   }
 
-  if (body.completed !== undefined) {
+  if (body.subTasks !== undefined) {
+    updatePlanItemSubTasks(body.id, body.subTasks);
+  } else if (body.completed !== undefined) {
     togglePlanItemComplete(body.id, body.completed);
   }
 

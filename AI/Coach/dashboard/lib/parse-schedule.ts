@@ -75,6 +75,7 @@ export function parseScheduleTable(markdown: string, weekNumber: number): PlanIt
       athleteNotes: cells[8] || '',
       completed: false,
       completedAt: null,
+      subTasks: [],
     });
   }
 

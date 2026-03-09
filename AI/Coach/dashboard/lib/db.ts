@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import fs from 'fs';
 import path from 'path';
-import type { PlanItem, WeeklyMetrics, CeilingEntry } from './types';
+import type { PlanItem, WeeklyMetrics, CeilingEntry, SubTask } from './types';
 
 const DB_PATH = path.join(process.cwd(), 'data', 'trends.db');
 
@@ -79,6 +79,13 @@ function initTables(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_ceiling_history_week ON ceiling_history(week_number);
     CREATE INDEX IF NOT EXISTS idx_plan_items_week ON plan_items(week_number);
   `);
+
+  // Migration: add sub_tasks column if it doesn't exist
+  try {
+    db.exec(`ALTER TABLE plan_items ADD COLUMN sub_tasks TEXT DEFAULT '[]'`);
+  } catch {
+    // Column already exists — ignore
+  }
 }
 
 // Settings
@@ -198,8 +205,28 @@ export function updatePlanItemNotes(id: number, notes: string): void {
   db.prepare('UPDATE plan_items SET athlete_notes = ? WHERE id = ?').run(notes, id);
 }
 
+export function updatePlanItemSubTasks(id: number, subTasks: SubTask[]): void {
+  const db = getDb();
+  const allCompleted = subTasks.length > 0 && subTasks.every((st) => st.completed);
+  db.prepare(
+    'UPDATE plan_items SET sub_tasks = ?, completed = ?, completed_at = ? WHERE id = ?'
+  ).run(
+    JSON.stringify(subTasks),
+    allCompleted ? 1 : 0,
+    allCompleted ? new Date().toISOString() : null,
+    id
+  );
+}
+
 function mapPlanRow(row: unknown): PlanItem {
   const r = row as Record<string, unknown>;
+  let subTasks: SubTask[] = [];
+  try {
+    const raw = r.sub_tasks as string | null;
+    if (raw) subTasks = JSON.parse(raw);
+  } catch {
+    subTasks = [];
+  }
   return {
     id: r.id as number,
     weekNumber: r.week_number as number,
@@ -213,6 +240,7 @@ function mapPlanRow(row: unknown): PlanItem {
     athleteNotes: (r.athlete_notes as string) || '',
     completed: !!(r.completed),
     completedAt: r.completed_at as string | null,
+    subTasks,
   };
 }
 

@@ -132,6 +132,12 @@ export interface AgentOutput {
   error?: string;
 }
 
+export interface SubTask {
+  key: string;
+  label: string;
+  completed: boolean;
+}
+
 export interface PlanItem {
   id?: number;
   weekNumber: number;
@@ -145,6 +151,7 @@ export interface PlanItem {
   athleteNotes: string;
   completed: boolean;
   completedAt: string | null;
+  subTasks: SubTask[];
 }
 
 export interface WeeklyMetrics {
