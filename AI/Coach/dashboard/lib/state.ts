@@ -99,3 +99,16 @@ export function getWeeklyLogFiles(): Array<{ filename: string; weekNumber: numbe
     };
   });
 }
+
+export function readWeeklyLogSynthesis(weekNumber: number): string {
+  const logs = getWeeklyLogFiles();
+  const logEntry = logs.find((l) => l.weekNumber === weekNumber);
+  if (!logEntry) return '';
+
+  const content = readWeeklyLog(logEntry.filename);
+  const marker = '## Head Coach Synthesis';
+  const idx = content.indexOf(marker);
+  if (idx === -1) return '';
+
+  return content.slice(idx);
+}
