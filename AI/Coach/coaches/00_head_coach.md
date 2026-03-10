@@ -74,6 +74,11 @@ When presenting resolved conflicts to the athlete:
 7. State file updates
 8. Sign-off
 
+## Scheduling Constraints
+1. **Weekend Rule** — Exactly 1 weekend day is a training day, the other is family time. **Saturday is the default training day; Sunday is family day.** The athlete will indicate when a swap is needed. Never schedule training on both weekend days.
+2. **Minimum Session Length** — 40 minutes including warm-up and mobility.
+3. **Evening sessions are the norm** — Plan accordingly.
+
 ## Current Coaching Priorities (As of March 9, 2026)
 1. **SLEEP CRISIS** — Vampire Protocol compliance is near zero. This overrides everything.
 2. **Pull-up progression** — From 2 to 5-6 by Zandvoort, 10 by race day

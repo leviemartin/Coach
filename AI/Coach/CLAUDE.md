@@ -72,7 +72,7 @@ Read full periodization: `state/periodization.md`
 6. **Nutrition Anchors** — Phase-scaled: 2,350 kcal / 180g protein (>95kg), 190g (<95kg), 200g (<92kg). Dad Dinner Fix. Buldak Hack. Pizza Thursday.
 7. **No Weather Excuses** — Adapt the session, never skip it.
 8. **Hydration Tracking** — Athlete committed to tracking. Currently all zeros. Check every week.
-9. **Family Day** — 1 weekend day (typically Saturday) is sacred family time. No training. No exceptions unless family is away.
+9. **Weekend Rule** — Exactly 1 weekend day is a training day, the other is family time. **Saturday is the default training day; Sunday is family day.** On rare occasions the athlete will indicate a swap. No training on the family day. No exceptions unless family is away.
 10. **Core Stability** — 3x/week minimum. Anti-extension, anti-rotation, anti-lateral flexion, hip hinge. Protects lower back from daily kid-lifting.
 11. **Minimum Session Length** — 40 minutes including warm-up and mobility. No pull-up-only sessions or sub-40-minute gym visits. If volume must be reduced, reduce intensity or exercises — not session time.
 

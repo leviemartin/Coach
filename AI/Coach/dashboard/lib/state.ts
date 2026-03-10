@@ -110,5 +110,20 @@ export function readWeeklyLogSynthesis(weekNumber: number): string {
   const idx = content.indexOf(marker);
   if (idx === -1) return '';
 
-  return content.slice(idx);
+  let synthesis = content.slice(idx);
+
+  // Strip internal system sections that aren't athlete-facing
+  const internalMarkers = [
+    '## State Updates Required',
+    '## State File Updates',
+    '## System Updates',
+  ];
+  for (const m of internalMarkers) {
+    const cutIdx = synthesis.indexOf(m);
+    if (cutIdx !== -1) {
+      synthesis = synthesis.slice(0, cutIdx);
+    }
+  }
+
+  return synthesis.trim();
 }
