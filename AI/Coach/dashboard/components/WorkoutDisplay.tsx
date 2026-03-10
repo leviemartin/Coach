@@ -42,9 +42,9 @@ type ParsedBlock =
 
 const EXERCISE_RE = /^(.+?)\s+(\d+)x(\d+(?:-\d+)?)\s*@\s*(\d+(?:\.\d+)?kg)(.*)$/;
 const EXERCISE_NO_WEIGHT_RE = /^(.+?)\s+(\d+)x(\d+(?:-\d+)?)\s*(.*)$/;
-const DURATION_RE = /^-?\s*(\d+\s*(?:min|sec|s|m|hr|hours?))\b/i;
+const DURATION_RE = /^-?\s*(\d+(?:\.\d+)?\s*(?:min|sec|s|m|hr|hours?))\b/i;
 const ANNOTATION_RE = /\(([A-Z]+)\)/g;
-const SUPERSET_LABEL_RE = /^([A-C]\d)\s*[:.–-]\s*/;
+const SUPERSET_LABEL_RE = /^([A-F]\d)\s*[:.–-]\s*/;
 
 // Section header keywords — line must end with ":" and start with one of these
 const SECTION_RE = /^((?:Superset|Circuit|Warm[- ]?up|Cool[- ]?down|AM|PM|Lunch|Finisher|Core|Conditioning|Grip|Block|Round|Part|Phase|Main|Accessory|Giant\s+Set|Tri[- ]?Set)[\w\s/'-]*(?:\([^)]+\))?)\s*:$/i;
@@ -88,6 +88,8 @@ function sanitizeWorkoutText(raw: string): string {
   text = text.replace(/•/g, '-');
   // Collapse multiple newlines
   text = text.replace(/\n{3,}/g, '\n\n');
+  // Strip trailing periods from exercise/instruction lines
+  text = text.replace(/\.(\n|$)/g, '$1');
   return text.trim();
 }
 
@@ -218,6 +220,13 @@ function parseExerciseToken(token: string): ParsedBlock | null {
   // Try cardio / duration-based: "20min StairMaster Zone 4 intervals"
   const durationMatch = trimmed.match(DURATION_RE);
   if (durationMatch) {
+    // Guard: rest/recovery instructions are NOT cardio
+    const lower = trimmed.toLowerCase();
+    const isRest = /\b(?:rest|recovery)\b/.test(lower);
+    const isCardioActivity = /\b(?:zone|interval|stairmaster|rower|bike|treadmill|walk|run|swim)\b/i.test(lower);
+    if (isRest && !isCardioActivity) {
+      return { type: 'text', data: trimmed };
+    }
     return {
       type: 'cardio',
       data: {
@@ -292,7 +301,40 @@ export function parseWorkoutPlan(text: string): ParsedBlock[] {
 
   const blocks: ParsedBlock[] = [];
   // Split on line breaks first, then on comma/plus within lines
-  const lines = sanitized.split(/\n/).map((l) => l.trim()).filter(Boolean);
+  const rawLines = sanitized.split(/\n/).map((l) => l.trim()).filter(Boolean);
+
+  // Layer 3: Display defense — expand any remaining long single-line blocks
+  const lines: string[] = [];
+  for (const line of rawLines) {
+    if (line.length > 120) {
+      // Try label-prefix split: "A) ... B1) ... C2) ..."
+      const labelSplit = line.split(/(?=\s[A-Z]\d?\)\s)/);
+      if (labelSplit.length >= 3) {
+        for (const seg of labelSplit) {
+          const t = seg.trim().replace(/^([A-Z]\d?\))\s+/, '- ');
+          if (t) lines.push(t);
+        }
+        continue;
+      }
+      // Try colon-format label split: "B1: ... C1: ... C2: ..."
+      const colonLabelSplit = line.split(/(?=\s[A-Z]\d\s*:\s)/);
+      if (colonLabelSplit.length >= 3) {
+        for (const seg of colonLabelSplit) {
+          if (seg.trim()) lines.push(seg.trim());
+        }
+        continue;
+      }
+      // Try period split: "Exercise. Exercise. ..."
+      const periodSplit = line.split(/\.\s+(?=[A-Z])/);
+      if (periodSplit.length >= 3) {
+        for (const seg of periodSplit) {
+          if (seg.trim()) lines.push(seg.trim());
+        }
+        continue;
+      }
+    }
+    lines.push(line);
+  }
 
   for (const line of lines) {
     // Strip leading dash for line-level checks (but keep original for token parsing)
@@ -359,7 +401,11 @@ export function parseWorkoutPlan(text: string): ParsedBlock[] {
       const ssMatch = token.match(SUPERSET_LABEL_RE);
       if (ssMatch) {
         const groupLetter = ssMatch[1][0]; // "A", "B", "C"
-        const exerciseText = token.replace(SUPERSET_LABEL_RE, '').trim();
+        let exerciseText = token.replace(SUPERSET_LABEL_RE, '').trim();
+        // Prepend "- " so COLON_DESCRIPTIVE_RE can match (it requires leading dash)
+        if (exerciseText && !exerciseText.startsWith('-')) {
+          exerciseText = '- ' + exerciseText;
+        }
         const parsed = parseExerciseToken(exerciseText);
         if (parsed && parsed.type === 'exercise') {
           const group = supersetMap.get(groupLetter) ?? [];
@@ -388,7 +434,23 @@ export function parseWorkoutPlan(text: string): ParsedBlock[] {
     }
   }
 
-  return blocks;
+  // Post-process: merge consecutive superset blocks with the same letter
+  const merged: ParsedBlock[] = [];
+  for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i];
+    if (block.type === 'superset') {
+      const letter = block.data.label; // e.g. "Superset B"
+      // Check if previous merged block is the same superset group
+      const prev = merged[merged.length - 1];
+      if (prev && prev.type === 'superset' && prev.data.label === letter) {
+        prev.data.exercises.push(...block.data.exercises);
+        continue;
+      }
+    }
+    merged.push(block);
+  }
+
+  return merged;
 }
 
 // ── Rendering ──────────────────────────────────────────────────────────

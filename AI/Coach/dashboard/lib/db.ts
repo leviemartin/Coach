@@ -2,6 +2,7 @@ import Database from 'better-sqlite3';
 import fs from 'fs';
 import path from 'path';
 import type { PlanItem, WeeklyMetrics, CeilingEntry, SubTask } from './types';
+import { normalizeWorkoutText } from './parse-schedule';
 
 const DB_PATH = path.join(process.cwd(), 'data', 'trends.db');
 
@@ -100,6 +101,56 @@ function initTables(db: Database.Database) {
   } catch {
     // Column already exists — ignore
   }
+
+  // Migration: normalize workout text in existing plan_items (v2 — handles label-prefix + period formats)
+  try {
+    const migrated = db.prepare(
+      "SELECT value FROM settings WHERE key = 'workout_normalize_v2'"
+    ).get();
+    if (!migrated) {
+      const rows = db.prepare('SELECT id, workout_plan, coach_cues FROM plan_items').all();
+      const update = db.prepare(
+        'UPDATE plan_items SET workout_plan = ?, coach_cues = ? WHERE id = ?'
+      );
+      db.transaction(() => {
+        for (const row of rows as { id: number; workout_plan: string | null; coach_cues: string | null }[]) {
+          update.run(
+            normalizeWorkoutText(row.workout_plan || ''),
+            normalizeWorkoutText(row.coach_cues || ''),
+            row.id
+          );
+        }
+        db.prepare(
+          "INSERT INTO settings (key, value) VALUES ('workout_normalize_v2', ?)"
+        ).run(new Date().toISOString());
+      })();
+    }
+  } catch { /* non-fatal */ }
+
+  // Migration v3: re-normalize with fixed normalizeWorkoutText (trailing periods, superset labels, per-line period split)
+  try {
+    const migrated = db.prepare(
+      "SELECT value FROM settings WHERE key = 'workout_normalize_v3'"
+    ).get();
+    if (!migrated) {
+      const rows = db.prepare('SELECT id, workout_plan, coach_cues FROM plan_items').all();
+      const update = db.prepare(
+        'UPDATE plan_items SET workout_plan = ?, coach_cues = ? WHERE id = ?'
+      );
+      db.transaction(() => {
+        for (const row of rows as { id: number; workout_plan: string | null; coach_cues: string | null }[]) {
+          update.run(
+            normalizeWorkoutText(row.workout_plan || ''),
+            normalizeWorkoutText(row.coach_cues || ''),
+            row.id
+          );
+        }
+        db.prepare(
+          "INSERT INTO settings (key, value) VALUES ('workout_normalize_v3', ?)"
+        ).run(new Date().toISOString());
+      })();
+    }
+  } catch { /* non-fatal */ }
 }
 
 // Settings

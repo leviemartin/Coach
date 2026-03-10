@@ -6,14 +6,46 @@ import type { PlanItem } from './types';
  */
 export function normalizeWorkoutText(raw: string): string {
   let text = raw;
-  // Convert HTML line breaks to newlines
+
+  // Step 1: Existing transforms
   text = text.replace(/<br\s*\/?>/gi, '\n');
-  // Strip markdown bold markers
   text = text.replace(/\*\*(.*?)\*\*/g, '$1');
-  // Replace bullet characters with dashes
   text = text.replace(/•/g, '-');
-  // Collapse multiple newlines
+
+  // Step 2: Label-prefix splitting — "A) Exercise. B1) Exercise." → newlines
+  // Insert newline before label prefixes that appear mid-string
+  text = text.replace(/(?<=\S)\s+(?=[A-Z]\d?\)\s)/g, '\n');
+  // Digit labels → superset format: "B1) Exercise" → "B1: Exercise"
+  text = text.replace(/^([A-Z]\d)\)\s+/gm, '$1: ');
+  // Single-letter labels → standalone dash: "A) Exercise" → "- Exercise"
+  text = text.replace(/^([A-Z])\)\s+/gm, '- ');
+
+  // Step 3: Period splitting — per-line, threshold 2+ segments
+  {
+    const lines = text.split('\n');
+    const expanded: string[] = [];
+    for (const line of lines) {
+      const segments = line.split(/\.\s+(?=[A-Z])/);
+      if (segments.length >= 2) {
+        expanded.push(...segments.map(s => s.trim()).filter(Boolean));
+      } else {
+        expanded.push(line);
+      }
+    }
+    text = expanded.join('\n');
+  }
+
+  // Step 4: "Warm-up:" / "Finish:" section headers mid-line → newline before
+  // Only match when followed by colon (section header pattern) to avoid splitting "bike warm-up"
+  text = text.replace(/(?<=\S)\s+(?=(?:Warm-up|Finish|Cool-down)\s*:)/gi, '\n');
+
+  // Step 5: Collapse multiple newlines
   text = text.replace(/\n{3,}/g, '\n\n');
+
+  // Step 6: Strip trailing periods from exercise/instruction lines
+  // Won't touch "47.5kg" (period followed by digit) or mid-sentence periods
+  text = text.replace(/\.(\n|$)/g, '$1');
+
   return text.trim();
 }
 

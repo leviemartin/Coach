@@ -9,8 +9,11 @@ import {
   CardContent,
   Collapse,
   IconButton,
+  Tooltip,
+  Typography,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import TrainingPlanTable from '@/components/TrainingPlanTable';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
 import type { PlanItem, SubTask } from '@/lib/types';
@@ -21,6 +24,7 @@ export default function PlanPage() {
   const [synthesis, setSynthesis] = useState('');
   const [weekNumber, setWeekNumber] = useState<number | null>(null);
   const [briefingOpen, setBriefingOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const loadPlan = useCallback(async () => {
     try {
@@ -53,6 +57,12 @@ export default function PlanPage() {
   useEffect(() => {
     loadPlan();
     loadBriefing();
+  }, [loadPlan, loadBriefing]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([loadPlan(), loadBriefing()]);
+    setRefreshing(false);
   }, [loadPlan, loadBriefing]);
 
   const handleUpdateSubTasks = async (id: number, subTasks: SubTask[]) => {
@@ -89,6 +99,20 @@ export default function PlanPage() {
 
   return (
     <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h5" fontWeight={700}>
+          Week {weekNumber ?? '?'}
+        </Typography>
+        <Tooltip title="Reload plan data">
+          <IconButton onClick={handleRefresh} disabled={refreshing} size="small">
+            <RefreshIcon sx={{
+              animation: refreshing ? 'spin 1s linear infinite' : 'none',
+              '@keyframes spin': { '0%': { transform: 'rotate(0deg)' }, '100%': { transform: 'rotate(360deg)' } },
+            }} />
+          </IconButton>
+        </Tooltip>
+      </Box>
+
       {synthesis && (
         <Card variant="outlined" sx={{ mb: 2 }}>
           <CardHeader

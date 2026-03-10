@@ -589,6 +589,36 @@ describe('Real DB — descriptive reps with qualifiers', () => {
     }
   });
 
+  // ── Layer 3: Display defense-in-depth ──────────────────────────────
+
+  test('long single-line with labels → produces multiple blocks (not one text wall)', () => {
+    const longLine = 'A) Goblet Squat: 30kg x10. B1) Hamstring Curl: 47.5kg x12. B2) Walking Lunges: 2x12kg DBs x10/leg. C1) Leg Press: 95kg x12. C2) Calf Press: 62.5kg x15';
+    const blocks = parseWorkoutPlan(longLine);
+    // Should NOT produce a single text block for >120 char input
+    expect(blocks.length).toBeGreaterThan(1);
+    // Should have multiple exercise blocks
+    const exercises = blocks.filter((b) => b.type === 'exercise');
+    expect(exercises.length).toBeGreaterThanOrEqual(3);
+  });
+
+  test('long single-line with periods → produces multiple blocks', () => {
+    const longLine = 'Warm-up 5min bike Zone 2. Goblet Squat 30kg x10. Hamstring Curl 47.5kg x12. StairMaster 20min Zone 4. Calf Press 3x15 at 60kg';
+    const blocks = parseWorkoutPlan(longLine);
+    expect(blocks.length).toBeGreaterThan(1);
+  });
+
+  test('should never produce a single text block for >120 char input with multiple exercises', () => {
+    const longLine = 'A) Goblet Squat: 30kg x10. B1) Hamstring Curl: 47.5kg x12. B2) Leg Press: 95kg x12. C1) Calf Press: 62.5kg x15. C2) Walking Lunges: 2x12kg DBs x10/leg';
+    const blocks = parseWorkoutPlan(longLine);
+    const textBlocks = blocks.filter((b) => b.type === 'text');
+    // No single text block should contain the entire input
+    for (const b of textBlocks) {
+      if (typeof b.data === 'string') {
+        expect(b.data.length).toBeLessThan(120);
+      }
+    }
+  });
+
   test('"- Lateral Raises: 6kg x12" → exercise with weight', () => {
     const blocks = parseWorkoutPlan('- Lateral Raises: 6kg x12');
     expect(blocks[0].type).toBe('exercise');
@@ -673,6 +703,137 @@ describe('Real DB — section headers', () => {
     const blocks = parseWorkoutPlan('Upper Plyo (3 sets, 90s rest):');
     expect(blocks[0].type).toBe('section');
     expect(blocks[0].data).toBe('Upper Plyo (3 sets, 90s rest)');
+  });
+});
+
+// ── Rest/recovery lines should NOT be cardio ───────────────────────
+
+describe('Rest/recovery lines are NOT cardio', () => {
+  test('"1min recovery" → text (not cardio)', () => {
+    const blocks = parseWorkoutPlan('1min recovery');
+    expect(blocks[0].type).toBe('text');
+  });
+
+  test('"2.5min recovery" → text (not cardio)', () => {
+    const blocks = parseWorkoutPlan('2.5min recovery');
+    expect(blocks[0].type).toBe('text');
+  });
+
+  test('"- 90s rest between sets" → text (not cardio)', () => {
+    const blocks = parseWorkoutPlan('- 90s rest between sets');
+    expect(blocks[0].type).toBe('text');
+  });
+
+  test('"20min StairMaster Zone 4" → cardio (unchanged)', () => {
+    const blocks = parseWorkoutPlan('20min StairMaster Zone 4');
+    expect(blocks[0].type).toBe('cardio');
+  });
+
+  test('"5min Zone 2 bike warm-up" → cardio (unchanged)', () => {
+    const blocks = parseWorkoutPlan('5min Zone 2 bike warm-up');
+    expect(blocks[0].type).toBe('cardio');
+  });
+});
+
+// ── Superset grouping from B1:/B2: format ───────────────────────────
+
+describe('Superset grouping from B1:/B2: format', () => {
+  test('"B1: DB Bench 3x10 @22kg" + "B2: Pull-ups 3x5" → superset block', () => {
+    const input = 'B1: DB Bench 3x10 @22kg\nB2: Pull-ups 3x5';
+    const blocks = parseWorkoutPlan(input);
+    const supersets = blocks.filter((b) => b.type === 'superset');
+    expect(supersets.length).toBe(1);
+    if (supersets[0].type === 'superset') {
+      expect(supersets[0].data.label).toBe('Superset B');
+      expect(supersets[0].data.exercises).toHaveLength(2);
+    }
+  });
+
+  test('mixed labels: A standalone + B1/B2 superset', () => {
+    const input = '- Goblet Squat: 30kg x10\nB1: Hamstring Curl: 47.5kg x12\nB2: Walking Lunges 3x10';
+    const blocks = parseWorkoutPlan(input);
+    const exercises = blocks.filter((b) => b.type === 'exercise');
+    const supersets = blocks.filter((b) => b.type === 'superset');
+    expect(exercises.length).toBeGreaterThanOrEqual(1);
+    expect(supersets.length).toBe(1);
+  });
+});
+
+// ── Expert review edge cases ────────────────────────────────────────
+
+describe('Expert review — rest/recovery edge cases', () => {
+  test('"5min recovery walk" → cardio (has both "recovery" AND "walk")', () => {
+    const blocks = parseWorkoutPlan('5min recovery walk');
+    expect(blocks[0].type).toBe('cardio');
+    if (blocks[0].type === 'cardio') {
+      expect(blocks[0].data.duration).toBe('5min');
+    }
+  });
+
+  test('"2.5min recovery" → text with correct decimal handling', () => {
+    const blocks = parseWorkoutPlan('2.5min recovery');
+    expect(blocks[0].type).toBe('text');
+  });
+});
+
+describe('Expert review — superset edge cases', () => {
+  test('single B1 with no B2 → produces superset with 1 exercise', () => {
+    const blocks = parseWorkoutPlan('B1: DB Bench 3x10 @22kg');
+    const supersets = blocks.filter((b) => b.type === 'superset');
+    expect(supersets.length).toBe(1);
+    if (supersets[0].type === 'superset') {
+      expect(supersets[0].data.exercises).toHaveLength(1);
+    }
+  });
+
+  test('B1/B2 with intervening text → two separate superset blocks (not merged)', () => {
+    const input = 'B1: DB Bench 3x10 @22kg\nSome coaching note\nB2: Pull-ups 3x5';
+    const blocks = parseWorkoutPlan(input);
+    const supersets = blocks.filter((b) => b.type === 'superset');
+    expect(supersets.length).toBe(2);
+  });
+
+  test('"B1: Dead Hang: max hold" → superset exercise (descriptive colon format)', () => {
+    const blocks = parseWorkoutPlan('B1: Dead Hang: max hold\nB2: Pull-ups 3x5');
+    const supersets = blocks.filter((b) => b.type === 'superset');
+    expect(supersets.length).toBe(1);
+    if (supersets[0].type === 'superset') {
+      expect(supersets[0].data.exercises).toHaveLength(2);
+      expect(supersets[0].data.exercises[0].name).toBe('Dead Hang');
+    }
+  });
+
+  test('F1/F2 labels (boundary of A-F range) → produces superset', () => {
+    const blocks = parseWorkoutPlan('F1: Squat 3x10\nF2: Bench 3x8');
+    const supersets = blocks.filter((b) => b.type === 'superset');
+    expect(supersets.length).toBe(1);
+  });
+
+  test('G1/G2 labels (outside A-F range) → NOT a superset', () => {
+    const blocks = parseWorkoutPlan('G1: Squat 3x10\nG2: Bench 3x8');
+    const supersets = blocks.filter((b) => b.type === 'superset');
+    expect(supersets.length).toBe(0);
+  });
+});
+
+describe('Expert review — trailing period + parse interaction', () => {
+  test('"- Goblet Squat: 28kg x10." → still parses as exercise after period strip', () => {
+    const blocks = parseWorkoutPlan('- Goblet Squat: 28kg x10.');
+    expect(blocks[0].type).toBe('exercise');
+    if (blocks[0].type === 'exercise') {
+      expect(blocks[0].data.name).toBe('Goblet Squat');
+      expect(blocks[0].data.reps).toBe('10');
+    }
+  });
+});
+
+describe('Expert review — decimal duration capture', () => {
+  test('"2.5min Zone 4 StairMaster" → cardio with duration "2.5min"', () => {
+    const blocks = parseWorkoutPlan('2.5min Zone 4 StairMaster');
+    expect(blocks[0].type).toBe('cardio');
+    if (blocks[0].type === 'cardio') {
+      expect(blocks[0].data.duration).toBe('2.5min');
+    }
   });
 });
 

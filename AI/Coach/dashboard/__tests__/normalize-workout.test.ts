@@ -241,6 +241,131 @@ describe('normalizeWorkoutText', () => {
     });
   });
 
+  // ── Week 10 Patterns (label-prefix + period-separated) ────────────────
+
+  describe('Week 10 — label-prefix format', () => {
+    const WEEK10_MONDAY = 'A) Goblet Squat: 30kg x10. B1) Hamstring Curl: 47.5kg x12. B2) Walking Lunges: 2x12kg DBs x10/leg. C1) Leg Press: 95kg x12. C2) Calf Press: 62.5kg x15';
+
+    it('splits label-prefix period-separated text into separate lines', () => {
+      const result = normalizeWorkoutText(WEEK10_MONDAY);
+      const lines = result.split('\n');
+      expect(lines.length).toBeGreaterThanOrEqual(5);
+    });
+
+    it('converts label prefixes: single-letter to dash, digit-labels to superset format', () => {
+      const result = normalizeWorkoutText(WEEK10_MONDAY);
+      expect(result).not.toMatch(/[A-Z]\d?\)/);
+      expect(result).toContain('- Goblet Squat');
+      expect(result).toContain('B1: Hamstring Curl');
+      expect(result).toContain('B2: Walking Lunges');
+      expect(result).toContain('C1: Leg Press');
+      expect(result).toContain('C2: Calf Press');
+    });
+
+    it('does not contain period-separated wall of text', () => {
+      const result = normalizeWorkoutText(WEEK10_MONDAY);
+      // No line should be >120 chars (the original is ~180+)
+      for (const line of result.split('\n')) {
+        expect(line.length).toBeLessThan(120);
+      }
+    });
+  });
+
+  describe('Week 10 — period-separated without labels', () => {
+    const PERIOD_TEXT = 'Warm-up 5min bike Zone 2. Goblet Squat 30kg x10. Hamstring Curl 47.5kg x12. StairMaster 20min Zone 4';
+
+    it('splits period-separated sentences into lines', () => {
+      const result = normalizeWorkoutText(PERIOD_TEXT);
+      const lines = result.split('\n');
+      expect(lines.length).toBeGreaterThanOrEqual(3);
+    });
+  });
+
+  describe('Mixed format — some newlines + some periods', () => {
+    const MIXED = 'Warm-up:\n- 5min bike Zone 2\nGoblet Squat 30kg x10. Hamstring Curl 47.5kg x12';
+
+    it('period-splits per-line even when other lines have newlines', () => {
+      const result = normalizeWorkoutText(MIXED);
+      // Per-line period split: the third line has 2 segments → split
+      expect(result).toContain('Goblet Squat 30kg x10');
+      expect(result).toContain('Hamstring Curl 47.5kg x12');
+      expect(result).not.toContain('Goblet Squat 30kg x10. Hamstring Curl');
+    });
+  });
+
+  describe('Already clean newline content', () => {
+    const CLEAN = 'Warm-up:\n- 5min bike Zone 2\nSuperset A (3 rounds, 90s rest):\n- Goblet Squat: 28kg x10\n- Hamstring Curl: 45kg x12';
+
+    it('passes through unchanged', () => {
+      const result = normalizeWorkoutText(CLEAN);
+      expect(result).toBe(CLEAN);
+    });
+  });
+
+  // ── Trailing periods ─────────────────────────────────────────────────
+
+  describe('Trailing periods', () => {
+    it('strips trailing period from "20 steps."', () => {
+      expect(normalizeWorkoutText('20 steps.')).toBe('20 steps');
+    });
+
+    it('strips trailing period from "Normal food intake."', () => {
+      expect(normalizeWorkoutText('Normal food intake.')).toBe('Normal food intake');
+    });
+
+    it('does not strip period followed by digit ("47.5kg")', () => {
+      expect(normalizeWorkoutText('Squat 47.5kg')).toBe('Squat 47.5kg');
+    });
+
+    it('strips trailing period on each line', () => {
+      const result = normalizeWorkoutText('Line one.\nLine two.');
+      expect(result).toBe('Line one\nLine two');
+    });
+  });
+
+  // ── Superset label preservation ─────────────────────────────────────
+
+  describe('Superset label preservation', () => {
+    it('converts "B1) DB Bench 3x10" to "B1: DB Bench 3x10"', () => {
+      expect(normalizeWorkoutText('B1) DB Bench 3x10')).toBe('B1: DB Bench 3x10');
+    });
+
+    it('converts "A) Med ball throws 3x6" to "- Med ball throws 3x6"', () => {
+      expect(normalizeWorkoutText('A) Med ball throws 3x6')).toBe('- Med ball throws 3x6');
+    });
+
+    it('converts digit labels but keeps single-letter labels as dashes', () => {
+      const input = 'A) Goblet Squat: 30kg x10\nB1) Hamstring Curl: 47.5kg x12\nB2) Walking Lunges: 2x12kg DBs x10/leg';
+      const result = normalizeWorkoutText(input);
+      expect(result).toContain('- Goblet Squat');
+      expect(result).toContain('B1: Hamstring Curl');
+      expect(result).toContain('B2: Walking Lunges');
+    });
+  });
+
+  // ── Expert review edge cases ──────────────────────────────────────────
+
+  describe('Expert review — period-split edge cases', () => {
+    it('strips trailing period from "47.5kg." correctly', () => {
+      expect(normalizeWorkoutText('Hamstring Curl: 47.5kg.')).toBe('Hamstring Curl: 47.5kg');
+    });
+
+    it('handles double period "Squat 3x10.. Bench 3x8" without empty lines', () => {
+      const result = normalizeWorkoutText('Squat 3x10.. Bench 3x8');
+      const lines = result.split('\n');
+      for (const line of lines) {
+        expect(line.trim()).not.toBe('');
+      }
+    });
+
+    it('period-split then trailing period strip pipeline: "Squat 3x10. Bench 3x8."', () => {
+      const result = normalizeWorkoutText('Squat 3x10. Bench 3x8.');
+      expect(result).toContain('Squat 3x10');
+      expect(result).toContain('Bench 3x8');
+      expect(result).not.toMatch(/\.$/m);
+    });
+  });
+
   // ── Edge cases ─────────────────────────────────────────────────────────
 
   describe('Edge cases', () => {
