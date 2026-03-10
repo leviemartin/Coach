@@ -42,18 +42,23 @@ type ParsedBlock =
 
 const EXERCISE_RE = /^(.+?)\s+(\d+)x(\d+(?:-\d+)?)\s*@\s*(\d+(?:\.\d+)?kg)(.*)$/;
 const EXERCISE_NO_WEIGHT_RE = /^(.+?)\s+(\d+)x(\d+(?:-\d+)?)\s*(.*)$/;
-const DURATION_RE = /^(\d+\s*(?:min|sec|s|m|hr|hours?))\b/i;
+const DURATION_RE = /^-?\s*(\d+\s*(?:min|sec|s|m|hr|hours?))\b/i;
 const ANNOTATION_RE = /\(([A-Z]+)\)/g;
 const SUPERSET_LABEL_RE = /^([A-C]\d)\s*[:.–-]\s*/;
 
 // Section header keywords — line must end with ":" and start with one of these
 const SECTION_RE = /^((?:Superset|Circuit|Warm[- ]?up|Cool[- ]?down|AM|PM|Lunch|Finisher|Core|Conditioning|Grip|Block|Round|Part|Phase|Main|Accessory|Giant\s+Set|Tri[- ]?Set)[\w\s/'-]*(?:\([^)]+\))?)\s*:$/i;
 
+// Fallback section header: any multi-word line ending with ":" (with optional parens)
+// that isn't a simple "Name: value" exercise line. Catches "Zone 4 StairMaster:",
+// "TRUE Rower Sprint Protocol:", "Pull-Up Circuit (3 rounds, 2min rest):", etc.
+const SECTION_FALLBACK_RE = /^([\w][\w\s/'-]+(?:\([^)]+\))?)\s*:$/;
+
 // Inline section: "AM: 3x2 negative pull-ups" — short label followed by content on same line
 const INLINE_SECTION_RE = /^(AM|PM|Lunch(?:\/PM)?\s*(?:Gym)?|Evening|Morning)\s*:\s+(.+)$/i;
 
-// Colon format: "- Exercise: 28kg x10" or "Exercise: 45kg x12"
-const COLON_FORMAT_RE = /^-?\s*(.+?):\s*(\d+(?:\.\d+)?kg)\s*x\s*(\d+(?:-\d+)?)\s*(.*)$/;
+// Colon format: "- Exercise: 28kg x10" or "Exercise: 45kg x12" or "Exercise: 15kg x12/side"
+const COLON_FORMAT_RE = /^-?\s*(.+?):\s*(\d+(?:\.\d+)?kg)\s*x\s*(\d+(?:-\d+)?(?:\/\w+)?)\s*(.*)$/;
 
 // Colon format with weight+qualifier: "- Farmer's Walk: 24kg/hand x 30m"
 const COLON_WEIGHT_QUALIFIER_RE = /^-?\s*(.+?):\s*(\d+(?:\.\d+)?kg\/\w+)\s+x\s+(.+)$/;
@@ -300,6 +305,14 @@ export function parseWorkoutPlan(text: string): ParsedBlock[] {
       continue;
     }
 
+    // Fallback section header: multi-word line ending with ":" that doesn't match keywords
+    // e.g. "Zone 4 StairMaster:", "TRUE Rower Sprint Protocol:", "Pull-Up Circuit (3 rounds):"
+    const sectionFallback = stripped.match(SECTION_FALLBACK_RE);
+    if (sectionFallback && /\s/.test(sectionFallback[1].trim())) {
+      blocks.push({ type: 'section', data: sectionFallback[1].trim() });
+      continue;
+    }
+
     // Check for inline section: "AM: 3x2 negative pull-ups (5s descent)"
     // Emits a section header, then parses the rest as a separate line
     const inlineMatch = line.match(INLINE_SECTION_RE);
@@ -401,7 +414,11 @@ function AnnotationBadge({ text }: { text: string }) {
 function ExerciseRow({ ex }: { ex: ParsedExercise }) {
   // Combine sets/reps/weight into one inline string: "3×10 @ 26kg"
   const setsRepsWeight = [
-    ex.sets != null && ex.reps != null ? `${ex.sets}×${ex.reps}` : null,
+    ex.sets != null && ex.reps != null
+      ? `${ex.sets}×${ex.reps}`
+      : ex.reps != null
+        ? (ex.weight ? `×${ex.reps}` : String(ex.reps))
+        : null,
     ex.weight ? `@ ${ex.weight}` : null,
   ].filter(Boolean).join(' ');
 

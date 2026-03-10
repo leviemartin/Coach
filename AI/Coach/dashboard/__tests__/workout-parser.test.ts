@@ -321,7 +321,7 @@ describe('Critical Check #3 — Superset distinction as section headers', () => 
   });
 });
 
-// ── Known problem area: comma split inside parentheses ─────────────
+// ── Comma split respects parentheses ────────────────────────────────
 
 describe('Comma split respects parentheses', () => {
   test('"Grip Circuit (3 rounds, 2min rest):" is NOT split on internal comma', () => {
@@ -407,5 +407,321 @@ describe('Edge cases — known problematic patterns', () => {
     const blocks = parseWorkoutPlan('Lunch/PM Gym:');
     expect(blocks[0].type).toBe('section');
     expect(blocks[0].data).toBe('Lunch/PM Gym');
+  });
+});
+
+// ── Real DB patterns: colon format with annotation text ────────────
+
+describe('Real DB — colon format with annotation text (not ALLCAPS)', () => {
+  test('"- Cable Woodchopper: 15kg x12/side" → exercise with weight and reps including /side', () => {
+    // COLON_FORMAT_RE now captures optional /word suffix in reps group
+    const blocks = parseWorkoutPlan('- Cable Woodchopper: 15kg x12/side');
+    expect(blocks[0].type).toBe('exercise');
+    if (blocks[0].type === 'exercise') {
+      expect(blocks[0].data.name).toBe('Cable Woodchopper');
+      expect(blocks[0].data.weight).toBe('15kg');
+      expect(blocks[0].data.reps).toBe('12/side');
+      expect(blocks[0].data.annotations).toEqual([]);
+    }
+  });
+
+  test('"- Face Pulls: Light x20" → exercise (descriptive) — "Light" is not a kg weight', () => {
+    // COLON_FORMAT_RE: needs \d+kg — "Light" is not numeric → no match
+    // COLON_COMPOUND_RE / COLON_WEIGHT_QUALIFIER_RE: no match
+    // COLON_SETSREPS_RE: needs \d+ x \d+ — "Light" is not a digit → no match
+    // COLON_DESCRIPTIVE_RE: name = "Face Pulls", reps = "Light x20"
+    const blocks = parseWorkoutPlan('- Face Pulls: Light x20');
+    expect(blocks[0].type).toBe('exercise');
+    if (blocks[0].type === 'exercise') {
+      expect(blocks[0].data.name).toBe('Face Pulls');
+      expect(blocks[0].data.reps).toBe('Light x20');
+      // BUG: weight is not extracted ("Light" is a qualitative weight label)
+      expect(blocks[0].data.weight).toBeUndefined();
+    }
+  });
+
+  test('"- Negative pull-ups: 3-5 reps (3s descent)" → exercise (COLON_DESCRIPTIVE_RE)', () => {
+    // COLON_FORMAT_RE: after ":", "3-5 reps (3s descent)" — no "kg" → no match
+    // COLON_SETSREPS_RE: "3" x? no "x" between "3" and "-5" → no match
+    // COLON_DESCRIPTIVE_RE: name = "Negative pull-ups", reps = "3-5 reps (3s descent)"
+    const blocks = parseWorkoutPlan('- Negative pull-ups: 3-5 reps (3s descent)');
+    expect(blocks[0].type).toBe('exercise');
+    if (blocks[0].type === 'exercise') {
+      expect(blocks[0].data.name).toBe('Negative pull-ups');
+      expect(blocks[0].data.reps).toBe('3-5 reps (3s descent)');
+    }
+  });
+});
+
+// ── Real DB — protocol/equipment lines ─────────────────────────────
+
+describe('Real DB — protocol/equipment lines', () => {
+  test('"- Damper: 8" → exercise (descriptive) via COLON_DESCRIPTIVE_RE', () => {
+    // Starts with "- ", has colon → COLON_DESCRIPTIVE_RE matches
+    // name = "Damper", reps = "8"
+    const blocks = parseWorkoutPlan('- Damper: 8');
+    expect(blocks[0].type).toBe('exercise');
+    if (blocks[0].type === 'exercise') {
+      expect(blocks[0].data.name).toBe('Damper');
+      expect(blocks[0].data.reps).toBe('8');
+      // BUG: "Damper: 8" is an equipment setting, not an exercise. Parsed as exercise anyway.
+    }
+  });
+
+  test('"- Target: >300W average" → exercise (descriptive) via COLON_DESCRIPTIVE_RE', () => {
+    // Starts with "- ", has colon → COLON_DESCRIPTIVE_RE matches
+    // name = "Target", reps = ">300W average"
+    const blocks = parseWorkoutPlan('- Target: >300W average');
+    expect(blocks[0].type).toBe('exercise');
+    if (blocks[0].type === 'exercise') {
+      expect(blocks[0].data.name).toBe('Target');
+      expect(blocks[0].data.reps).toBe('>300W average');
+      // BUG: "Target: >300W average" is a performance cue, not an exercise
+    }
+  });
+
+  test('"- 8x [20s MAX EFFORT / 1:40 complete rest]" → should NOT parse as exercise 8x20', () => {
+    // No colon → not any COLON_* regex
+    // EXERCISE_RE: needs @ weight → no
+    // EXERCISE_NO_WEIGHT_RE: "8x" tries to match (.+?) (\d+)x(\d+) — but the "[" prevents
+    //   Actually: "- 8x [20s..." → trimmed = "- 8x [20s..." → stripped = "8x [20s..."
+    //   But wait, line-level: stripped (no dash) = "8x [20s MAX EFFORT / 1:40 complete rest]"
+    //   Passed to parseExerciseToken as the full line "- 8x [20s MAX EFFORT / 1:40 complete rest]"
+    //   Actually smartSplit first, then parseExerciseToken on tokens
+    //   Token: "- 8x [20s MAX EFFORT / 1:40 complete rest]"
+    //   EXERCISE_NO_WEIGHT_RE on trimmed: (.+?) (\d+)x(\d+) — need space before \d+x\d+
+    //   "- 8x [20s..." — no space before "8x", so "- " is (.+?), "8" is (\d+), then x, then "["?
+    //   No, "[" is not \d+ → no match
+    // DURATION_RE: starts with \d+min/sec — "- 8x" doesn't match
+    // COLON_DESCRIPTIVE_RE: needs "- " + colon — there IS a colon in "1:40"
+    //   Pattern: /^-\s+(.+?):\s+(.+)$/ — "- 8x [20s MAX EFFORT / 1" : " 40 complete rest]"
+    //   name = "8x [20s MAX EFFORT / 1", reps = "40 complete rest]"
+    //   This matches! So it becomes an exercise with a mangled name.
+    const blocks = parseWorkoutPlan('- 8x [20s MAX EFFORT / 1:40 complete rest]');
+    expect(blocks).toHaveLength(1);
+    // The ":" in "1:40" does NOT trigger COLON_DESCRIPTIVE_RE because there is no space
+    // after the colon (1:40 has digit immediately). Falls through to text.
+    expect(blocks[0].type).toBe('text');
+  });
+});
+
+// ── Real DB — descriptive reps with qualifiers ─────────────────────
+
+describe('Real DB — descriptive reps with qualifiers', () => {
+  test('"- Burpees: 10 reps" → exercise, reps="10 reps"', () => {
+    // COLON_FORMAT_RE: "10 reps" — no "kg" → no match
+    // COLON_SETSREPS_RE: "10" as sets, then needs "x" — no "x" after "10" → no match
+    // COLON_DESCRIPTIVE_RE: name = "Burpees", reps = "10 reps"
+    const blocks = parseWorkoutPlan('- Burpees: 10 reps');
+    expect(blocks[0].type).toBe('exercise');
+    if (blocks[0].type === 'exercise') {
+      expect(blocks[0].data.name).toBe('Burpees');
+      expect(blocks[0].data.reps).toBe('10 reps');
+    }
+  });
+
+  test('"- Med Ball Rotational Throws: 8/side" → exercise, reps="8/side"', () => {
+    const blocks = parseWorkoutPlan('- Med Ball Rotational Throws: 8/side');
+    expect(blocks[0].type).toBe('exercise');
+    if (blocks[0].type === 'exercise') {
+      expect(blocks[0].data.name).toBe('Med Ball Rotational Throws');
+      expect(blocks[0].data.reps).toBe('8/side');
+    }
+  });
+
+  test('"- Box Step-overs: 10/leg" → exercise, reps="10/leg"', () => {
+    const blocks = parseWorkoutPlan('- Box Step-overs: 10/leg');
+    expect(blocks[0].type).toBe('exercise');
+    if (blocks[0].type === 'exercise') {
+      expect(blocks[0].data.name).toBe('Box Step-overs');
+      expect(blocks[0].data.reps).toBe('10/leg');
+    }
+  });
+
+  test('"- Pallof Press: 10/side" → exercise, reps="10/side"', () => {
+    const blocks = parseWorkoutPlan('- Pallof Press: 10/side');
+    expect(blocks[0].type).toBe('exercise');
+    if (blocks[0].type === 'exercise') {
+      expect(blocks[0].data.name).toBe('Pallof Press');
+      expect(blocks[0].data.reps).toBe('10/side');
+    }
+  });
+
+  test('"- Russian Twists w/10kg: 20 total" → exercise, reps="20 total"', () => {
+    // COLON_FORMAT_RE: "20 total" — no "kg" → no match
+    // COLON_DESCRIPTIVE_RE: name = "Russian Twists w/10kg", reps = "20 total"
+    const blocks = parseWorkoutPlan('- Russian Twists w/10kg: 20 total');
+    expect(blocks[0].type).toBe('exercise');
+    if (blocks[0].type === 'exercise') {
+      expect(blocks[0].data.name).toBe('Russian Twists w/10kg');
+      expect(blocks[0].data.reps).toBe('20 total');
+      // BUG: weight is embedded in name ("w/10kg") but not extracted
+      expect(blocks[0].data.weight).toBeUndefined();
+    }
+  });
+
+  test('"- Band-assisted pull-ups: Max reps (aim 5-8)" → exercise, reps includes "Max reps"', () => {
+    const blocks = parseWorkoutPlan('- Band-assisted pull-ups: Max reps (aim 5-8)');
+    expect(blocks[0].type).toBe('exercise');
+    if (blocks[0].type === 'exercise') {
+      expect(blocks[0].data.name).toBe('Band-assisted pull-ups');
+      expect(blocks[0].data.reps).toContain('Max reps');
+      // Full reps field includes the parenthetical
+      expect(blocks[0].data.reps).toBe('Max reps (aim 5-8)');
+    }
+  });
+
+  test('"- Dead hang: Max time" → exercise, reps="Max time"', () => {
+    const blocks = parseWorkoutPlan('- Dead hang: Max time');
+    expect(blocks[0].type).toBe('exercise');
+    if (blocks[0].type === 'exercise') {
+      expect(blocks[0].data.name).toBe('Dead hang');
+      expect(blocks[0].data.reps).toBe('Max time');
+    }
+  });
+
+  test('"- Med Ball Slams: 10 reps" → exercise', () => {
+    const blocks = parseWorkoutPlan('- Med Ball Slams: 10 reps');
+    expect(blocks[0].type).toBe('exercise');
+    if (blocks[0].type === 'exercise') {
+      expect(blocks[0].data.name).toBe('Med Ball Slams');
+      expect(blocks[0].data.reps).toBe('10 reps');
+    }
+  });
+
+  test('"- Lateral Raises: 6kg x12" → exercise with weight', () => {
+    const blocks = parseWorkoutPlan('- Lateral Raises: 6kg x12');
+    expect(blocks[0].type).toBe('exercise');
+    if (blocks[0].type === 'exercise') {
+      expect(blocks[0].data.name).toBe('Lateral Raises');
+      expect(blocks[0].data.weight).toBe('6kg');
+      expect(blocks[0].data.reps).toBe('12');
+    }
+  });
+
+  test('"- Band-assisted Pull-ups: Max reps" → exercise', () => {
+    const blocks = parseWorkoutPlan('- Band-assisted Pull-ups: Max reps');
+    expect(blocks[0].type).toBe('exercise');
+    if (blocks[0].type === 'exercise') {
+      expect(blocks[0].data.name).toBe('Band-assisted Pull-ups');
+      expect(blocks[0].data.reps).toBe('Max reps');
+    }
+  });
+});
+
+// ── Real DB — section headers ──────────────────────────────────────
+
+describe('Real DB — section headers', () => {
+  test('"PM Gym:" → section', () => {
+    // SECTION_RE: starts with PM → matches PM keyword
+    const blocks = parseWorkoutPlan('PM Gym:');
+    expect(blocks[0].type).toBe('section');
+    expect(blocks[0].data).toBe('PM Gym');
+  });
+
+  test('"TRUE Rower Sprint Protocol:" → section (via fallback — multi-word line ending with ":")', () => {
+    // SECTION_RE misses this (no keyword match), but SECTION_FALLBACK_RE catches it:
+    // multi-word line ending with ":" → section header
+    const blocks = parseWorkoutPlan('TRUE Rower Sprint Protocol:');
+    expect(blocks[0].type).toBe('section');
+    expect(blocks[0].data).toBe('TRUE Rower Sprint Protocol');
+  });
+
+  test('"Zone 4 StairMaster:" → section (via fallback — multi-word line ending with ":")', () => {
+    // SECTION_RE misses this, but SECTION_FALLBACK_RE catches multi-word lines ending with ":"
+    const blocks = parseWorkoutPlan('Zone 4 StairMaster:');
+    expect(blocks[0].type).toBe('section');
+    expect(blocks[0].data).toBe('Zone 4 StairMaster');
+  });
+
+  test('"Functional Circuit (3 rounds, 90s between):" → section (via fallback)', () => {
+    // SECTION_RE misses this ("Functional" not a keyword), but SECTION_FALLBACK_RE catches it:
+    // multi-word line with parens ending with ":"
+    const blocks = parseWorkoutPlan('Functional Circuit (3 rounds, 90s between):');
+    expect(blocks[0].type).toBe('section');
+    expect(blocks[0].data).toBe('Functional Circuit (3 rounds, 90s between)');
+  });
+
+  test('"Investigation Set: DB Bench 22.5kg x max reps" → text (no section keyword, no leading dash)', () => {
+    // "Investigation" is not in SECTION_RE keywords
+    // Not INLINE_SECTION_RE (only AM/PM/Lunch/Evening/Morning)
+    // parseExerciseToken: has colon but no leading dash → COLON_DESCRIPTIVE_RE won't match
+    // COLON_FORMAT_RE: "DB Bench 22.5kg x max reps" — "max" is not \d+ → no match
+    // Falls through to text
+    const blocks = parseWorkoutPlan('Investigation Set: DB Bench 22.5kg x max reps');
+    expect(blocks[0].type).toBe('text');
+    if (blocks[0].type === 'text') {
+      expect(blocks[0].data).toBe('Investigation Set: DB Bench 22.5kg x max reps');
+    }
+  });
+
+  test('"Post-strength: 20min treadmill incline walk (10% grade, 4.5km/h)" → text (not a section keyword)', () => {
+    // "Post-strength" is not a SECTION_RE keyword and not an INLINE_SECTION label
+    // No leading dash → COLON_DESCRIPTIVE_RE won't match
+    // parseExerciseToken processes it: EXERCISE_RE no, COLON_FORMAT_RE no,
+    // DURATION_RE: starts with "Post-strength:" — no digit start → no match
+    // → text
+    const blocks = parseWorkoutPlan('Post-strength: 20min treadmill incline walk (10% grade, 4.5km/h)');
+    expect(blocks[0].type).toBe('text');
+    if (blocks[0].type === 'text') {
+      expect(blocks[0].data).toBe('Post-strength: 20min treadmill incline walk (10% grade, 4.5km/h)');
+    }
+  });
+
+  test('"Upper Plyo (3 sets, 90s rest):" → section (via fallback)', () => {
+    // SECTION_RE misses this ("Upper" not a keyword), but SECTION_FALLBACK_RE catches it
+    const blocks = parseWorkoutPlan('Upper Plyo (3 sets, 90s rest):');
+    expect(blocks[0].type).toBe('section');
+    expect(blocks[0].data).toBe('Upper Plyo (3 sets, 90s rest)');
+  });
+});
+
+// ── Real DB — compound/cardio/text lines ───────────────────────────
+
+describe('Real DB — compound/cardio/text lines', () => {
+  test('"- 5min warm-up Zone 2" → cardio with duration (DURATION_RE handles leading dash)', () => {
+    // DURATION_RE now includes optional -?\s* prefix to handle dashed lines
+    const blocks = parseWorkoutPlan('- 5min warm-up Zone 2');
+    expect(blocks[0].type).toBe('cardio');
+    if (blocks[0].type === 'cardio') {
+      expect(blocks[0].data.duration).toBe('5min');
+    }
+  });
+
+  test('"5min warm-up Zone 2" (without dash) → cardio', () => {
+    const blocks = parseWorkoutPlan('5min warm-up Zone 2');
+    expect(blocks[0].type).toBe('cardio');
+    if (blocks[0].type === 'cardio') {
+      expect(blocks[0].data.duration).toBe('5min');
+    }
+  });
+
+  test('"- 5min cool-down" → cardio (DURATION_RE handles leading dash)', () => {
+    const blocks = parseWorkoutPlan('- 5min cool-down');
+    expect(blocks[0].type).toBe('cardio');
+    if (blocks[0].type === 'cardio') {
+      expect(blocks[0].data.duration).toBe('5min');
+    }
+  });
+
+  test('"5min cool-down" (without dash) → cardio', () => {
+    const blocks = parseWorkoutPlan('5min cool-down');
+    expect(blocks[0].type).toBe('cardio');
+    if (blocks[0].type === 'cardio') {
+      expect(blocks[0].data.duration).toBe('5min');
+    }
+  });
+
+  test('"Total: 40 minutes" (no leading dash) → text', () => {
+    // No dash → COLON_DESCRIPTIVE_RE won't match (requires leading dash)
+    // "Total" not a section keyword
+    // Not INLINE_SECTION label
+    // parseExerciseToken: EXERCISE_RE no, COLON_FORMAT_RE no, DURATION_RE no (starts with "Total"),
+    // → text
+    const blocks = parseWorkoutPlan('Total: 40 minutes');
+    expect(blocks[0].type).toBe('text');
+    if (blocks[0].type === 'text') {
+      expect(blocks[0].data).toBe('Total: 40 minutes');
+    }
   });
 });
