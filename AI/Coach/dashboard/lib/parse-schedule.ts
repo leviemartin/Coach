@@ -1,6 +1,23 @@
 import type { PlanItem } from './types';
 
 /**
+ * Normalize AI-generated workout text that contains HTML/markdown formatting.
+ * Converts <br> tags, markdown bold, bullet chars into clean newline-separated text.
+ */
+export function normalizeWorkoutText(raw: string): string {
+  let text = raw;
+  // Convert HTML line breaks to newlines
+  text = text.replace(/<br\s*\/?>/gi, '\n');
+  // Strip markdown bold markers
+  text = text.replace(/\*\*(.*?)\*\*/g, '$1');
+  // Replace bullet characters with dashes
+  text = text.replace(/•/g, '-');
+  // Collapse multiple newlines
+  text = text.replace(/\n{3,}/g, '\n\n');
+  return text.trim();
+}
+
+/**
  * Parses pipe-separated schedule table from Head Coach output.
  *
  * Expected format:
@@ -70,8 +87,8 @@ export function parseScheduleTable(markdown: string, weekNumber: number): PlanIt
       sessionType: cells[3] || '',
       focus: cells[4] || '',
       startingWeight: cells[5] || '',
-      workoutPlan: cells[6] || '',
-      coachCues: cells[7] || '',
+      workoutPlan: normalizeWorkoutText(cells[6] || ''),
+      coachCues: normalizeWorkoutText(cells[7] || ''),
       athleteNotes: cells[8] || '',
       completed: false,
       completedAt: null,

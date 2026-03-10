@@ -175,7 +175,7 @@ export default function TrainingPlanTable({
       </Card>
 
       {/* Day cards */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         {items.map((item) => {
           const sessionStyle = getSessionColor(item.sessionType);
           const isExpanded = expandedCards.has(item.id ?? item.dayOrder);
@@ -213,8 +213,8 @@ export default function TrainingPlanTable({
               }}
             >
               <CardContent sx={{ pb: '12px !important', pt: 1.5 }}>
-                {/* Header row: Day + Session Type Chip + Focus + Sub-tasks + Starting Weight + Status */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5, flexWrap: 'wrap' }}>
+                {/* Row 1: Day + Session Type + Starting Weight + Expand */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                   {allDone && (
                     <CheckCircleIcon sx={{ fontSize: 20, color: 'success.main' }} />
                   )}
@@ -223,7 +223,6 @@ export default function TrainingPlanTable({
                     variant="subtitle1"
                     sx={{
                       fontWeight: 700,
-                      minWidth: 90,
                       ...(allDone && { color: 'text.secondary' }),
                     }}
                   >
@@ -243,48 +242,6 @@ export default function TrainingPlanTable({
                       }),
                     }}
                   />
-
-                  {item.focus && (
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{
-                        fontStyle: 'italic',
-                        ...(allDone && { textDecoration: 'line-through' }),
-                      }}
-                    >
-                      {item.focus}
-                    </Typography>
-                  )}
-
-                  {/* Sub-task pills — compact inline */}
-                  {subTasks.map((st) => (
-                    <Chip
-                      key={st.key}
-                      label={st.label}
-                      size="small"
-                      role={readOnly ? undefined : 'checkbox'}
-                      aria-checked={readOnly ? undefined : st.completed}
-                      aria-label={readOnly ? undefined : `Mark ${st.label} as ${st.completed ? 'incomplete' : 'complete'}`}
-                      icon={st.completed ? <CheckIcon sx={{ fontSize: '14px !important' }} /> : undefined}
-                      color={st.completed ? 'success' : 'default'}
-                      variant={st.completed ? 'filled' : 'outlined'}
-                      onClick={readOnly ? undefined : () => handleSubTaskToggle(item, st.key)}
-                      sx={{
-                        fontSize: '0.65rem',
-                        height: 22,
-                        fontWeight: 600,
-                        cursor: readOnly ? 'default' : 'pointer',
-                        ...(st.completed && { textDecoration: 'none' }),
-                      }}
-                    />
-                  ))}
-
-                  {someDone && !allDone && (
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
-                      {subTasks.filter((s) => s.completed).length}/{subTasks.length}
-                    </Typography>
-                  )}
 
                   {hasStartingWeight && (
                     <Chip
@@ -310,6 +267,22 @@ export default function TrainingPlanTable({
                   )}
                 </Box>
 
+                {/* Row 2: Focus */}
+                {item.focus && (
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{
+                      fontStyle: 'italic',
+                      mb: 1,
+                      pl: allDone ? 3.5 : 0,
+                      ...(allDone && { textDecoration: 'line-through' }),
+                    }}
+                  >
+                    {item.focus}
+                  </Typography>
+                )}
+
                 {/* Coach cues preview (collapsed) */}
                 {cuePreview && (
                   <Typography
@@ -331,7 +304,9 @@ export default function TrainingPlanTable({
                       mb: 0.5,
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
                       cursor: 'pointer',
                       '&:hover': { color: 'text.primary' },
                     }}
@@ -357,6 +332,37 @@ export default function TrainingPlanTable({
                     )}
                   </Box>
                 )}
+
+                {/* Sub-task chips — below workout content */}
+                <Box sx={{ display: 'flex', gap: 0.5, mt: 1, flexWrap: 'wrap', pl: allDone ? 3.5 : 0 }}>
+                  {subTasks.map((st) => (
+                    <Chip
+                      key={st.key}
+                      label={st.label}
+                      size="small"
+                      role={readOnly ? undefined : 'checkbox'}
+                      aria-checked={readOnly ? undefined : st.completed}
+                      aria-label={readOnly ? undefined : `Mark ${st.label} as ${st.completed ? 'incomplete' : 'complete'}`}
+                      icon={st.completed ? <CheckIcon sx={{ fontSize: '14px !important' }} /> : undefined}
+                      color={st.completed ? 'success' : 'default'}
+                      variant={st.completed ? 'filled' : 'outlined'}
+                      onClick={readOnly ? undefined : () => handleSubTaskToggle(item, st.key)}
+                      sx={{
+                        fontSize: '0.65rem',
+                        height: 22,
+                        fontWeight: 600,
+                        cursor: readOnly ? 'default' : 'pointer',
+                        ...(st.completed && { textDecoration: 'none' }),
+                      }}
+                    />
+                  ))}
+
+                  {someDone && !allDone && (
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', alignSelf: 'center' }}>
+                      {subTasks.filter((s) => s.completed).length}/{subTasks.length}
+                    </Typography>
+                  )}
+                </Box>
 
                 {/* Expandable section: Coach's Cues + Notes */}
                 {hasExpandableContent && (
