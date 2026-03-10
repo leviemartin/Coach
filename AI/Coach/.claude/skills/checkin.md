@@ -155,6 +155,67 @@ Output as pipe-separated table:
 |-------|-----|-------------|-------|-------------------------------|----------------------|------------------------|----------|
 ```
 
+### Workout Cell Content Format (CRITICAL)
+Inside the "Detailed Workout Plan" column, use EXACTLY this structure:
+- One exercise per line (newline-separated, NOT periods or semicolons)
+- Section headers end with colon: `Superset A (3 rounds, 90s rest):`
+- Exercises use dash prefix: `- Goblet Squat: 28kg x10`
+- Cardio starts with duration: `20min StairMaster Zone 4`
+- Do NOT use A) B1) C2) label prefixes
+- Do NOT use period-separated lists on a single line
+- Do NOT use `<br>`, `**bold**`, or `•`
+
+### Superset Equipment Rules (TrainMore — Busy Commercial Gym)
+The athlete can hold ONE machine at a time. Valid superset pairings:
+- Same station: Lat Pulldown → Straight-arm Pulldown (same cable)
+- Machine + portable: Cable Row + Band Pull-aparts
+- Machine + bodyweight: Lat Pulldown + Pull-ups (same bar area)
+- Two portable items: DB Bench + DB Curls (same dumbbells)
+
+INVALID (requires 2 machines simultaneously):
+- Lat Pulldown + Cable Row (two different cable stations)
+- Chest Press Machine + Seated Row Machine
+- Leg Press + Hamstring Curl (two separate machines)
+
+For machine pairings that can't share equipment, use SEQUENTIAL blocks with full rest, NOT supersets.
+
+### Weight Notation (MANDATORY — No Exceptions for Loaded Exercises)
+Every exercise using external load MUST show weight in the workout plan:
+- Machines/cables: `- Lat Pulldown: 45kg x10`
+- Dumbbells: `- DB Bench: 22kg x10`
+- Medicine ball: `- Med Ball Slams: 6kg x8`
+- Plates: `- Russian Twists w/10kg plate: 20 total`
+- Bands: `- Band Pull-aparts: Light band x20`
+- Farmer carry: `- Farmer Walk: 24kg/hand x40m`
+
+Bodyweight-only exercises are the ONLY exception — show reps/duration only:
+- `- Pull-ups: Max reps`
+- `- Dead Hang: Max time (target 60s)`
+- `- Plank: 45s hold`
+
+Reference `state/current_ceilings.json` for tracked exercises. For untracked equipment, assign a conservative starting weight and note it for ceiling tracking.
+
+### Exercise Description Clarity (ZERO AMBIGUITY)
+The athlete must NEVER guess what to do. Every line = one clear instruction.
+
+FORBIDDEN patterns:
+- "DB Bench or 20kg+pauses: 3x10" — NEVER use "or" between exercises/weights
+- "Lateral Raises: 5-6kg x12" — pick ONE weight
+- "Band-assisted/negative pull-ups" — pick ONE variation
+
+CORRECT pattern for alternatives:
+- `- DB Bench: 22kg x10`
+- `IF 22kg too heavy: DB Bench: 20kg x10 (2s pause at bottom)`
+
+CORRECT pattern for testing:
+- `- DB Bench: Test 22kg x8-10`
+- `Note: If 22kg fails at rep 6, drop to 20kg and complete set`
+
+Every exercise MUST match one of these templates:
+- `- Exercise: Xkg x reps` (weighted)
+- `- Exercise: Xkg x reps/side` (unilateral)
+- `- Exercise: reps or duration` (bodyweight only)
+
 ## Step 9: Close the Briefing
 
 End the athlete-facing output with the mandated sign-off:

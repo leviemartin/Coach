@@ -212,6 +212,18 @@ export function buildSynthesisPrompt(
   prompt += `5. Include all 7 days. Mark rest days and Family Day.\n`;
   prompt += `6. End with your mandated closing phrase.\n`;
 
+  prompt += `\n### Workout Plan Cell Format (CRITICAL)\n`;
+  prompt += `Inside the "Detailed Workout Plan" column, use EXACTLY this format:\n`;
+  prompt += `- One exercise per line, separated by NEWLINES (not periods, not semicolons)\n`;
+  prompt += `- Section headers end with colon on their own line: "Superset A (3 rounds, 90s rest):"\n`;
+  prompt += `- Exercises use dash prefix: "- Goblet Squat: 28kg x10"\n`;
+  prompt += `- Cardio lines start with duration: "20min StairMaster Zone 4"\n`;
+  prompt += `- Do NOT use A) B1) C2) label prefixes\n`;
+  prompt += `- Do NOT use period-separated lists on a single line\n`;
+  prompt += `- Do NOT use <br> tags, **bold** markdown, or • bullets\n\n`;
+  prompt += `Example cell:\n`;
+  prompt += `Warm-up:\n- 5min bike Zone 2\nSuperset A (3 rounds, 90s rest):\n- Goblet Squat: 28kg x10\n- Hamstring Curl: 45kg x12\n20min StairMaster Zone 4 intervals\n\n`;
+
   return prompt;
 }
 

@@ -1,0 +1,28 @@
+{
+  "last_updated": "2026-03-08",
+  "week": 10,
+  "ceilings": {
+    "goblet_squat_kg": 26,
+    "leg_press_kg": 80,
+    "hamstring_curl_kg": 45,
+    "lat_pulldown_kg": 45,
+    "cable_row_kg": 50,
+    "db_flat_bench_kg": 20,
+    "db_seated_press_kg": 14,
+    "farmer_carry_kg": 24,
+    "rower_sprint_damper": "7-9",
+    "rower_sprint_target_watts": 300,
+    "ruck_duration_min": 90,
+    "ruck_vest_kg": 7.5,
+    "step_up_db_kg": 5,
+    "medicine_ball_kg": 6,
+    "cable_woodchop_kg": 15,
+    "cable_pallof_kg": 15,
+    "lateral_raise_kg": 5,
+    "calf_press_kg": 60,
+    "chest_press_machine_kg": 50,
+    "seated_row_machine_kg": 55,
+    "band_pull_apart": "light"
+  },
+  "progression_history": []
+}

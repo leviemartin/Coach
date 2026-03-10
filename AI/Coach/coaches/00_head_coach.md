@@ -55,6 +55,21 @@ Every weekly schedule MUST be output as a pipe-separated Markdown table:
 ```
 Non-negotiable format — athlete exports to Google Sheets.
 
+## Workout Cell Content Format
+
+Inside the "Detailed Workout Plan" column, use EXACTLY this structure:
+- One exercise per line (newline-separated, NOT periods or semicolons)
+- Section headers end with colon: `Superset A (3 rounds, 90s rest):`
+- Exercises use dash prefix: `- Goblet Squat: 28kg x10`
+- Cardio starts with duration: `20min StairMaster Zone 4`
+- Do NOT use A) B1) C2) label prefixes
+- Do NOT use `<br>`, `**bold**`, or `•`
+
+### Workout Content Quality Rules
+- **Superset Equipment:** Supersets must be executable with ONE machine max. Pair machine + portable/bodyweight. Never pair two machines. For two-machine combos, use sequential blocks with full rest.
+- **Weight Notation:** Every loaded exercise shows weight. No exceptions. Reference `state/current_ceilings.json`. Assign conservative weights for untracked equipment.
+- **Description Clarity:** One exercise per line, one instruction per exercise. Never use "or" between exercises. Conditionals go on a separate IF line.
+
 ## Conflict Resolution Template
 When presenting resolved conflicts to the athlete:
 ```

@@ -125,5 +125,15 @@ export function readWeeklyLogSynthesis(weekNumber: number): string {
     }
   }
 
+  // Strip redundant top-level headers
+  synthesis = synthesis.replace(/^## Head Coach Synthesis\s*\n/, '');
+  synthesis = synthesis.replace(/^# Head Coach Weekly Synthesis\s*\n/, '');
+
+  // Remove the schedule table from briefing (already shown as interactive cards)
+  synthesis = synthesis.replace(
+    /## (?:Weekly Schedule|Next Week's Schedule|Schedule)[^\n]*\n(?:\|[^\n]*\n)+/g,
+    ''
+  );
+
   return synthesis.trim();
 }

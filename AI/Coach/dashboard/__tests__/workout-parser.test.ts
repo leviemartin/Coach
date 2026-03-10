@@ -872,7 +872,74 @@ describe('Real DB — compound/cardio/text lines', () => {
       expect(blocks[0].data.duration).toBe('5min');
     }
   });
+});
 
+// ── "or" syntax defense ─────────────────────────────────────────────
+
+describe('"or" syntax defense — ambiguous conditionals fall to text', () => {
+  test('"- DB Bench or 20kg+pauses: 3x10" → NOT parsed as exercise', () => {
+    const blocks = parseWorkoutPlan('- DB Bench or 20kg+pauses: 3x10');
+    const exercises = blocks.filter((b) => b.type === 'exercise');
+    expect(exercises).toHaveLength(0);
+    // Should fall through to text
+    const textBlocks = blocks.filter((b) => b.type === 'text');
+    expect(textBlocks.length).toBeGreaterThanOrEqual(1);
+  });
+
+  test('"- DB Bench: 22kg x10" → still parses as exercise (no regression)', () => {
+    const blocks = parseWorkoutPlan('- DB Bench: 22kg x10');
+    expect(blocks[0].type).toBe('exercise');
+    if (blocks[0].type === 'exercise') {
+      expect(blocks[0].data.name).toBe('DB Bench');
+      expect(blocks[0].data.weight).toBe('22kg');
+      expect(blocks[0].data.reps).toBe('10');
+    }
+  });
+
+  test('"- Lateral Raises or DB Flyes: 6kg x12" → NOT parsed as exercise', () => {
+    const blocks = parseWorkoutPlan('- Lateral Raises or DB Flyes: 6kg x12');
+    const exercises = blocks.filter((b) => b.type === 'exercise');
+    expect(exercises).toHaveLength(0);
+  });
+
+  test('"Push-ups or Bench 3x10" → NOT parsed as exercise (no-weight format)', () => {
+    const blocks = parseWorkoutPlan('Push-ups or Bench 3x10');
+    const exercises = blocks.filter((b) => b.type === 'exercise');
+    expect(exercises).toHaveLength(0);
+  });
+
+  test('"- DB Bench Or 20kg: 3x10" → NOT parsed (case-insensitive "Or")', () => {
+    const blocks = parseWorkoutPlan('- DB Bench Or 20kg: 3x10');
+    const exercises = blocks.filter((b) => b.type === 'exercise');
+    expect(exercises).toHaveLength(0);
+  });
+
+  test('"Push-ups OR Bench 3x10 @ 50kg" → NOT parsed (uppercase "OR")', () => {
+    const blocks = parseWorkoutPlan('Push-ups OR Bench 3x10 @ 50kg');
+    const exercises = blocks.filter((b) => b.type === 'exercise');
+    expect(exercises).toHaveLength(0);
+  });
+
+  test('"- Floor Press: 40kg x10" → still parses (name contains "or" substring, not word)', () => {
+    const blocks = parseWorkoutPlan('- Floor Press: 40kg x10');
+    expect(blocks[0].type).toBe('exercise');
+    if (blocks[0].type === 'exercise') {
+      expect(blocks[0].data.name).toBe('Floor Press');
+      expect(blocks[0].data.weight).toBe('40kg');
+    }
+  });
+
+  test('"- Core Rotation: 15kg x12/side" → still parses (name contains "or" substring)', () => {
+    const blocks = parseWorkoutPlan('- Core Rotation: 15kg x12/side');
+    expect(blocks[0].type).toBe('exercise');
+    if (blocks[0].type === 'exercise') {
+      expect(blocks[0].data.name).toBe('Core Rotation');
+      expect(blocks[0].data.weight).toBe('15kg');
+    }
+  });
+});
+
+describe('Real DB — compound/cardio/text lines', () => {
   test('"Total: 40 minutes" (no leading dash) → text', () => {
     // No dash → COLON_DESCRIPTIVE_RE won't match (requires leading dash)
     // "Total" not a section keyword

@@ -102,13 +102,16 @@ function extractAnnotations(text: string): { clean: string; annotations: string[
   return { clean, annotations };
 }
 
+/** Reject ambiguous "or" syntax in exercise names (case-insensitive) */
+const AMBIGUOUS_OR_RE = /\sor\s/i;
+
 function parseExerciseToken(token: string): ParsedBlock | null {
   const trimmed = token.trim();
   if (!trimmed) return null;
 
   // Try sets x reps @ weight: "Calf Press 3x15 @ 60kg"
   const matchFull = trimmed.match(EXERCISE_RE);
-  if (matchFull) {
+  if (matchFull && !AMBIGUOUS_OR_RE.test(matchFull[1])) {
     const { annotations } = extractAnnotations(matchFull[5]);
     return {
       type: 'exercise',
@@ -130,6 +133,8 @@ function parseExerciseToken(token: string): ParsedBlock | null {
     const rest = matchNoWeight[4];
     if (/^(?:s|sec|min|m|kg)\b/i.test(rest)) {
       // Fall through — this is a protocol/weight spec, not a SxR exercise
+    } else if (AMBIGUOUS_OR_RE.test(matchNoWeight[1])) {
+      // Fall through — ambiguous "or" syntax (e.g. "DB Bench or 20kg+pauses")
     } else {
       const { annotations } = extractAnnotations(rest);
       return {
@@ -147,7 +152,7 @@ function parseExerciseToken(token: string): ParsedBlock | null {
 
   // Try colon format: "- Exercise: 28kg x10"
   const colonMatch = trimmed.match(COLON_FORMAT_RE);
-  if (colonMatch) {
+  if (colonMatch && !AMBIGUOUS_OR_RE.test(colonMatch[1])) {
     const { annotations } = extractAnnotations(colonMatch[4]);
     return {
       type: 'exercise',
@@ -163,7 +168,7 @@ function parseExerciseToken(token: string): ParsedBlock | null {
 
   // Try colon format with compound weight: "- Walking Lunges: 2x10kg DBs x10/leg"
   const compoundMatch = trimmed.match(COLON_COMPOUND_RE);
-  if (compoundMatch) {
+  if (compoundMatch && !AMBIGUOUS_OR_RE.test(compoundMatch[1])) {
     const { annotations } = extractAnnotations(compoundMatch[4]);
     return {
       type: 'exercise',
@@ -179,7 +184,7 @@ function parseExerciseToken(token: string): ParsedBlock | null {
 
   // Try colon format with weight+qualifier: "- Farmer's Walk: 24kg/hand x 30m"
   const qualifierMatch = trimmed.match(COLON_WEIGHT_QUALIFIER_RE);
-  if (qualifierMatch) {
+  if (qualifierMatch && !AMBIGUOUS_OR_RE.test(qualifierMatch[1])) {
     return {
       type: 'exercise',
       data: {
@@ -201,6 +206,8 @@ function parseExerciseToken(token: string): ParsedBlock | null {
       // Fall through — "2x10kg" is a weight spec, not 2 sets of 10 reps
     } else if (/^(?:s|sec|min|m)\b/i.test(rest)) {
       // Fall through — "5x 20s" is a protocol/time spec, not sets x reps
+    } else if (AMBIGUOUS_OR_RE.test(colonSetsMatch[1])) {
+      // Fall through — ambiguous "or" syntax (e.g. "DB Bench or 20kg+pauses: 3x10")
     } else {
       const { annotations } = extractAnnotations(rest);
       return {
@@ -240,7 +247,7 @@ function parseExerciseToken(token: string): ParsedBlock | null {
   // Try colon descriptive exercise: "- Dead Hang: max hold"
   // Must start with dash to distinguish from random colon text
   const descriptiveMatch = trimmed.match(COLON_DESCRIPTIVE_RE);
-  if (descriptiveMatch) {
+  if (descriptiveMatch && !AMBIGUOUS_OR_RE.test(descriptiveMatch[1])) {
     return {
       type: 'exercise',
       data: {
