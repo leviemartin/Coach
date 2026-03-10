@@ -48,6 +48,7 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
     upcomingConflicts: '',
     focusNextWeek: '',
     questionsForCoaches: '',
+    perceivedReadiness: 3,
     planSatisfaction: 3,
     planFeedback: '',
     model: 'sonnet',
@@ -183,6 +184,34 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
                     min={0} max={10} step={1} marks
                     valueLabelDisplay="auto"
                   />
+                </Box>
+
+                <Box sx={{ borderTop: '2px solid', borderColor: 'divider', pt: 3, mt: 1 }}>
+                  <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                    How Do You Actually Feel?
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    Garmin readiness is one signal. Your body is another. This gets combined with Garmin data (60% you / 40% Garmin) to set training intensity.
+                  </Typography>
+                  <Box sx={{ mt: 2 }}>
+                    <Typography gutterBottom>
+                      Perceived readiness: {formData.perceivedReadiness}/5
+                      {formData.perceivedReadiness === 1 ? ' — Wrecked' : formData.perceivedReadiness === 2 ? ' — Tired but can move' : formData.perceivedReadiness === 3 ? ' — Normal' : formData.perceivedReadiness === 4 ? ' — Feeling strong' : ' — Peaked'}
+                    </Typography>
+                    <Slider
+                      aria-label="Perceived readiness, 1 is wrecked, 5 is peaked"
+                      value={formData.perceivedReadiness}
+                      onChange={(_, v) => update('perceivedReadiness', v as number)}
+                      min={1} max={5} step={1} marks={[
+                        { value: 1, label: 'Wrecked' },
+                        { value: 2, label: 'Tired' },
+                        { value: 3, label: 'Normal' },
+                        { value: 4, label: 'Strong' },
+                        { value: 5, label: 'Peaked' },
+                      ]}
+                      valueLabelDisplay="auto"
+                    />
+                  </Box>
                 </Box>
 
                 <Box sx={{ display: 'flex', gap: 2 }}>
@@ -339,7 +368,7 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
                   Hevy: {formData.hevyCsv.trim() ? `${formData.hevyCsv.split('\n').length} lines` : 'Skipped'}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Sessions: {formData.sessionsCompleted}/{formData.sessionsPlanned}
+                  Sessions: {formData.sessionsCompleted}/{formData.sessionsPlanned} | Perceived readiness: {formData.perceivedReadiness}/5
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Bedtime: {formData.bedtimeCompliance}/7 | Rug: {formData.rugProtocolDays}/7 | Hydration: {formData.hydrationTracked ? 'Yes' : 'No'}

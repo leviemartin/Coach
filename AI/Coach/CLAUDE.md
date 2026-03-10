@@ -36,7 +36,7 @@ During `/checkin`, all 7 specialists analyze the same data, produce domain-speci
 
 ### Conflict Resolution Priority
 1. **Injury prevention** — Mobility agent has veto power on impact/plyo decisions
-2. **Recovery** — If readiness <30, Recovery agent overrides training prescriptions
+2. **Recovery** — If combined readiness <35, Recovery agent overrides training prescriptions (uses weekly combined score, NOT single-day Garmin minimums)
 3. **Athlete plan feedback** — Adjusts programming within bounds set by #1 and #2. If a deload triggered "too light" feedback, the deload is correct — maintain it. Mental Performance agent owns interpretation.
 4. **Race-specific preparation** — OCR agent's functional benchmarks gate race readiness
 5. **Long-term progression** — Strength and Endurance agents inform periodization
@@ -134,18 +134,19 @@ weekly_averages_7d             → pre-computed 7-day averages (sleep, readiness
 | Metric | Green | Yellow | Red |
 |--------|-------|--------|-----|
 | Sleep Score | >75 | 60-75 | <60 |
-| Training Readiness | >50 | 30-50 | <30 |
+| Combined Readiness | >50 | 35-50 | <35 |
 | Body Battery High | >70 | 50-70 | <50 |
 | ACWR | 0.8-1.3 | 1.3-1.5 | >1.5 |
 | Avg Anaerobic TE | >1.0 | 0.5-1.0 | <0.5 |
 | Bedtime | Before 23:00 | 23:00-01:00 | After 01:00 |
 | Muscle Mass (Garmin) | >37kg | 36-37kg | <36kg |
 
-### Training Readiness Decision Matrix (Recovery Agent Owns)
-- Score >50: Train as programmed
-- Score 30-50: Reduce volume 20%, maintain intensity
-- Score <30: Deload — Zone 2 flush + mobility only
-- Score <15: Rest day. No negotiation.
+### Combined Readiness Decision Matrix (Recovery Agent Owns)
+Uses **Combined Readiness Score** = 60% athlete perceived readiness (1-5 scaled to 0-100) + 40% Garmin weekly average readiness. Individual daily Garmin scores are for same-day adjustments ONLY.
+- Combined >50: Train as programmed
+- Combined 35-50: Reduce volume 20%, maintain intensity (**dad baseline — this is normal operating range**)
+- Combined <35: Deload — Zone 2 flush + mobility only
+- Combined <20: Rest day. No negotiation.
 
 ## 8. Output Format
 

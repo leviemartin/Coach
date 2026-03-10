@@ -42,6 +42,7 @@ export async function POST() {
       sessionsCompleted: null,
       bakerCystPain: 0,
       pullupCount: null,
+      perceivedReadiness: null,
       planSatisfaction: null,
       modelUsed: 'unknown',
     };

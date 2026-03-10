@@ -122,6 +122,7 @@ export interface CheckInFormData {
   upcomingConflicts: string;
   focusNextWeek: string;
   questionsForCoaches: string;
+  perceivedReadiness: number; // 1-5 scale (1=wrecked, 3=normal, 5=peaked)
   planSatisfaction: number;  // 1-5 scale (1=too light, 3=right, 5=too much)
   planFeedback: string;
   // Model
@@ -178,6 +179,7 @@ export interface WeeklyMetrics {
   sessionsCompleted: number | null;
   bakerCystPain: number;
   pullupCount: number | null;
+  perceivedReadiness: number | null;
   planSatisfaction: number | null;
   modelUsed: string;
 }

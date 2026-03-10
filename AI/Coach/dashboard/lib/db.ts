@@ -93,6 +93,13 @@ function initTables(db: Database.Database) {
   } catch {
     // Column already exists — ignore
   }
+
+  // Migration: add perceived_readiness column if it doesn't exist
+  try {
+    db.exec(`ALTER TABLE weekly_metrics ADD COLUMN perceived_readiness INTEGER`);
+  } catch {
+    // Column already exists — ignore
+  }
 }
 
 // Settings
@@ -116,14 +123,14 @@ export function upsertWeeklyMetrics(m: WeeklyMetrics): void {
       avg_sleep_score, avg_training_readiness, avg_rhr, avg_hrv,
       calories_avg, protein_avg, hydration_tracked, vampire_compliance_pct,
       rug_protocol_days, sessions_planned, sessions_completed,
-      baker_cyst_pain, pullup_count, plan_satisfaction, model_used
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      baker_cyst_pain, pullup_count, perceived_readiness, plan_satisfaction, model_used
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     m.weekNumber, m.checkInDate, m.weightKg, m.bodyFatPct, m.muscleMassKg,
     m.avgSleepScore, m.avgTrainingReadiness, m.avgRhr, m.avgHrv,
     m.caloriesAvg, m.proteinAvg, m.hydrationTracked ? 1 : 0,
     m.vampireCompliancePct, m.rugProtocolDays, m.sessionsPlanned,
-    m.sessionsCompleted, m.bakerCystPain, m.pullupCount, m.planSatisfaction, m.modelUsed
+    m.sessionsCompleted, m.bakerCystPain, m.pullupCount, m.perceivedReadiness, m.planSatisfaction, m.modelUsed
   );
 }
 
@@ -164,6 +171,7 @@ function mapMetricsRow(row: unknown): WeeklyMetrics {
     sessionsCompleted: r.sessions_completed as number | null,
     bakerCystPain: (r.baker_cyst_pain as number) ?? 0,
     pullupCount: r.pullup_count as number | null,
+    perceivedReadiness: r.perceived_readiness as number | null,
     planSatisfaction: r.plan_satisfaction as number | null,
     modelUsed: r.model_used as string,
   };

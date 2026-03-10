@@ -41,7 +41,7 @@ export function buildSharedContext(
   context += `## Athlete Plan Feedback (PRIORITY — Read First)\n`;
   context += `- Plan satisfaction: ${formData.planSatisfaction}/5 (1=too light, 3=right, 5=too much)\n`;
   context += `- Feedback: ${formData.planFeedback || 'None provided'}\n`;
-  context += `**Instruction:** The athlete's subjective experience of last week's plan is a primary input. If satisfaction ≤2 (too light), do not reduce volume further unless injury or readiness <30 demands it. If satisfaction ≥4 (too much), consider reducing. If readiness <30 triggered a deload and feedback says "too light," the deload is working as designed — maintain it. If the athlete consistently reports extreme values that contradict objective data, flag the discrepancy rather than blindly adjusting. Address this feedback explicitly in your assessment.\n\n`;
+  context += `**Instruction:** The athlete's subjective experience of last week's plan is a primary input. If satisfaction ≤2 (too light), do not reduce volume further unless injury or combined readiness <35 demands it. If satisfaction ≥4 (too much), consider reducing. If combined readiness <35 triggered a deload and feedback says "too light," the deload is working as designed — maintain it. If the athlete consistently reports extreme values that contradict objective data, flag the discrepancy rather than blindly adjusting. Address this feedback explicitly in your assessment.\n\n`;
 
   context += `## Athlete Profile\n${profile}\n\n`;
   context += `## Current Phase & Periodization\n${periodization}\n\n`;
@@ -55,6 +55,36 @@ export function buildSharedContext(
     context += `## Garmin Data\nNo Garmin data available this week.\n\n`;
   }
 
+  // Compute Combined Readiness Score (60% subjective, 40% Garmin weekly avg)
+  let combinedReadinessSection = `## Combined Readiness Score (USE THIS FOR WEEKLY PLANNING)\n`;
+  const perceivedNormalized = (formData.perceivedReadiness / 5) * 100; // Scale 1-5 → 20-100
+  let garminAvgReadiness: number | null = null;
+  if (garminData?.performance_stats?.training_readiness?.daily) {
+    const scores = garminData.performance_stats.training_readiness.daily
+      .map((d: { score?: number }) => d.score)
+      .filter((s): s is number => s != null);
+    if (scores.length > 0) {
+      garminAvgReadiness = Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length);
+    }
+  }
+  if (garminAvgReadiness !== null) {
+    const combined = Math.round(perceivedNormalized * 0.6 + garminAvgReadiness * 0.4);
+    combinedReadinessSection += `- Athlete perceived readiness: ${formData.perceivedReadiness}/5 (normalized: ${Math.round(perceivedNormalized)})\n`;
+    combinedReadinessSection += `- Garmin weekly avg readiness: ${garminAvgReadiness} (from ${garminData!.performance_stats.training_readiness!.daily.length} days)\n`;
+    combinedReadinessSection += `- **Combined score: ${combined}** (60% subjective + 40% Garmin)\n`;
+    combinedReadinessSection += `**Decision matrix (use combined score, NOT single-day minimums):**\n`;
+    combinedReadinessSection += `- >50: Train as programmed\n`;
+    combinedReadinessSection += `- 35-50: Reduce volume 20%, maintain intensity (THIS IS THE DAD BASELINE — expected for a parent of 2 with baby #3 incoming)\n`;
+    combinedReadinessSection += `- <35: Deload — Zone 2 flush + mobility only\n`;
+    combinedReadinessSection += `- <20: Rest day. No negotiation.\n`;
+    combinedReadinessSection += `**CRITICAL:** Use the WEEKLY AVERAGE for weekly plan design. Individual daily scores (including outlier lows) are for same-day session adjustments ONLY — they do not drive the entire week's programming.\n`;
+  } else {
+    combinedReadinessSection += `- Athlete perceived readiness: ${formData.perceivedReadiness}/5\n`;
+    combinedReadinessSection += `- Garmin readiness: No data available\n`;
+    combinedReadinessSection += `- Using perceived readiness only. Scale: 1-2 = deload, 3 = normal, 4-5 = push.\n`;
+  }
+  context += combinedReadinessSection + `\n`;
+
   context += `## Hevy Training Log\n${hevySummary}\n\n`;
 
   if (formData.hevyCsv.trim()) {
@@ -64,6 +94,7 @@ export function buildSharedContext(
   context += `## Subjective Check-In\n`;
   context += `- Baker's Cyst pain: ${formData.bakerCystPain}/10\n`;
   context += `- Lower back fatigue: ${formData.lowerBackFatigue}/10\n`;
+  context += `- Perceived readiness: ${formData.perceivedReadiness}/5 (1=wrecked, 3=normal, 5=peaked)\n`;
   context += `- Sessions completed: ${formData.sessionsCompleted} / ${formData.sessionsPlanned} planned\n`;
   context += `- Missed sessions: ${formData.missedSessions || 'None reported'}\n`;
   context += `- Strength wins: ${formData.strengthWins || 'None reported'}\n`;
