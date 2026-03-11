@@ -156,20 +156,70 @@ Output as pipe-separated table:
 ```
 
 ### Workout Cell Content Format (CRITICAL)
-Inside the "Detailed Workout Plan" column, use EXACTLY this structure:
-- One exercise per line (newline-separated, NOT periods or semicolons)
-- Section headers end with colon: `Superset A (3 rounds, 90s rest):`
-- Exercises use dash prefix: `- Goblet Squat: 28kg x10`
-- Cardio starts with duration: `20min StairMaster Zone 4`
-- Do NOT use A) B1) C2) label prefixes
-- Do NOT use period-separated lists on a single line
+Use standard gym notation with letter-number labels:
+- Same letter = done together (superset/tri-set)
+- Different letter = done sequentially
+- Numbers indicate order within a group
+- Standalone exercises use letter + 1 (e.g., C1:)
+
+**Exercise format:** `[Label]: [Exercise]: [weight] x[reps] [annotations]`
+**Group notes:** `[rounds, rest]` on own line after the group
+
+Example:
+```
+Warm-up:
+- 5min row easy
+- Band pull-aparts 2x15
+
+A1: Band-Assisted Pull-ups: Max reps (aim 5-8)
+A2: Dead Hang: 30s
+[3 rounds, 90s rest]
+
+B1: Lat Pulldown: 45kg x12
+B2: Band Pull-aparts: x20
+[3 rounds, 90s rest]
+
+C1: Cable Row: 50kg x12
+[3 sets, 90s rest]
+
+D1: Negative Pull-ups: 3 reps (3-second descent)
+D2: Hammer Curls: 10kg x12
+[3 rounds, 60s rest]
+
+Finisher:
+- 15min Treadmill Walk @ 10% incline
+```
+
+**Rules:**
+- Warm-up and cool-down: section headers with dash-prefix exercises
+- All main work: letter-number labels (A1:, B1:/B2:, C1:, etc.)
+- Round/rest info: square brackets on own line after group
+- One exercise per line
+- Do NOT use free-form section headers like "Superset A (3 rounds, 90s rest):" or "Pull-Up Bar Block:"
 - Do NOT use `<br>`, `**bold**`, or `•`
+- Do NOT use period-separated lists on a single line
+
+### Session Duration Target
+**50-60 minutes** including warm-up and mobility. This is a hard cap.
+
+Time budget per session:
+- Warm-up: 5 min
+- Main work (A-D blocks): 35-40 min
+- Finisher/cardio: 10-15 min
+- Cool-down: 5 min
+
+If total exceeds 60 minutes, reduce accessory sets first. Never cut core stability or pull-up progression.
+
+### No Duplicate Exercises
+Each exercise appears ONCE in the session plan. If an exercise serves multiple goals (e.g., dead hangs for grip AND pull-up progression), place it in ONE block — not two. Combine the volume in that single block.
+
+If band pull-aparts appear in the warm-up, do NOT also include them in a superset. Pick one location.
 
 ### Superset Equipment Rules (TrainMore — Busy Commercial Gym)
 The athlete can hold ONE machine at a time. Valid superset pairings:
 - Same station: Lat Pulldown → Straight-arm Pulldown (same cable)
 - Machine + portable: Cable Row + Band Pull-aparts
-- Machine + bodyweight: Lat Pulldown + Pull-ups (same bar area)
+- Machine + bodyweight: Leg Press + Bodyweight Lunges (at the machine)
 - Two portable items: DB Bench + DB Curls (same dumbbells)
 
 INVALID (requires 2 machines simultaneously):
@@ -178,6 +228,69 @@ INVALID (requires 2 machines simultaneously):
 - Leg Press + Hamstring Curl (two separate machines)
 
 For machine pairings that can't share equipment, use SEQUENTIAL blocks with full rest, NOT supersets.
+
+### Circuit Equipment Rules (TrainMore — Busy Commercial Gym)
+In a circuit (3+ exercises rotated continuously), the athlete leaves each station for 4-5 minutes per round. Machines WILL be taken by other gym members.
+
+**Rule:** Only the FIRST exercise in a circuit may be a stationary machine (StairMaster or Rower — to start the circuit with cardio). All subsequent exercises must use portable equipment or bodyweight.
+
+Portable = dumbbells, kettlebells, bands, medicine ball, plates
+Stationary = any cable machine, any selectorized machine, Smith machine
+
+VALID circuit example:
+- Rower: 250m sprint (circuit opener)
+- DB Goblet Squat: 24kg x10
+- Band Woodchops: Medium band x12/side
+- Med Ball Slams: 6kg x8
+- Push-ups: 12
+
+INVALID circuit example:
+- Rower: 250m sprint
+- DB Goblet Squat: 24kg x10
+- Cable Woodchops: 15kg x12 ← INVALID (cable machine mid-circuit)
+- Med Ball Slams: 6kg x8
+
+**Common cable exercise replacements for circuits:**
+- Cable Woodchops → Band Woodchops or DB Woodchops (single DB held at end)
+- Cable Face Pulls → Band Pull-aparts or Band Face Pulls
+- Cable Pallof Press → Band Pallof Press
+- Cable Tricep Pushdown → Band Tricep Pushdown or DB Skull Crushers
+
+### Pull-Up Bar Zone Rule (TrainMore Layout)
+The pull-up bar is in the barbell/free weight area, NOT near cable machines. Pull-up bar exercises are in their OWN zone.
+
+Pull-up bar exercises: pull-ups, negative pull-ups, band-assisted pull-ups, dead hangs, chin-ups, hanging knee raises
+
+Pull-up bar can ONLY be superset with:
+- Other pull-up bar exercises (pull-ups + dead hangs)
+- Portable equipment brought to the bar (bands, DBs for weighted pull-ups)
+- Bodyweight exercises doable at the bar area (push-ups, dips if dip station is adjacent)
+
+INVALID pull-up bar supersets:
+- Lat Pulldown + Pull-ups ✗ (pull-up bar is far from cable zone)
+- Cable Row + Negative Pull-ups ✗ (two locations)
+- Any cable machine + any pull-up bar exercise ✗
+
+VALID pull-up bar supersets:
+- Band-Assisted Pull-ups + Dead Hang ✓ (same bar)
+- Pull-ups + DB Curls ✓ (bring DBs to bar area)
+- Pull-ups + Push-ups ✓ (bodyweight at bar area)
+- Pull-ups + Band Pull-aparts ✓ (band at bar area)
+
+### Sunday Ruck Sessions (Outdoor Only)
+Sunday ruck sessions with the Vizsla are OUTDOOR ONLY. The ruck happens in nature (woods, parks, trails).
+
+ALLOWED during a Sunday ruck:
+- Bodyweight exercises at outdoor locations (push-ups, air squats at a park bench, step-ups on a log)
+- Walking lunges on the path
+- Bear crawls on grass
+
+NOT ALLOWED on Sunday ruck sessions:
+- "At Gym (Pre or Post Ruck)" blocks — no gym visits on ruck day
+- Monkey bars, pull-up bar dead hangs, or any gym-dependent exercise
+- Any exercise requiring gym equipment
+
+Gym-dependent exercises (monkey bars, dead hangs on pull-up bar, cable work) belong on WEEKDAY gym sessions. Schedule them there instead.
 
 ### Weight Notation (MANDATORY — No Exceptions for Loaded Exercises)
 Every exercise using external load MUST show weight in the workout plan:

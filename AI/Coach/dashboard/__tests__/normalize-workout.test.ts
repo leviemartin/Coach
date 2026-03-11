@@ -252,10 +252,10 @@ describe('normalizeWorkoutText', () => {
       expect(lines.length).toBeGreaterThanOrEqual(5);
     });
 
-    it('converts label prefixes: single-letter to dash, digit-labels to superset format', () => {
+    it('converts label prefixes: all labels to colon format', () => {
       const result = normalizeWorkoutText(WEEK10_MONDAY);
       expect(result).not.toMatch(/[A-Z]\d?\)/);
-      expect(result).toContain('- Goblet Squat');
+      expect(result).toContain('A1: Goblet Squat');
       expect(result).toContain('B1: Hamstring Curl');
       expect(result).toContain('B2: Walking Lunges');
       expect(result).toContain('C1: Leg Press');
@@ -330,14 +330,14 @@ describe('normalizeWorkoutText', () => {
       expect(normalizeWorkoutText('B1) DB Bench 3x10')).toBe('B1: DB Bench 3x10');
     });
 
-    it('converts "A) Med ball throws 3x6" to "- Med ball throws 3x6"', () => {
-      expect(normalizeWorkoutText('A) Med ball throws 3x6')).toBe('- Med ball throws 3x6');
+    it('converts "A) Med ball throws 3x6" to "A1: Med ball throws 3x6"', () => {
+      expect(normalizeWorkoutText('A) Med ball throws 3x6')).toBe('A1: Med ball throws 3x6');
     });
 
-    it('converts digit labels but keeps single-letter labels as dashes', () => {
+    it('converts all labels to colon format', () => {
       const input = 'A) Goblet Squat: 30kg x10\nB1) Hamstring Curl: 47.5kg x12\nB2) Walking Lunges: 2x12kg DBs x10/leg';
       const result = normalizeWorkoutText(input);
-      expect(result).toContain('- Goblet Squat');
+      expect(result).toContain('A1: Goblet Squat');
       expect(result).toContain('B1: Hamstring Curl');
       expect(result).toContain('B2: Walking Lunges');
     });

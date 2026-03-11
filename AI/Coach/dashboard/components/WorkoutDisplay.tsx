@@ -28,6 +28,7 @@ interface ParsedConditional {
 interface SupersetGroup {
   label: string;
   exercises: ParsedExercise[];
+  groupNote?: string;  // e.g. "3 rounds, 90s rest"
 }
 
 type ParsedBlock =
@@ -45,6 +46,7 @@ const EXERCISE_NO_WEIGHT_RE = /^(.+?)\s+(\d+)x(\d+(?:-\d+)?)\s*(.*)$/;
 const DURATION_RE = /^-?\s*(\d+(?:\.\d+)?\s*(?:min|sec|s|m|hr|hours?))\b/i;
 const ANNOTATION_RE = /\(([A-Z]+)\)/g;
 const SUPERSET_LABEL_RE = /^([A-F]\d)\s*[:.–-]\s*/;
+const GROUP_NOTE_RE = /^\[(.+)\]$/;
 
 // Section header keywords — line must end with ":" and start with one of these
 const SECTION_RE = /^((?:Superset|Circuit|Warm[- ]?up|Cool[- ]?down|AM|PM|Lunch|Finisher|Core|Conditioning|Grip|Block|Round|Part|Phase|Main|Accessory|Giant\s+Set|Tri[- ]?Set)[\w\s/'-]*(?:\([^)]+\))?)\s*:$/i;
@@ -318,7 +320,7 @@ export function parseWorkoutPlan(text: string): ParsedBlock[] {
       const labelSplit = line.split(/(?=\s[A-Z]\d?\)\s)/);
       if (labelSplit.length >= 3) {
         for (const seg of labelSplit) {
-          const t = seg.trim().replace(/^([A-Z]\d?\))\s+/, '- ');
+          const t = seg.trim().replace(/^([A-Z])(\d?)\)\s+/, (_, letter, digit) => digit ? `${letter}${digit}: ` : `${letter}1: `);
           if (t) lines.push(t);
         }
         continue;
@@ -346,6 +348,13 @@ export function parseWorkoutPlan(text: string): ParsedBlock[] {
   for (const line of lines) {
     // Strip leading dash for line-level checks (but keep original for token parsing)
     const stripped = line.replace(/^-\s*/, '').trim();
+
+    // Check for group note: "[3 rounds, 90s rest]"
+    const groupNoteMatch = stripped.match(GROUP_NOTE_RE);
+    if (groupNoteMatch) {
+      blocks.push({ type: 'text', data: `[${groupNoteMatch[1]}]` });
+      continue;
+    }
 
     // Check for section header: "Superset A (3 rounds, 90s rest):" or "AM:" etc.
     const sectionMatch = stripped.match(SECTION_RE);
@@ -441,10 +450,24 @@ export function parseWorkoutPlan(text: string): ParsedBlock[] {
     }
   }
 
-  // Post-process: merge consecutive superset blocks with the same letter
+  // Post-process: merge consecutive superset blocks with the same letter,
+  // and attach group notes to preceding supersets
   const merged: ParsedBlock[] = [];
   for (let i = 0; i < blocks.length; i++) {
     const block = blocks[i];
+
+    // Attach group notes to preceding superset
+    if (block.type === 'text' && typeof block.data === 'string') {
+      const noteMatch = (block.data as string).match(/^\[(.+)\]$/);
+      if (noteMatch) {
+        const prev = merged[merged.length - 1];
+        if (prev && prev.type === 'superset') {
+          prev.data.groupNote = noteMatch[1];
+          continue;
+        }
+      }
+    }
+
     if (block.type === 'superset') {
       const letter = block.data.label; // e.g. "Superset B"
       // Check if previous merged block is the same superset group
@@ -552,6 +575,22 @@ function CardioRow({ data }: { data: ParsedCardio }) {
 }
 
 function SupersetBlock({ data }: { data: SupersetGroup }) {
+  const isSolo = data.exercises.length === 1;
+
+  // Solo exercises: render without outer border wrapper (ExerciseRow has its own border)
+  if (isSolo) {
+    return (
+      <Box sx={{ my: 0.5 }}>
+        <ExerciseRow ex={data.exercises[0]} />
+        {data.groupNote && (
+          <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem', mt: 0.25, pl: 1.5, display: 'block' }}>
+            {data.groupNote}
+          </Typography>
+        )}
+      </Box>
+    );
+  }
+
   return (
     <Box
       sx={{
@@ -570,6 +609,11 @@ function SupersetBlock({ data }: { data: SupersetGroup }) {
       {data.exercises.map((ex) => (
         <ExerciseRow key={ex.raw} ex={ex} />
       ))}
+      {data.groupNote && (
+        <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem', mt: 0.25, display: 'block' }}>
+          {data.groupNote}
+        </Typography>
+      )}
     </Box>
   );
 }

@@ -596,9 +596,13 @@ describe('Real DB — descriptive reps with qualifiers', () => {
     const blocks = parseWorkoutPlan(longLine);
     // Should NOT produce a single text block for >120 char input
     expect(blocks.length).toBeGreaterThan(1);
-    // Should have multiple exercise blocks
-    const exercises = blocks.filter((b) => b.type === 'exercise');
-    expect(exercises.length).toBeGreaterThanOrEqual(3);
+    // Should have multiple exercise or superset blocks (A) converts to A1: → superset)
+    const exerciseCount = blocks.reduce((count, b) => {
+      if (b.type === 'exercise') return count + 1;
+      if (b.type === 'superset') return count + b.data.exercises.length;
+      return count;
+    }, 0);
+    expect(exerciseCount).toBeGreaterThanOrEqual(3);
   });
 
   test('long single-line with periods → produces multiple blocks', () => {
@@ -941,15 +945,108 @@ describe('"or" syntax defense — ambiguous conditionals fall to text', () => {
 
 describe('Real DB — compound/cardio/text lines', () => {
   test('"Total: 40 minutes" (no leading dash) → text', () => {
-    // No dash → COLON_DESCRIPTIVE_RE won't match (requires leading dash)
-    // "Total" not a section keyword
-    // Not INLINE_SECTION label
-    // parseExerciseToken: EXERCISE_RE no, COLON_FORMAT_RE no, DURATION_RE no (starts with "Total"),
-    // → text
     const blocks = parseWorkoutPlan('Total: 40 minutes');
     expect(blocks[0].type).toBe('text');
     if (blocks[0].type === 'text') {
       expect(blocks[0].data).toBe('Total: 40 minutes');
     }
+  });
+});
+
+// ── Standard gym notation (letter-number labels) ─────────────────────
+
+describe('Standard gym notation (letter-number labels)', () => {
+  test('parses solo exercise C1: as single-member superset', () => {
+    const blocks = parseWorkoutPlan('C1: Cable Row: 50kg x12');
+    const supersets = blocks.filter((b) => b.type === 'superset');
+    expect(supersets.length).toBe(1);
+    if (supersets[0].type === 'superset') {
+      expect(supersets[0].data.exercises).toHaveLength(1);
+      expect(supersets[0].data.label).toBe('Superset C');
+      expect(supersets[0].data.exercises[0].name).toBe('Cable Row');
+      expect(supersets[0].data.exercises[0].weight).toBe('50kg');
+    }
+  });
+
+  test('groups B1/B2 exercises under same superset', () => {
+    const input = 'B1: Lat Pulldown: 45kg x12\nB2: Band Pull-aparts: x20';
+    const blocks = parseWorkoutPlan(input);
+    const supersets = blocks.filter((b) => b.type === 'superset');
+    expect(supersets.length).toBe(1);
+    if (supersets[0].type === 'superset') {
+      expect(supersets[0].data.exercises).toHaveLength(2);
+      expect(supersets[0].data.label).toBe('Superset B');
+    }
+  });
+
+  test('attaches [3 rounds, 90s rest] as group note to preceding superset', () => {
+    const input = 'B1: Lat Pulldown: 45kg x12\nB2: Band Pull-aparts: x20\n[3 rounds, 90s rest]';
+    const blocks = parseWorkoutPlan(input);
+    const supersets = blocks.filter((b) => b.type === 'superset');
+    expect(supersets.length).toBe(1);
+    if (supersets[0].type === 'superset') {
+      expect(supersets[0].data.groupNote).toBe('3 rounds, 90s rest');
+    }
+  });
+
+  test('renders group note as text when no preceding superset', () => {
+    const blocks = parseWorkoutPlan('[3 rounds, 90s rest]');
+    expect(blocks.length).toBe(1);
+    expect(blocks[0].type).toBe('text');
+    if (blocks[0].type === 'text') {
+      expect(blocks[0].data).toBe('[3 rounds, 90s rest]');
+    }
+  });
+
+  test('full new-format workout parses all blocks correctly', () => {
+    const input = `Warm-up:
+- 5min row easy
+
+A1: Band-Assisted Pull-ups: Max reps (aim 5-8)
+A2: Dead Hang: 30s
+[3 rounds, 90s rest]
+
+B1: Lat Pulldown: 45kg x12
+B2: Band Pull-aparts: x20
+[3 rounds, 90s rest]
+
+C1: Cable Row: 50kg x12
+[3 sets, 90s rest]`;
+
+    const blocks = parseWorkoutPlan(input);
+
+    // Should have: section (Warm-up), cardio (5min row), supersets A, B, C
+    const sections = blocks.filter((b) => b.type === 'section');
+    expect(sections.length).toBe(1);
+
+    const supersets = blocks.filter((b) => b.type === 'superset');
+    expect(supersets.length).toBe(3);
+
+    // A superset has 2 exercises
+    if (supersets[0].type === 'superset') {
+      expect(supersets[0].data.exercises).toHaveLength(2);
+      expect(supersets[0].data.groupNote).toBe('3 rounds, 90s rest');
+    }
+
+    // B superset has 2 exercises
+    if (supersets[1].type === 'superset') {
+      expect(supersets[1].data.exercises).toHaveLength(2);
+      expect(supersets[1].data.groupNote).toBe('3 rounds, 90s rest');
+    }
+
+    // C superset has 1 exercise (solo)
+    if (supersets[2].type === 'superset') {
+      expect(supersets[2].data.exercises).toHaveLength(1);
+      expect(supersets[2].data.groupNote).toBe('3 sets, 90s rest');
+    }
+  });
+});
+
+describe('Backward compatibility — old section-header format', () => {
+  test('still parses "Superset A (3 rounds, 90s rest):" as section header', () => {
+    const blocks = parseWorkoutPlan('Superset A (3 rounds, 90s rest):');
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].type).toBe('section');
+    expect(blocks[0].data).toBe('Superset A (3 rounds, 90s rest)');
   });
 });

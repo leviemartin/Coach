@@ -17,8 +17,8 @@ export function normalizeWorkoutText(raw: string): string {
   text = text.replace(/(?<=\S)\s+(?=[A-Z]\d?\)\s)/g, '\n');
   // Digit labels → superset format: "B1) Exercise" → "B1: Exercise"
   text = text.replace(/^([A-Z]\d)\)\s+/gm, '$1: ');
-  // Single-letter labels → standalone dash: "A) Exercise" → "- Exercise"
-  text = text.replace(/^([A-Z])\)\s+/gm, '- ');
+  // Single-letter labels → solo exercise: "A) Exercise" → "A1: Exercise"
+  text = text.replace(/^([A-Z])\)\s+/gm, '$11: ');
 
   // Step 3: Period splitting — per-line, threshold 2+ segments
   {

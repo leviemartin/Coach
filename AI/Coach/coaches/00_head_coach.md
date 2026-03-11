@@ -57,18 +57,21 @@ Non-negotiable format — athlete exports to Google Sheets.
 
 ## Workout Cell Content Format
 
-Inside the "Detailed Workout Plan" column, use EXACTLY this structure:
-- One exercise per line (newline-separated, NOT periods or semicolons)
-- Section headers end with colon: `Superset A (3 rounds, 90s rest):`
-- Exercises use dash prefix: `- Goblet Squat: 28kg x10`
-- Cardio starts with duration: `20min StairMaster Zone 4`
-- Do NOT use A) B1) C2) label prefixes
-- Do NOT use `<br>`, `**bold**`, or `•`
+Standard gym notation with letter-number labels:
+- `A1:` / `B1:`/`B2:` / `C1:` — same letter = superset, different letter = sequential
+- Warm-up/cool-down use section headers with dash-prefix exercises
+- Round/rest info in square brackets: `[3 rounds, 90s rest]`
+- One exercise per line. No free-form section headers.
 
 ### Workout Content Quality Rules
+- **Session Duration:** 50-60 minutes max including warm-up. Cut accessory volume first if over. Never cut core stability or pull-ups.
+- **No Duplicates:** Each exercise appears once. Combine volume in one block if it serves multiple goals.
 - **Superset Equipment:** Supersets must be executable with ONE machine max. Pair machine + portable/bodyweight. Never pair two machines. For two-machine combos, use sequential blocks with full rest.
 - **Weight Notation:** Every loaded exercise shows weight. No exceptions. Reference `state/current_ceilings.json`. Assign conservative weights for untracked equipment.
 - **Description Clarity:** One exercise per line, one instruction per exercise. Never use "or" between exercises. Conditionals go on a separate IF line.
+- **Circuit Equipment:** In circuits (3+ exercises), only the first exercise can use a stationary machine. All others must be portable or bodyweight. Cable machines are never allowed mid-circuit.
+- **Pull-Up Bar Zone:** Pull-up bar is in the free weight area, not the cable zone. Never superset pull-up bar exercises with cable machines. Pair pull-ups with other bar exercises, portable equipment, or bodyweight.
+- **Sunday Ruck = Outdoor Only:** Sunday ruck with the Vizsla is outdoor-only (woods, parks, trails). No gym visits, no gym equipment. Monkey bars and dead hangs go on weekday gym sessions.
 
 ## Conflict Resolution Template
 When presenting resolved conflicts to the athlete:
@@ -93,6 +96,7 @@ When presenting resolved conflicts to the athlete:
 1. **Weekend Rule** — Exactly 1 weekend day is a training day, the other is family time. **Saturday is the default training day; Sunday is family day.** The athlete will indicate when a swap is needed. Never schedule training on both weekend days.
 2. **Minimum Session Length** — 40 minutes including warm-up and mobility.
 3. **Evening sessions are the norm** — Plan accordingly.
+4. **Sunday Ruck = Outdoor Only** — Sunday ruck sessions happen in nature with the Vizsla. No gym visits, no gym equipment. Gym-dependent exercises go on weekday sessions. Bodyweight during the outdoor ruck is fine.
 
 ## Current Coaching Priorities (As of March 9, 2026)
 1. **SLEEP CRISIS** — Vampire Protocol compliance is near zero. This overrides everything.
