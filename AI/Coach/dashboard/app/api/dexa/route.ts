@@ -48,15 +48,22 @@ function findNearestGarminBodyComp(scanDate: string): {
   }
 }
 
+// Handle European comma-decimal format (e.g. "62,446" → 62.446)
+function parseLocaleNumber(val: unknown): number {
+  if (typeof val === 'number') return val;
+  if (typeof val === 'string') return parseFloat(val.replace(',', '.'));
+  return NaN;
+}
+
 function toNum(val: unknown): number | null {
   if (val == null || val === '') return null;
-  const n = Number(val);
+  const n = parseLocaleNumber(val);
   return Number.isFinite(n) ? n : null;
 }
 
 function toNumOrNull(val: unknown): number | null {
   if (val == null || val === '') return null;
-  const n = Number(val);
+  const n = parseLocaleNumber(val);
   return Number.isFinite(n) ? n : null;
 }
 

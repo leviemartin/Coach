@@ -81,7 +81,7 @@ export default function DexaPage() {
     ];
     for (const { key, label } of requiredNumeric) {
       const val = form[key as keyof typeof form];
-      if (val === '' || isNaN(parseFloat(val))) {
+      if (val === '' || isNaN(parseFloat(val.replace(',', '.')))) {
         setError(`${label} is required and must be a number`);
         setSaving(false);
         return;
@@ -98,17 +98,19 @@ export default function DexaPage() {
       return;
     }
 
-    const numOrNull = (v: string) => v === '' ? null : parseFloat(v);
+    // Handle European comma-decimal format (e.g. "62,446" → 62.446)
+    const parseLocaleNum = (v: string) => parseFloat(v.replace(',', '.'));
+    const numOrNull = (v: string) => v === '' ? null : parseLocaleNum(v);
     const body = {
       scanNumber,
       date: form.date,
       phase: form.phase,
-      totalBodyFatPct: parseFloat(form.totalBodyFatPct),
-      totalLeanMassKg: parseFloat(form.totalLeanMassKg),
-      fatMassKg: parseFloat(form.fatMassKg),
-      boneMineralDensityGcm2: parseFloat(form.boneMineralDensityGcm2),
-      boneMassKg: parseFloat(form.boneMassKg),
-      weightAtScanKg: parseFloat(form.weightAtScanKg),
+      totalBodyFatPct: parseLocaleNum(form.totalBodyFatPct),
+      totalLeanMassKg: parseLocaleNum(form.totalLeanMassKg),
+      fatMassKg: parseLocaleNum(form.fatMassKg),
+      boneMineralDensityGcm2: parseLocaleNum(form.boneMineralDensityGcm2),
+      boneMassKg: parseLocaleNum(form.boneMassKg),
+      weightAtScanKg: parseLocaleNum(form.weightAtScanKg),
       trunkFatPct: numOrNull(form.trunkFatPct),
       armsFatPct: numOrNull(form.armsFatPct),
       legsFatPct: numOrNull(form.legsFatPct),

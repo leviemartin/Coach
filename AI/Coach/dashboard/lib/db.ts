@@ -6,20 +6,26 @@ import { normalizeWorkoutText } from './parse-schedule';
 
 const DB_PATH = path.join(process.cwd(), 'data', 'trends.db');
 
+// Schema version — bump this when adding tables or columns to force re-init on cached connections
+const SCHEMA_VERSION = 2; // v2: added dexa_scans table
+
 // Use globalThis to persist across hot reloads in dev
-const globalForDb = globalThis as unknown as { _coachDb?: Database.Database };
+const globalForDb = globalThis as unknown as { _coachDb?: Database.Database; _coachDbSchema?: number };
 
 export function getDb(): Database.Database {
-  if (!globalForDb._coachDb) {
+  if (!globalForDb._coachDb || globalForDb._coachDbSchema !== SCHEMA_VERSION) {
     const dir = path.dirname(DB_PATH);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    globalForDb._coachDb = new Database(DB_PATH);
-    globalForDb._coachDb.pragma('journal_mode = WAL');
-    globalForDb._coachDb.pragma('busy_timeout = 5000');
-    globalForDb._coachDb.pragma('foreign_keys = ON');
+    if (!globalForDb._coachDb) {
+      globalForDb._coachDb = new Database(DB_PATH);
+      globalForDb._coachDb.pragma('journal_mode = WAL');
+      globalForDb._coachDb.pragma('busy_timeout = 5000');
+      globalForDb._coachDb.pragma('foreign_keys = ON');
+    }
     initTables(globalForDb._coachDb);
+    globalForDb._coachDbSchema = SCHEMA_VERSION;
   }
   return globalForDb._coachDb;
 }
@@ -151,6 +157,39 @@ function initTables(db: Database.Database) {
       })();
     }
   } catch { /* non-fatal */ }
+
+  // Migration: ensure dexa_scans table exists on DBs created before schema v2
+  // CREATE TABLE IF NOT EXISTS never throws for "already exists" — a catch here means a real error
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS dexa_scans (
+        scan_number INTEGER PRIMARY KEY,
+        date TEXT NOT NULL,
+        phase TEXT NOT NULL,
+        total_body_fat_pct REAL NOT NULL,
+        total_lean_mass_kg REAL NOT NULL,
+        fat_mass_kg REAL NOT NULL,
+        bone_mineral_density_gcm2 REAL NOT NULL,
+        bone_mass_kg REAL NOT NULL,
+        weight_at_scan_kg REAL NOT NULL,
+        trunk_fat_pct REAL,
+        arms_fat_pct REAL,
+        legs_fat_pct REAL,
+        trunk_lean_kg REAL,
+        arms_lean_kg REAL,
+        legs_lean_kg REAL,
+        garmin_body_fat_pct REAL,
+        garmin_muscle_mass_kg REAL,
+        garmin_weight_kg REAL,
+        garmin_reading_date TEXT,
+        calibration_body_fat_offset_pct REAL,
+        calibration_lean_mass_offset_kg REAL,
+        notes TEXT DEFAULT ''
+      )
+    `);
+  } catch (err) {
+    console.error('[db] dexa_scans migration failed:', err);
+  }
 
   // Migration v3: re-normalize with fixed normalizeWorkoutText (trailing periods, superset labels, per-line period split)
   try {
