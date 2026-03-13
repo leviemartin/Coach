@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getWeeklyMetrics, getCeilingHistory, upsertWeeklyMetrics, insertCeilingHistory } from '@/lib/db';
-import { getWeeklyLogFiles, readWeeklyLog, readCeilings } from '@/lib/state';
+import { getWeeklyMetrics, getCeilingHistory, upsertWeeklyMetrics, insertCeilingHistory, getDexaScans, upsertDexaScan } from '@/lib/db';
+import { getWeeklyLogFiles, readWeeklyLog, readCeilings, readDexaScans } from '@/lib/state';
 import type { WeeklyMetrics, CeilingEntry } from '@/lib/types';
 
 export async function GET(request: Request) {
@@ -9,8 +9,9 @@ export async function GET(request: Request) {
 
   const metrics = getWeeklyMetrics();
   const ceilings = getCeilingHistory(exercise);
+  const dexaScans = getDexaScans();
 
-  return NextResponse.json({ metrics, ceilings });
+  return NextResponse.json({ metrics, ceilings, dexaScans });
 }
 
 // POST: Rebuild SQLite from weekly_logs/ files
@@ -65,6 +66,12 @@ export async function POST() {
     if (entries.length > 0) {
       insertCeilingHistory(entries);
     }
+  }
+
+  // Rebuild DEXA scans from JSON source of truth
+  const dexaData = readDexaScans();
+  for (const scan of dexaData.scans) {
+    upsertDexaScan(scan);
   }
 
   return NextResponse.json({ success: true, imported });

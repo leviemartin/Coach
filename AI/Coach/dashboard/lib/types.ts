@@ -204,6 +204,49 @@ export interface CeilingsData {
   }>;
 }
 
+export interface DexaScanRegional {
+  trunkFatPct: number | null;
+  armsFatPct: number | null;
+  legsFatPct: number | null;
+  trunkLeanKg: number | null;
+  armsLeanKg: number | null;
+  legsLeanKg: number | null;
+}
+
+export interface DexaScanCalibration {
+  bodyFatOffsetPct: number; // DEXA BF% - Garmin BF% (positive = Garmin underreads)
+  leanMassOffsetKg: number; // DEXA lean mass - Garmin muscle mass
+}
+
+export interface DexaScan {
+  scanNumber: 1 | 2 | 3;
+  date: string;
+  phase: string;
+  // Core measurements
+  totalBodyFatPct: number;
+  totalLeanMassKg: number;
+  fatMassKg: number;
+  boneMineralDensityGcm2: number;
+  boneMassKg: number;
+  weightAtScanKg: number;
+  // Regional (nullable — scanner bed frame limitation)
+  regional: DexaScanRegional;
+  // Garmin nearest reading (auto-populated)
+  garminBodyFatPct: number | null;
+  garminMuscleMassKg: number | null;
+  garminWeightKg: number | null;
+  garminReadingDate: string | null;
+  // Calculated
+  calibration: DexaScanCalibration;
+  // Free text
+  notes: string;
+}
+
+export interface DexaData {
+  scans: DexaScan[];
+  latest_calibration: DexaScanCalibration | null;
+}
+
 export interface Settings {
   model: string;
   [key: string]: string;

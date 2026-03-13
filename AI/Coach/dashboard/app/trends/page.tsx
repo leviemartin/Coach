@@ -3,11 +3,12 @@
 import React, { useEffect, useState } from 'react';
 import { Typography, Box, Button, Alert, CircularProgress } from '@mui/material';
 import TrendCharts from '@/components/TrendCharts';
-import type { WeeklyMetrics, CeilingEntry } from '@/lib/types';
+import type { WeeklyMetrics, CeilingEntry, DexaScan } from '@/lib/types';
 
 export default function TrendsPage() {
   const [metrics, setMetrics] = useState<WeeklyMetrics[]>([]);
   const [ceilings, setCeilings] = useState<CeilingEntry[]>([]);
+  const [dexaScans, setDexaScans] = useState<DexaScan[]>([]);
   const [exercises, setExercises] = useState<string[]>([]);
   const [selectedExercise, setSelectedExercise] = useState('');
   const [loading, setLoading] = useState(true);
@@ -20,6 +21,9 @@ export default function TrendsPage() {
       const data = await res.json();
       setMetrics(data.metrics || []);
       setCeilings(data.ceilings || []);
+      if (!exercise) {
+        setDexaScans(data.dexaScans || []);
+      }
 
       // Extract unique exercises from ceilings
       if (!exercise) {
@@ -88,6 +92,7 @@ export default function TrendsPage() {
         <TrendCharts
           metrics={metrics}
           ceilings={ceilings}
+          dexaScans={dexaScans}
           exercises={exercises}
           selectedExercise={selectedExercise}
           onExerciseChange={handleExerciseChange}

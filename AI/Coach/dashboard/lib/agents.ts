@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { readAgentPersona, readAthleteProfile, readTrainingHistory, readCeilings, readPeriodization, readDecisionsLog } from './state';
+import { readAgentPersona, readAthleteProfile, readTrainingHistory, readCeilings, readPeriodization, readDecisionsLog, readDexaScans } from './state';
 import { SPECIALIST_IDS, AGENT_LABELS, DEFAULT_MODEL, OPUS_MODEL } from './constants';
 import type { GarminData, CheckInFormData, AgentOutput } from './types';
 import { formatHevySummary, parseHevyCsv } from './parse-hevy';
@@ -89,6 +89,49 @@ export function buildSharedContext(
 
   if (formData.hevyCsv.trim()) {
     context += `### Raw Hevy CSV\n\`\`\`csv\n${formData.hevyCsv}\n\`\`\`\n\n`;
+  }
+
+  // DEXA Scan Data & Garmin Calibration
+  const dexaData = readDexaScans();
+  if (dexaData.scans.length > 0) {
+    context += `## DEXA Scan Data & Garmin Calibration\n`;
+    const latest = dexaData.scans[dexaData.scans.length - 1];
+    context += `**Latest scan:** #${latest.scanNumber} on ${latest.date} (${latest.phase})\n`;
+    context += `- DEXA body fat: ${latest.totalBodyFatPct}% | Lean mass: ${latest.totalLeanMassKg}kg | Fat mass: ${latest.fatMassKg}kg\n`;
+    context += `- Bone mineral density: ${latest.boneMineralDensityGcm2} g/cm² | Bone mass: ${latest.boneMassKg}kg\n`;
+    context += `- Weight at scan: ${latest.weightAtScanKg}kg\n`;
+    if (latest.garminBodyFatPct != null) {
+      context += `- Garmin nearest reading (${latest.garminReadingDate}): BF ${latest.garminBodyFatPct}%, muscle ${latest.garminMuscleMassKg}kg, weight ${latest.garminWeightKg}kg\n`;
+    }
+    if (latest.garminBodyFatPct != null) {
+      context += `- **Calibration offsets:** Garmin BF ${latest.calibration.bodyFatOffsetPct > 0 ? 'underreads' : 'overreads'} by ${Math.abs(latest.calibration.bodyFatOffsetPct).toFixed(1)}% | Lean mass delta: ${latest.calibration.leanMassOffsetKg > 0 ? '+' : ''}${latest.calibration.leanMassOffsetKg.toFixed(1)}kg\n`;
+    } else {
+      context += `- **Calibration:** No Garmin body composition reading available near scan date — offsets not calculated\n`;
+    }
+
+    // DEXA-corrected current-week Garmin BF%
+    if (garminData?.health_stats_7d?.body_composition?.daily) {
+      const latestGarminBF = garminData.health_stats_7d.body_composition.daily
+        .filter((d) => d.body_fat_pct != null && d.body_fat_pct > 0)
+        .pop();
+      if (latestGarminBF?.body_fat_pct) {
+        const corrected = Math.round((latestGarminBF.body_fat_pct + latest.calibration.bodyFatOffsetPct) * 10) / 10;
+        context += `- **DEXA-corrected current Garmin BF%:** ${corrected}% (Garmin raw: ${latestGarminBF.body_fat_pct}% + offset ${latest.calibration.bodyFatOffsetPct > 0 ? '+' : ''}${latest.calibration.bodyFatOffsetPct}%)\n`;
+      }
+    }
+
+    // Scan history
+    if (dexaData.scans.length > 1) {
+      context += `- Scan history: ${dexaData.scans.map((s) => `#${s.scanNumber} (${s.date}): BF ${s.totalBodyFatPct}%, lean ${s.totalLeanMassKg}kg`).join(' | ')}\n`;
+    }
+
+    // Next scan reminder
+    const scanCount = dexaData.scans.length;
+    if (scanCount < 3) {
+      const nextDates = ['November 2026', 'May 2027'];
+      context += `- **Next DEXA scan:** #${scanCount + 1} planned for ${nextDates[scanCount - 1] || 'TBD'}\n`;
+    }
+    context += `\n`;
   }
 
   context += `## Subjective Check-In\n`;
@@ -222,8 +265,20 @@ export function buildSynthesisPrompt(
   prompt += `- Cardio finishers: use a section header (e.g., Finisher:) with dash-prefix lines\n`;
   prompt += `- One exercise per line. No free-form section headers.\n`;
   prompt += `- Do NOT use "Superset A (3 rounds, 90s rest):" or "Pull-Up Bar Block:" headers\n`;
-  prompt += `- Do NOT use <br> tags, **bold** markdown, or • bullets\n`;
+  prompt += `- Do NOT use **bold** markdown or • bullets\n`;
   prompt += `- Do NOT use period-separated lists on a single line\n\n`;
+  prompt += `### Equipment Rules (TrainMore — Busy Commercial Gym)\n`;
+  prompt += `Supersets: athlete holds ONE machine at a time. Pair machine + portable/bodyweight. Never pair two machines.\n`;
+  prompt += `- INVALID: Lat Pulldown + Cable Row, Chest Press + Seated Row, Leg Press + Hamstring Curl\n`;
+  prompt += `- Pull-Up Bar Zone: pull-up bar is in the barbell/free weight area, NOT near cable machines. NEVER superset pull-up bar exercises with cable machines (e.g., Lat Pulldown + Pull-ups is INVALID).\n`;
+  prompt += `- Circuits: only exercise #1 may use a stationary machine. All others portable/bodyweight. Cable machines never mid-circuit.\n`;
+  prompt += `- No "or" between exercises. Pick ONE variation. Conditionals go on separate IF line.\n`;
+  prompt += `- Every loaded exercise shows weight. No exceptions.\n\n`;
+  prompt += `### Session Design Rules\n`;
+  prompt += `- Session duration: 50-60 minutes max (excluding warm-up and mobility). If over, cut accessory sets first — NEVER cut core stability or pull-up progression.\n`;
+  prompt += `- Each exercise appears ONCE per session. If it serves multiple goals, combine volume in one block. Do not repeat exercises across warm-up and main work.\n`;
+  prompt += `- Weekend rule: Sunday is the default TRAINING day. Saturday is FAMILY DAY (no gym). Only the athlete can swap this.\n`;
+  prompt += `- Sunday ruck: outdoor only (woods, parks, trails) with Vizsla. No gym visits, no gym equipment, no monkey bars or dead hangs. Gym-dependent exercises go on weekday sessions.\n\n`;
   prompt += `Example cell:\n`;
   prompt += `Warm-up:\n- 5min bike Zone 2\n\nA1: Goblet Squat: 28kg x10\nA2: Hamstring Curl: 45kg x12\n[3 rounds, 90s rest]\n\nB1: Lat Pulldown: 45kg x12\nB2: Band Pull-aparts: x20\n[3 rounds, 90s rest]\n\nC1: Cable Row: 50kg x12\n[3 sets, 90s rest]\n\nFinisher:\n- 20min StairMaster Zone 4 intervals\n\n`;
 

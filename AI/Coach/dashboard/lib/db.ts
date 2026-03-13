@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import fs from 'fs';
 import path from 'path';
-import type { PlanItem, WeeklyMetrics, CeilingEntry, SubTask } from './types';
+import type { PlanItem, WeeklyMetrics, CeilingEntry, SubTask, DexaScan } from './types';
 import { normalizeWorkoutText } from './parse-schedule';
 
 const DB_PATH = path.join(process.cwd(), 'data', 'trends.db');
@@ -74,6 +74,31 @@ function initTables(db: Database.Database) {
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS dexa_scans (
+      scan_number INTEGER PRIMARY KEY,
+      date TEXT NOT NULL,
+      phase TEXT NOT NULL,
+      total_body_fat_pct REAL NOT NULL,
+      total_lean_mass_kg REAL NOT NULL,
+      fat_mass_kg REAL NOT NULL,
+      bone_mineral_density_gcm2 REAL NOT NULL,
+      bone_mass_kg REAL NOT NULL,
+      weight_at_scan_kg REAL NOT NULL,
+      trunk_fat_pct REAL,
+      arms_fat_pct REAL,
+      legs_fat_pct REAL,
+      trunk_lean_kg REAL,
+      arms_lean_kg REAL,
+      legs_lean_kg REAL,
+      garmin_body_fat_pct REAL,
+      garmin_muscle_mass_kg REAL,
+      garmin_weight_kg REAL,
+      garmin_reading_date TEXT,
+      calibration_body_fat_offset_pct REAL,
+      calibration_lean_mass_offset_kg REAL,
+      notes TEXT DEFAULT ''
     );
 
     CREATE INDEX IF NOT EXISTS idx_ceiling_history_exercise ON ceiling_history(exercise);
@@ -351,4 +376,68 @@ export function getCeilingHistory(exercise?: string): CeilingEntry[] {
 export function deletePlanItems(weekNumber: number): void {
   const db = getDb();
   db.prepare('DELETE FROM plan_items WHERE week_number = ?').run(weekNumber);
+}
+
+// DEXA Scans
+export function upsertDexaScan(scan: DexaScan): void {
+  const db = getDb();
+  db.prepare(`
+    INSERT OR REPLACE INTO dexa_scans (
+      scan_number, date, phase,
+      total_body_fat_pct, total_lean_mass_kg, fat_mass_kg,
+      bone_mineral_density_gcm2, bone_mass_kg, weight_at_scan_kg,
+      trunk_fat_pct, arms_fat_pct, legs_fat_pct,
+      trunk_lean_kg, arms_lean_kg, legs_lean_kg,
+      garmin_body_fat_pct, garmin_muscle_mass_kg, garmin_weight_kg, garmin_reading_date,
+      calibration_body_fat_offset_pct, calibration_lean_mass_offset_kg,
+      notes
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    scan.scanNumber, scan.date, scan.phase,
+    scan.totalBodyFatPct, scan.totalLeanMassKg, scan.fatMassKg,
+    scan.boneMineralDensityGcm2, scan.boneMassKg, scan.weightAtScanKg,
+    scan.regional.trunkFatPct, scan.regional.armsFatPct, scan.regional.legsFatPct,
+    scan.regional.trunkLeanKg, scan.regional.armsLeanKg, scan.regional.legsLeanKg,
+    scan.garminBodyFatPct, scan.garminMuscleMassKg, scan.garminWeightKg, scan.garminReadingDate,
+    scan.calibration.bodyFatOffsetPct, scan.calibration.leanMassOffsetKg,
+    scan.notes
+  );
+}
+
+export function getDexaScans(): DexaScan[] {
+  const db = getDb();
+  const rows = db.prepare('SELECT * FROM dexa_scans ORDER BY scan_number ASC').all();
+  return rows.map(mapDexaRow);
+}
+
+function mapDexaRow(row: unknown): DexaScan {
+  const r = row as Record<string, unknown>;
+  return {
+    scanNumber: r.scan_number as 1 | 2 | 3,
+    date: r.date as string,
+    phase: r.phase as string,
+    totalBodyFatPct: r.total_body_fat_pct as number,
+    totalLeanMassKg: r.total_lean_mass_kg as number,
+    fatMassKg: r.fat_mass_kg as number,
+    boneMineralDensityGcm2: r.bone_mineral_density_gcm2 as number,
+    boneMassKg: r.bone_mass_kg as number,
+    weightAtScanKg: r.weight_at_scan_kg as number,
+    regional: {
+      trunkFatPct: r.trunk_fat_pct as number | null,
+      armsFatPct: r.arms_fat_pct as number | null,
+      legsFatPct: r.legs_fat_pct as number | null,
+      trunkLeanKg: r.trunk_lean_kg as number | null,
+      armsLeanKg: r.arms_lean_kg as number | null,
+      legsLeanKg: r.legs_lean_kg as number | null,
+    },
+    garminBodyFatPct: r.garmin_body_fat_pct as number | null,
+    garminMuscleMassKg: r.garmin_muscle_mass_kg as number | null,
+    garminWeightKg: r.garmin_weight_kg as number | null,
+    garminReadingDate: r.garmin_reading_date as string | null,
+    calibration: {
+      bodyFatOffsetPct: (r.calibration_body_fat_offset_pct as number | null) ?? 0,
+      leanMassOffsetKg: (r.calibration_lean_mass_offset_kg as number | null) ?? 0,
+    },
+    notes: (r.notes as string) || '',
+  };
 }

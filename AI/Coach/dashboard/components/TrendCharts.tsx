@@ -2,12 +2,13 @@
 
 import React from 'react';
 import { Card, CardContent, Typography, Grid, Box, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
-import { LineChart, BarChart } from '@mui/x-charts';
-import type { WeeklyMetrics, CeilingEntry } from '@/lib/types';
+import { LineChart, BarChart, ScatterChart } from '@mui/x-charts';
+import type { WeeklyMetrics, CeilingEntry, DexaScan } from '@/lib/types';
 
 interface TrendChartsProps {
   metrics: WeeklyMetrics[];
   ceilings: CeilingEntry[];
+  dexaScans: DexaScan[];
   exercises: string[];
   selectedExercise: string;
   onExerciseChange: (exercise: string) => void;
@@ -21,6 +22,7 @@ function nn(val: number | null | undefined): number {
 export default function TrendCharts({
   metrics,
   ceilings,
+  dexaScans,
   exercises,
   selectedExercise,
   onExerciseChange,
@@ -205,6 +207,81 @@ export default function TrendCharts({
           </CardContent>
         </Card>
       </Grid>
+
+      {/* Body Composition (DEXA + Garmin) */}
+      {(dexaScans.length > 0 || metrics.some((m) => m.bodyFatPct != null)) && (
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>Body Composition</Typography>
+              {metrics.some((m) => m.bodyFatPct != null) ? (
+                <>
+                  <LineChart
+                    xAxis={[{ data: weeks, scaleType: 'band' }]}
+                    series={[
+                      {
+                        data: metrics.map((m) => nn(m.bodyFatPct) || null),
+                        label: 'Garmin BF%',
+                        color: '#FF7043',
+                      },
+                      ...(dexaScans.length > 0 && dexaScans.some((s) => s.garminBodyFatPct != null)
+                        ? [{
+                            data: metrics.map((m) => {
+                              const latestDexa = dexaScans[dexaScans.length - 1];
+                              const raw = nn(m.bodyFatPct);
+                              return raw > 0 ? Math.round((raw + latestDexa.calibration.bodyFatOffsetPct) * 10) / 10 : null;
+                            }),
+                            label: 'DEXA-corrected BF%',
+                            color: '#E91E63',
+                          }]
+                        : []),
+                    ]}
+                    height={200}
+                  />
+                  <LineChart
+                    xAxis={[{ data: weeks, scaleType: 'band' }]}
+                    series={[
+                      {
+                        data: metrics.map((m) => nn(m.muscleMassKg) || null),
+                        label: 'Muscle Mass (kg)',
+                        color: '#4CAF50',
+                      },
+                    ]}
+                    height={150}
+                  />
+                  {dexaScans.length > 0 && (
+                    <Box sx={{ mt: 1 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        DEXA ground truth:{' '}
+                        {dexaScans.map((s) => `#${s.scanNumber} (${s.date}): ${s.totalBodyFatPct}% BF, ${s.totalLeanMassKg}kg lean`).join(' | ')}
+                      </Typography>
+                    </Box>
+                  )}
+                </>
+              ) : dexaScans.length > 0 ? (
+                <ScatterChart
+                  xAxis={[{
+                    data: dexaScans.map((_, i) => i + 1),
+                    label: 'Scan #',
+                    min: 0.5,
+                    max: 3.5,
+                  }]}
+                  series={[
+                    {
+                      data: dexaScans.map((s, i) => ({ x: i + 1, y: s.totalBodyFatPct, id: `bf-${i}` })),
+                      label: 'DEXA BF%',
+                      color: '#E91E63',
+                    },
+                  ]}
+                  height={250}
+                />
+              ) : (
+                <Typography variant="body2" color="text.secondary">No body composition data yet.</Typography>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+      )}
     </Grid>
   );
 }

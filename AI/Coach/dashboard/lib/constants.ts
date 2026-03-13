@@ -11,6 +11,7 @@ export const CURRENT_CEILINGS_PATH = path.join(STATE_DIR, 'current_ceilings.json
 export const PERIODIZATION_PATH = path.join(STATE_DIR, 'periodization.md');
 export const DECISIONS_LOG_PATH = path.join(STATE_DIR, 'decisions_log.md');
 export const WEEKLY_LOGS_DIR = path.join(STATE_DIR, 'weekly_logs');
+export const DEXA_SCANS_PATH = path.join(STATE_DIR, 'dexa_scans.json');
 
 // Coach persona files
 export const COACHES_DIR = path.join(COACH_ROOT, 'coaches');

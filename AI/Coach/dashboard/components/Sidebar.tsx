@@ -20,6 +20,7 @@ import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import PersonIcon from '@mui/icons-material/Person';
+import ScienceIcon from '@mui/icons-material/Science';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import React from 'react';
@@ -34,6 +35,7 @@ const NAV_ITEMS = [
   { label: 'Training Plan', path: '/plan', icon: <FitnessCenterIcon /> },
   { label: 'Archive', path: '/archive', icon: <ArchiveIcon /> },
   { label: 'Trends', path: '/trends', icon: <TrendingUpIcon /> },
+  { label: 'DEXA Scans', path: '/dexa', icon: <ScienceIcon /> },
   { label: 'Profile', path: '/profile', icon: <PersonIcon /> },
 ];
 

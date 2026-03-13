@@ -9,8 +9,9 @@ import {
   WEEKLY_LOGS_DIR,
   COACHES_DIR,
   AGENT_FILES,
+  DEXA_SCANS_PATH,
 } from './constants';
-import type { CeilingsData } from './types';
+import type { CeilingsData, DexaData } from './types';
 
 export function readFileOrEmpty(filePath: string): string {
   try {
@@ -45,6 +46,19 @@ export function readCeilings(): CeilingsData {
 
 export function writeCeilings(data: CeilingsData): void {
   fs.writeFileSync(CURRENT_CEILINGS_PATH, JSON.stringify(data, null, 2), 'utf-8');
+}
+
+export function readDexaScans(): DexaData {
+  try {
+    const raw = fs.readFileSync(DEXA_SCANS_PATH, 'utf-8');
+    return JSON.parse(raw);
+  } catch {
+    return { scans: [], latest_calibration: null };
+  }
+}
+
+export function writeDexaScans(data: DexaData): void {
+  fs.writeFileSync(DEXA_SCANS_PATH, JSON.stringify(data, null, 2), 'utf-8');
 }
 
 export function readPeriodization(): string {
