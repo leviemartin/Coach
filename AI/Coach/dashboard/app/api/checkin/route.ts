@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { readGarminData, extractGarminSummary } from '@/lib/garmin';
 import { buildSharedContext, runSpecialistsSequentially, streamHeadCoachSynthesis } from '@/lib/agents';
-import { writeWeeklyLog, appendTrainingHistory, readCeilings } from '@/lib/state';
+import { writeWeeklyLog, appendTrainingHistory, readCeilings, writeCeilings } from '@/lib/state';
+import { getPlanWeekNumber } from '@/lib/week';
 import { parseScheduleTable } from '@/lib/parse-schedule';
 import {
   upsertWeeklyMetrics,
@@ -79,7 +80,7 @@ export async function POST(request: Request) {
 
         const today = new Date().toISOString().split('T')[0];
         const ceilings = readCeilings();
-        const weekNumber = ceilings.week || 10;
+        const weekNumber = getPlanWeekNumber();
 
         // Build weekly log content
         const specialistSection = specialistOutputs
@@ -142,6 +143,11 @@ export async function POST(request: Request) {
         if (ceilingEntries.length > 0) {
           insertCeilingHistory(ceilingEntries);
         }
+
+        // Keep ceilings.json week in sync for external tools
+        ceilings.week = weekNumber;
+        ceilings.last_updated = today;
+        writeCeilings(ceilings);
 
         send('synthesis_complete', {
           fullText: fullSynthesis,

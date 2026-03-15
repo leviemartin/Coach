@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getWeeklyMetrics, getCeilingHistory, upsertWeeklyMetrics, insertCeilingHistory, getDexaScans, upsertDexaScan } from '@/lib/db';
 import { getWeeklyLogFiles, readWeeklyLog, readCeilings, readDexaScans } from '@/lib/state';
+import { getTrainingWeek } from '@/lib/week';
 import type { WeeklyMetrics, CeilingEntry } from '@/lib/types';
 
 export async function GET(request: Request) {
@@ -54,12 +55,13 @@ export async function POST() {
 
   // Also rebuild ceiling history from current_ceilings.json
   const ceilings = readCeilings();
-  if (ceilings.week > 0) {
+  const ceilingsWeek = ceilings.week > 0 ? ceilings.week : getTrainingWeek();
+  {
     const entries: CeilingEntry[] = Object.entries(ceilings.ceilings)
       .filter(([, v]) => typeof v === 'number')
       .map(([exercise, weight]) => ({
-        weekNumber: ceilings.week,
-        date: ceilings.last_updated,
+        weekNumber: ceilingsWeek,
+        date: ceilings.last_updated || new Date().toISOString().split('T')[0],
         exercise,
         weightKg: weight as number,
       }));

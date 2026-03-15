@@ -29,6 +29,11 @@ Read these files in parallel:
 - `state/decisions_log.md` — Active decisions and gates
 - `state/athlete_profile.md` — Athlete context and targets
 
+**Week Number:** Calculate automatically. Week 1 starts Monday December 29, 2025.
+Current week = floor((today - Dec 29, 2025) / 7) + 1.
+Plan week = current week + 1 (if today is Sunday) or current week (if Mon-Sat).
+Do NOT read the week number from current_ceilings.json — calculate it fresh.
+
 ## Step 3: Multi-Agent Analysis
 
 Run all 7 specialist agents against the data. Each agent has a persona file in `coaches/` that defines their domain, what they monitor, their red flags, and their output format.
@@ -196,11 +201,11 @@ Finisher:
 - Round/rest info: square brackets on own line after group
 - One exercise per line
 - Do NOT use free-form section headers like "Superset A (3 rounds, 90s rest):" or "Pull-Up Bar Block:"
-- Do NOT use `<br>`, `**bold**`, or `•`
+- Do NOT use `**bold**` or `•`
 - Do NOT use period-separated lists on a single line
 
 ### Session Duration Target
-**50-60 minutes** including warm-up and mobility. This is a hard cap.
+**50-60 minutes** excluding warm-up and mobility. This is a hard cap.
 
 Time budget per session:
 - Warm-up: 5 min
@@ -344,3 +349,4 @@ After the sign-off, update internal state files. These are system operations, NO
 2. **Update `state/current_ceilings.json`** — If progressive overload applied, update ceilings and progression_history
 3. **Save full check-in to `state/weekly_logs/week_NN_YYYY-MM-DD.md`** — Include agent analyses, debates, athlete responses, and schedule. If state update notes are included, place them under a `## State Updates Required` heading AFTER the sign-off so the dashboard can exclude them.
 4. **Update `state/decisions_log.md`** — If any new decisions were made during the check-in
+5. **Update `state/current_ceilings.json` week field** — Set `"week"` to the calculated plan week number and `"last_updated"` to today's date.

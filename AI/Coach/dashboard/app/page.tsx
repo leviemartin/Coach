@@ -5,6 +5,7 @@ import { Typography, Card, CardContent, Grid, Box, Button, Chip, IconButton, Too
 import SyncIcon from '@mui/icons-material/Sync';
 import { useRouter } from 'next/navigation';
 import StatusBadge from '@/components/StatusBadge';
+import { getTrainingWeek } from '@/lib/week';
 
 interface GarminSummary {
   avgSleep: number | null;
@@ -67,7 +68,7 @@ export default function DashboardHome() {
           Dashboard
         </Typography>
         <Chip label="Phase 1: The Reconstruction" color="primary" />
-        <Chip label="Week 10" variant="outlined" />
+        <Chip label={`Week ${getTrainingWeek()}`} variant="outlined" />
         <Tooltip title={syncing ? 'Syncing...' : 'Sync Garmin data'}>
           <IconButton onClick={handleSync} disabled={syncing} size="small">
             <SyncIcon sx={{
