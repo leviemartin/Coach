@@ -18,6 +18,8 @@ export const COACHES_DIR = path.join(COACH_ROOT, 'coaches');
 
 // Garmin data
 export const GARMIN_DATA_PATH = '/Users/martinlevie/garmin-coach/garmin_coach_data.json';
+export const GARMIN_CONNECTOR_DIR = '/Users/martinlevie/garmin-coach';
+export const GARMIN_CONNECTOR_SCRIPT = 'garmin_connector.py';
 
 // Agent IDs mapped to their persona files
 export const AGENT_FILES: Record<string, string> = {

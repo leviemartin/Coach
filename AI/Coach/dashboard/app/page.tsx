@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { Typography, Card, CardContent, Grid, Box, Button, Chip, LinearProgress } from '@mui/material';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { Typography, Card, CardContent, Grid, Box, Button, Chip, IconButton, Tooltip, Snackbar, Alert } from '@mui/material';
+import SyncIcon from '@mui/icons-material/Sync';
 import { useRouter } from 'next/navigation';
 import StatusBadge from '@/components/StatusBadge';
 
@@ -15,24 +16,66 @@ interface GarminSummary {
 export default function DashboardHome() {
   const router = useRouter();
   const [summary, setSummary] = useState<GarminSummary | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const syncAbortRef = useRef<AbortController | null>(null);
 
   const isSunday = new Date().getDay() === 0;
 
-  useEffect(() => {
+  const refreshSummary = useCallback(() => {
     fetch('/api/garmin')
       .then((r) => r.json())
       .then((data) => setSummary(data.summary))
       .catch(() => {});
   }, []);
 
+  useEffect(() => {
+    refreshSummary();
+  }, [refreshSummary]);
+
+  useEffect(() => {
+    return () => { syncAbortRef.current?.abort(); };
+  }, []);
+
+  const handleSync = async () => {
+    setSyncing(true);
+    setSyncResult(null);
+    const controller = new AbortController();
+    syncAbortRef.current = controller;
+    try {
+      const res = await fetch('/api/garmin/sync', { method: 'POST', signal: controller.signal });
+      const data = await res.json();
+      if (data.success) {
+        refreshSummary();
+        setSyncResult({ type: 'success', message: 'Garmin data synced' });
+      } else {
+        setSyncResult({ type: 'error', message: data.error || 'Sync failed' });
+      }
+    } catch (err) {
+      if ((err as Error).name !== 'AbortError') {
+        setSyncResult({ type: 'error', message: 'Could not reach sync endpoint' });
+      }
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   return (
     <Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, flexWrap: 'wrap' }}>
         <Typography variant="h4" fontWeight={700}>
           Dashboard
         </Typography>
         <Chip label="Phase 1: The Reconstruction" color="primary" />
         <Chip label="Week 10" variant="outlined" />
+        <Tooltip title={syncing ? 'Syncing...' : 'Sync Garmin data'}>
+          <IconButton onClick={handleSync} disabled={syncing} size="small">
+            <SyncIcon sx={{
+              animation: syncing ? 'spin 1s linear infinite' : 'none',
+              '@keyframes spin': { '0%': { transform: 'rotate(0deg)' }, '100%': { transform: 'rotate(360deg)' } },
+            }} />
+          </IconButton>
+        </Tooltip>
       </Box>
 
       {isSunday && (
@@ -126,6 +169,21 @@ export default function DashboardHome() {
           </Card>
         </Grid>
       </Grid>
+
+      <Snackbar
+        open={syncResult !== null}
+        autoHideDuration={4000}
+        onClose={() => setSyncResult(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          severity={syncResult?.type === 'success' ? 'success' : 'error'}
+          onClose={() => setSyncResult(null)}
+          variant="filled"
+        >
+          {syncResult?.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Stepper, Step, StepLabel, Button, Box, Typography, Card, CardContent,
   TextField, Slider, Switch, FormControlLabel, Select, MenuItem, FormControl,
-  InputLabel, Alert, Chip, CircularProgress,
+  InputLabel, Alert, Chip, CircularProgress, LinearProgress,
 } from '@mui/material';
 import type { CheckInFormData } from '@/lib/types';
 
@@ -32,6 +32,9 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
   const [activeStep, setActiveStep] = useState(0);
   const [garminStatus, setGarminStatus] = useState<GarminStatus | null>(null);
   const [garminLoading, setGarminLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const [syncSuccess, setSyncSuccess] = useState(false);
 
   const [formData, setFormData] = useState<CheckInFormData>({
     hevyCsv: '',
@@ -54,13 +57,48 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
     model: 'sonnet',
   });
 
-  useEffect(() => {
-    fetch('/api/garmin')
+  const syncAbortRef = useRef<AbortController | null>(null);
+
+  const refreshGarminStatus = useCallback(() => {
+    setGarminLoading(true);
+    return fetch('/api/garmin')
       .then((r) => r.json())
       .then(setGarminStatus)
       .catch(() => setGarminStatus(null))
       .finally(() => setGarminLoading(false));
   }, []);
+
+  useEffect(() => {
+    refreshGarminStatus();
+  }, [refreshGarminStatus]);
+
+  useEffect(() => {
+    return () => { syncAbortRef.current?.abort(); };
+  }, []);
+
+  const handleSync = async () => {
+    setSyncing(true);
+    setSyncError(null);
+    setSyncSuccess(false);
+    const controller = new AbortController();
+    syncAbortRef.current = controller;
+    try {
+      const res = await fetch('/api/garmin/sync', { method: 'POST', signal: controller.signal });
+      const data = await res.json();
+      if (data.success) {
+        setSyncSuccess(true);
+        await refreshGarminStatus();
+      } else {
+        setSyncError(data.error || 'Sync failed');
+      }
+    } catch (err) {
+      if ((err as Error).name !== 'AbortError') {
+        setSyncError('Network error — could not reach sync endpoint');
+      }
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const update = <K extends keyof CheckInFormData>(key: K, value: CheckInFormData[K]) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
@@ -93,9 +131,25 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
                       Last updated: {new Date(garminStatus.timestamp).toLocaleString()} ({Math.round(garminStatus.ageHours)}h ago)
                     </Typography>
                   </Box>
-                  {garminStatus.status !== 'fresh' && (
-                    <Alert severity="warning" sx={{ mb: 2 }}>
-                      Run the Garmin connector in terminal to refresh: <code>cd ~/garmin-coach && python garmin_connector.py</code>
+                  <Box sx={{ mb: 2 }}>
+                    <Button
+                      variant={garminStatus.status !== 'fresh' ? 'contained' : 'outlined'}
+                      onClick={handleSync}
+                      disabled={syncing}
+                      startIcon={syncing ? <CircularProgress size={18} color="inherit" /> : null}
+                    >
+                      {syncing ? 'Syncing Garmin... (~20s)' : 'Sync Garmin Data'}
+                    </Button>
+                    {syncing && <LinearProgress aria-label="Syncing Garmin data" sx={{ mt: 1, borderRadius: 1 }} />}
+                  </Box>
+                  {syncSuccess && (
+                    <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSyncSuccess(false)}>
+                      Garmin data synced successfully.
+                    </Alert>
+                  )}
+                  {syncError && (
+                    <Alert severity="error" sx={{ mb: 2 }} onClose={() => setSyncError(null)}>
+                      {syncError}
                     </Alert>
                   )}
                   {garminStatus.summary && (
@@ -132,7 +186,22 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
                   )}
                 </>
               ) : (
-                <Alert severity="error">Could not read Garmin data file.</Alert>
+                <>
+                  <Alert severity="error" sx={{ mb: 2 }}>Could not read Garmin data file.</Alert>
+                  <Button
+                    variant="contained"
+                    onClick={handleSync}
+                    disabled={syncing}
+                    startIcon={syncing ? <CircularProgress size={18} color="inherit" /> : null}
+                  >
+                    {syncing ? 'Syncing Garmin... (~20s)' : 'Sync Garmin Data'}
+                  </Button>
+                  {syncError && (
+                    <Alert severity="error" sx={{ mt: 2 }} onClose={() => setSyncError(null)}>
+                      {syncError}
+                    </Alert>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
