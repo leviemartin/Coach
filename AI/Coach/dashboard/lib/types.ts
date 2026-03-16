@@ -247,6 +247,22 @@ export interface DexaData {
   latest_calibration: DexaScanCalibration | null;
 }
 
+export type RaceStatus = 'registered' | 'planned' | 'tentative' | 'completed';
+
+export interface Race {
+  id: string;
+  name: string;
+  date: string;
+  location: string;
+  type: string;
+  status: RaceStatus;
+  notes: string;
+}
+
+export interface RacesData {
+  races: Race[];
+}
+
 export interface Settings {
   model: string;
   [key: string]: string;

@@ -12,6 +12,7 @@ export const PERIODIZATION_PATH = path.join(STATE_DIR, 'periodization.md');
 export const DECISIONS_LOG_PATH = path.join(STATE_DIR, 'decisions_log.md');
 export const WEEKLY_LOGS_DIR = path.join(STATE_DIR, 'weekly_logs');
 export const DEXA_SCANS_PATH = path.join(STATE_DIR, 'dexa_scans.json');
+export const RACES_PATH = path.join(STATE_DIR, 'races.json');
 
 // Coach persona files
 export const COACHES_DIR = path.join(COACH_ROOT, 'coaches');
@@ -69,10 +70,6 @@ export const THRESHOLDS = {
   bedtime: { green: '23:00', yellow: '01:00' },
   muscleMass: { green: 37, yellow: 36 },
 } as const;
-
-// Race dates
-export const RACE_ZANDVOORT = new Date('2026-05-09');
-export const RACE_MORZINE = new Date('2027-07-05');
 
 // Default model
 export const DEFAULT_MODEL = 'claude-sonnet-4-20250514';

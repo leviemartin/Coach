@@ -1,0 +1,22 @@
+{
+  "races": [
+    {
+      "id": "zandvoort-super-2026",
+      "name": "Spartan Zandvoort Super",
+      "date": "2026-05-09",
+      "location": "Zandvoort, Netherlands",
+      "type": "Spartan Super",
+      "status": "planned",
+      "notes": "Systems check. Walk most of it, test obstacles, practice penalties."
+    },
+    {
+      "id": "morzine-ultra-2027",
+      "name": "Spartan Ultra Morzine",
+      "date": "2027-07-05",
+      "location": "Morzine, France",
+      "type": "Spartan Ultra",
+      "status": "planned",
+      "notes": "The A race. 50km+, 4000m+ elevation gain."
+    }
+  ]
+}

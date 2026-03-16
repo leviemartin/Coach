@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, Typography, LinearProgress, Box } from '@mui/material';
+import type { Race } from '@/lib/types';
 
-const RACE_ZANDVOORT = new Date('2026-05-09');
-const RACE_MORZINE = new Date('2027-07-05');
-const TRAINING_START = new Date('2026-01-05');
+const TRAINING_START = new Date('2025-12-29');
 
 function daysUntil(target: Date): number {
   const now = new Date();
@@ -21,13 +20,24 @@ function progressPercent(start: Date, target: Date): number {
 }
 
 export default function RaceCountdown() {
-  // Defer date calculations to client to avoid SSR/hydration mismatch
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const [races, setRaces] = useState<Race[]>([]);
 
-  const zandvoortDays = mounted ? daysUntil(RACE_ZANDVOORT) : 0;
-  const morzineDays = mounted ? daysUntil(RACE_MORZINE) : 0;
-  const morzineProgress = mounted ? progressPercent(TRAINING_START, RACE_MORZINE) : 0;
+  useEffect(() => {
+    setMounted(true);
+    fetch('/api/races')
+      .then((r) => r.json())
+      .then((data) => setRaces(data.races || []))
+      .catch(() => {});
+  }, []);
+
+  const upcomingRaces = mounted
+    ? races.filter((r) => daysUntil(new Date(r.date)) > 0).sort((a, b) => a.date.localeCompare(b.date))
+    : [];
+
+  // Use the furthest-out race for progress bar
+  const furthestRace = upcomingRaces.length > 0 ? upcomingRaces[upcomingRaces.length - 1] : null;
+  const overallProgress = furthestRace ? progressPercent(TRAINING_START, new Date(furthestRace.date)) : 0;
 
   return (
     <Card variant="outlined" sx={{ bgcolor: 'background.default' }}>
@@ -36,33 +46,40 @@ export default function RaceCountdown() {
           RACE COUNTDOWN
         </Typography>
 
-        {zandvoortDays > 0 && (
+        {mounted && upcomingRaces.map((race) => {
+          const days = daysUntil(new Date(race.date));
+          const weeks = Math.floor(days / 7);
+          const remainDays = days % 7;
+          return (
+            <Box key={race.id} sx={{ mt: 1 }}>
+              <Typography variant="body2" fontWeight={500}>
+                {race.name}
+              </Typography>
+              <Typography variant="h5" fontWeight={700} color="primary">
+                {weeks}w {remainDays}d
+              </Typography>
+            </Box>
+          );
+        })}
+
+        {mounted && furthestRace && (
           <Box sx={{ mt: 1 }}>
-            <Typography variant="body2" fontWeight={500}>
-              Zandvoort Super
-            </Typography>
-            <Typography variant="h5" fontWeight={700} color="primary">
-              {zandvoortDays}d
+            <LinearProgress
+              variant="determinate"
+              value={overallProgress}
+              sx={{ borderRadius: 4, height: 6 }}
+            />
+            <Typography variant="caption" color="text.secondary">
+              {Math.round(overallProgress)}% of journey
             </Typography>
           </Box>
         )}
 
-        <Box sx={{ mt: 1 }}>
-          <Typography variant="body2" fontWeight={500}>
-            Morzine Ultra
+        {mounted && upcomingRaces.length === 0 && (
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            No upcoming races
           </Typography>
-          <Typography variant="h5" fontWeight={700} color="primary">
-            {morzineDays}d
-          </Typography>
-          <LinearProgress
-            variant="determinate"
-            value={morzineProgress}
-            sx={{ mt: 0.5, borderRadius: 4, height: 6 }}
-          />
-          <Typography variant="caption" color="text.secondary">
-            {Math.round(morzineProgress)}% of journey
-          </Typography>
-        </Box>
+        )}
       </CardContent>
     </Card>
   );

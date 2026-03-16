@@ -10,8 +10,9 @@ import {
   COACHES_DIR,
   AGENT_FILES,
   DEXA_SCANS_PATH,
+  RACES_PATH,
 } from './constants';
-import type { CeilingsData, DexaData } from './types';
+import type { CeilingsData, DexaData, RacesData } from './types';
 
 export function readFileOrEmpty(filePath: string): string {
   try {
@@ -59,6 +60,19 @@ export function readDexaScans(): DexaData {
 
 export function writeDexaScans(data: DexaData): void {
   fs.writeFileSync(DEXA_SCANS_PATH, JSON.stringify(data, null, 2), 'utf-8');
+}
+
+export function readRaces(): RacesData {
+  try {
+    const raw = fs.readFileSync(RACES_PATH, 'utf-8');
+    return JSON.parse(raw);
+  } catch {
+    return { races: [] };
+  }
+}
+
+export function writeRaces(data: RacesData): void {
+  fs.writeFileSync(RACES_PATH, JSON.stringify(data, null, 2), 'utf-8');
 }
 
 export function readPeriodization(): string {

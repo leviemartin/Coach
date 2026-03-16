@@ -5,7 +5,31 @@ import { Typography, Card, CardContent, Grid, Box, Button, Chip, IconButton, Too
 import SyncIcon from '@mui/icons-material/Sync';
 import { useRouter } from 'next/navigation';
 import StatusBadge from '@/components/StatusBadge';
+import PhaseTimeline from '@/components/PhaseTimeline';
+import MacroOverview from '@/components/MacroOverview';
 import { getTrainingWeek } from '@/lib/week';
+import type { Race } from '@/lib/types';
+
+interface PhaseInfo {
+  number: number;
+  name: string;
+  dateRange: string;
+  isCurrent: boolean;
+  weightTarget: string;
+  focus: string[];
+}
+
+interface PeriodizationResponse {
+  phases: PhaseInfo[];
+  currentPhase: PhaseInfo;
+  currentWeek: number;
+  targets: {
+    raceWeight: string;
+    stretchWeight: string;
+    protein: string;
+    calories: string;
+  };
+}
 
 interface GarminSummary {
   avgSleep: number | null;
@@ -17,6 +41,8 @@ interface GarminSummary {
 export default function DashboardHome() {
   const router = useRouter();
   const [summary, setSummary] = useState<GarminSummary | null>(null);
+  const [periodization, setPeriodization] = useState<PeriodizationResponse | null>(null);
+  const [races, setRaces] = useState<Race[]>([]);
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const syncAbortRef = useRef<AbortController | null>(null);
@@ -32,6 +58,8 @@ export default function DashboardHome() {
 
   useEffect(() => {
     refreshSummary();
+    fetch('/api/periodization').then(r => r.json()).then(setPeriodization).catch(() => {});
+    fetch('/api/races').then(r => r.json()).then(d => setRaces(d.races || [])).catch(() => {});
   }, [refreshSummary]);
 
   useEffect(() => {
@@ -67,7 +95,7 @@ export default function DashboardHome() {
         <Typography variant="h4" fontWeight={700}>
           Dashboard
         </Typography>
-        <Chip label="Phase 1: The Reconstruction" color="primary" />
+        <Chip label={periodization ? `Phase ${periodization.currentPhase.number}: ${periodization.currentPhase.name}` : 'Phase 1: The Reconstruction'} color="primary" />
         <Chip label={`Week ${getTrainingWeek()}`} variant="outlined" />
         <Tooltip title={syncing ? 'Syncing...' : 'Sync Garmin data'}>
           <IconButton onClick={handleSync} disabled={syncing} size="small">
@@ -97,6 +125,10 @@ export default function DashboardHome() {
           </CardContent>
         </Card>
       )}
+
+      {periodization && <PhaseTimeline phases={periodization.phases} currentPhaseNumber={periodization.currentPhase.number} />}
+
+      <MacroOverview periodization={periodization} races={races} currentWeight={summary?.weight ?? null} />
 
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>

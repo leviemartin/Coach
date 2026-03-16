@@ -21,6 +21,7 @@ import ArchiveIcon from '@mui/icons-material/Archive';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import PersonIcon from '@mui/icons-material/Person';
 import ScienceIcon from '@mui/icons-material/Science';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import React from 'react';
@@ -36,6 +37,7 @@ const NAV_ITEMS = [
   { label: 'Archive', path: '/archive', icon: <ArchiveIcon /> },
   { label: 'Trends', path: '/trends', icon: <TrendingUpIcon /> },
   { label: 'DEXA Scans', path: '/dexa', icon: <ScienceIcon /> },
+  { label: 'Races', path: '/races', icon: <EmojiEventsIcon /> },
   { label: 'Profile', path: '/profile', icon: <PersonIcon /> },
 ];
 

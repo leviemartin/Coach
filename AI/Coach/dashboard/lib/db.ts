@@ -1,13 +1,13 @@
 import Database from 'better-sqlite3';
 import fs from 'fs';
 import path from 'path';
-import type { PlanItem, WeeklyMetrics, CeilingEntry, SubTask, DexaScan } from './types';
+import type { PlanItem, WeeklyMetrics, CeilingEntry, SubTask, DexaScan, Race, RaceStatus } from './types';
 import { normalizeWorkoutText } from './parse-schedule';
 
 const DB_PATH = path.join(process.cwd(), 'data', 'trends.db');
 
 // Schema version — bump this when adding tables or columns to force re-init on cached connections
-const SCHEMA_VERSION = 2; // v2: added dexa_scans table
+const SCHEMA_VERSION = 3; // v3: added races table
 
 // Use globalThis to persist across hot reloads in dev
 const globalForDb = globalThis as unknown as { _coachDb?: Database.Database; _coachDbSchema?: number };
@@ -107,6 +107,16 @@ function initTables(db: Database.Database) {
       notes TEXT DEFAULT ''
     );
 
+    CREATE TABLE IF NOT EXISTS races (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      date TEXT NOT NULL,
+      location TEXT NOT NULL,
+      type TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'planned',
+      notes TEXT DEFAULT ''
+    );
+
     CREATE INDEX IF NOT EXISTS idx_ceiling_history_exercise ON ceiling_history(exercise);
     CREATE INDEX IF NOT EXISTS idx_ceiling_history_week ON ceiling_history(week_number);
     CREATE INDEX IF NOT EXISTS idx_plan_items_week ON plan_items(week_number);
@@ -189,6 +199,23 @@ function initTables(db: Database.Database) {
     `);
   } catch (err) {
     console.error('[db] dexa_scans migration failed:', err);
+  }
+
+  // Migration: ensure races table exists on DBs created before schema v3
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS races (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        date TEXT NOT NULL,
+        location TEXT NOT NULL,
+        type TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'planned',
+        notes TEXT DEFAULT ''
+      )
+    `);
+  } catch (err) {
+    console.error('[db] races migration failed:', err);
   }
 
   // Migration v3: re-normalize with fixed normalizeWorkoutText (trailing periods, superset labels, per-line period split)
@@ -479,4 +506,35 @@ function mapDexaRow(row: unknown): DexaScan {
     },
     notes: (r.notes as string) || '',
   };
+}
+
+// Races
+export function upsertRace(race: Race): void {
+  const db = getDb();
+  db.prepare(`
+    INSERT OR REPLACE INTO races (id, name, date, location, type, status, notes)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(race.id, race.name, race.date, race.location, race.type, race.status, race.notes);
+}
+
+export function getRaces(): Race[] {
+  const db = getDb();
+  const rows = db.prepare('SELECT * FROM races ORDER BY date ASC').all();
+  return rows.map((row: unknown) => {
+    const r = row as Record<string, unknown>;
+    return {
+      id: r.id as string,
+      name: r.name as string,
+      date: r.date as string,
+      location: r.location as string,
+      type: r.type as string,
+      status: r.status as RaceStatus,
+      notes: (r.notes as string) || '',
+    };
+  });
+}
+
+export function deleteRace(id: string): void {
+  const db = getDb();
+  db.prepare('DELETE FROM races WHERE id = ?').run(id);
 }
