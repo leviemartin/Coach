@@ -35,10 +35,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         component="main"
         sx={{
           flexGrow: 1,
-          p: { xs: 1.5, sm: 2, md: 3 },
-          pt: { xs: 7, sm: 7, md: 3 },
-          ml: { xs: 0, md: `${DRAWER_WIDTH}px` },
-          maxWidth: { xs: '100%', md: `calc(100% - ${DRAWER_WIDTH}px)` },
+          minWidth: 0,
+          overflowX: 'hidden',
+          p: { xs: 1.5, sm: 2, md: 2.5 },
+          pt: { xs: 7, sm: 7, md: 2.5 },
         }}
       >
         {children}

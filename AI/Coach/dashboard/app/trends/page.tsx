@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Typography, Box, Button, Alert, CircularProgress } from '@mui/material';
 import TrendCharts from '@/components/TrendCharts';
 import type { WeeklyMetrics, CeilingEntry, DexaScan } from '@/lib/types';
@@ -71,8 +72,15 @@ export default function TrendsPage() {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-        <Typography variant="h4" fontWeight={700}>
+      {/* Breadcrumb */}
+      <Link href="/" style={{ textDecoration: 'none' }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1, '&:hover': { color: 'text.primary' } }}>
+          ← Dashboard
+        </Typography>
+      </Link>
+
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
+        <Typography variant="h3" fontWeight={700}>
           Trends
         </Typography>
         <Button

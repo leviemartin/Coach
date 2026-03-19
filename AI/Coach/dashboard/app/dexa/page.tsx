@@ -3,10 +3,11 @@
 import React, { useEffect, useState } from 'react';
 import {
   Typography, Box, Card, CardContent, Grid, TextField, Button,
-  Alert, Table, TableHead, TableRow, TableCell, TableBody, TableContainer,
-  Divider, CircularProgress, IconButton, Tooltip,
+  Alert, Divider, CircularProgress, IconButton, Tooltip, Chip,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import type { DexaScan, DexaData } from '@/lib/types';
 
 const EMPTY_FORM = {
@@ -28,6 +29,185 @@ const EMPTY_FORM = {
   notes: '',
 };
 
+// ── Body composition stacked bar ────────────────────────────────────────────
+function BodyCompBar({ scan }: { scan: DexaScan }) {
+  const total = scan.weightAtScanKg;
+  const fatPct = (scan.fatMassKg / total) * 100;
+  const leanPct = (scan.totalLeanMassKg / total) * 100;
+  const bonePct = (scan.boneMassKg / total) * 100;
+
+  return (
+    <Box sx={{ mt: 1.5 }}>
+      <Box sx={{ display: 'flex', height: 18, borderRadius: 1, overflow: 'hidden', width: '100%' }}>
+        <Tooltip title={`Fat: ${scan.fatMassKg.toFixed(1)} kg (${fatPct.toFixed(1)}%)`}>
+          <Box sx={{ width: `${fatPct}%`, bgcolor: '#f44336', cursor: 'default' }} />
+        </Tooltip>
+        <Tooltip title={`Lean: ${scan.totalLeanMassKg.toFixed(1)} kg (${leanPct.toFixed(1)}%)`}>
+          <Box sx={{ width: `${leanPct}%`, bgcolor: '#2196f3', cursor: 'default' }} />
+        </Tooltip>
+        <Tooltip title={`Bone: ${scan.boneMassKg.toFixed(1)} kg (${bonePct.toFixed(1)}%)`}>
+          <Box sx={{ width: `${bonePct}%`, bgcolor: '#9e9e9e', cursor: 'default' }} />
+        </Tooltip>
+      </Box>
+      <Box sx={{ display: 'flex', gap: 2, mt: 0.75 }}>
+        {[
+          { label: 'Fat', color: '#f44336' },
+          { label: 'Lean', color: '#2196f3' },
+          { label: 'Bone', color: '#9e9e9e' },
+        ].map(({ label, color }) => (
+          <Box key={label} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: color, flexShrink: 0 }} />
+            <Typography variant="caption" color="text.secondary">{label}</Typography>
+          </Box>
+        ))}
+      </Box>
+    </Box>
+  );
+}
+
+// ── Single metric display ────────────────────────────────────────────────────
+function MetricItem({ label, value }: { label: string; value: string }) {
+  return (
+    <Box>
+      <Typography variant="caption" color="text.secondary" display="block">{label}</Typography>
+      <Typography variant="body1" fontWeight={600}>{value}</Typography>
+    </Box>
+  );
+}
+
+// ── Delta indicator ──────────────────────────────────────────────────────────
+function DeltaItem({
+  label, delta, unit, lowerIsBetter = false,
+}: {
+  label: string;
+  delta: number;
+  unit: string;
+  lowerIsBetter?: boolean;
+}) {
+  const improved = lowerIsBetter ? delta < 0 : delta > 0;
+  const neutral = Math.abs(delta) < 0.05;
+  const color = neutral ? 'text.secondary' : improved ? 'success.main' : 'error.main';
+  const sign = delta > 0 ? '+' : '';
+  const Icon = delta > 0 ? ArrowUpwardIcon : ArrowDownwardIcon;
+
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+      <Box>
+        <Typography variant="caption" color="text.secondary" display="block">{label}</Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+          {!neutral && <Icon sx={{ fontSize: 14, color }} />}
+          <Typography variant="body2" fontWeight={600} color={color}>
+            {sign}{delta.toFixed(1)}{unit}
+          </Typography>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
+// ── Individual scan card ─────────────────────────────────────────────────────
+function ScanCard({ scan, onEdit }: { scan: DexaScan; onEdit: (s: DexaScan) => void }) {
+  return (
+    <Card>
+      <CardContent>
+        {/* Header */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
+          <Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.25 }}>
+              <Typography variant="h6" fontWeight={700}>Scan #{scan.scanNumber}</Typography>
+              <Chip label={scan.phase} size="small" variant="outlined" />
+            </Box>
+            <Typography variant="body2" color="text.secondary">{scan.date}</Typography>
+          </Box>
+          <Tooltip title="Edit scan">
+            <IconButton size="small" onClick={() => onEdit(scan)}>
+              <EditIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Box>
+
+        {/* Body comp bar */}
+        <BodyCompBar scan={scan} />
+
+        <Divider sx={{ my: 1.5 }} />
+
+        {/* Key metrics grid */}
+        <Grid container spacing={1.5}>
+          <Grid size={{ xs: 6, sm: 4 }}>
+            <MetricItem label="Weight" value={`${scan.weightAtScanKg} kg`} />
+          </Grid>
+          <Grid size={{ xs: 6, sm: 4 }}>
+            <MetricItem label="Body Fat" value={`${scan.totalBodyFatPct}%`} />
+          </Grid>
+          <Grid size={{ xs: 6, sm: 4 }}>
+            <MetricItem label="Lean Mass" value={`${scan.totalLeanMassKg} kg`} />
+          </Grid>
+          <Grid size={{ xs: 6, sm: 4 }}>
+            <MetricItem label="Fat Mass" value={`${scan.fatMassKg} kg`} />
+          </Grid>
+          <Grid size={{ xs: 6, sm: 4 }}>
+            <MetricItem label="Bone Mass" value={`${scan.boneMassKg} kg`} />
+          </Grid>
+          <Grid size={{ xs: 6, sm: 4 }}>
+            <MetricItem label="BMD" value={`${scan.boneMineralDensityGcm2} g/cm²`} />
+          </Grid>
+        </Grid>
+
+        {/* Garmin calibration footer */}
+        {scan.garminBodyFatPct != null && (
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.5 }}>
+            Garmin BF% at scan: {scan.garminBodyFatPct}% — offset {scan.calibration.bodyFatOffsetPct > 0 ? '+' : ''}{scan.calibration.bodyFatOffsetPct.toFixed(1)}% | Lean delta: {scan.calibration.leanMassOffsetKg > 0 ? '+' : ''}{scan.calibration.leanMassOffsetKg.toFixed(1)} kg
+          </Typography>
+        )}
+
+        {/* Notes */}
+        {scan.notes && (
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, fontStyle: 'italic' }}>
+            {scan.notes}
+          </Typography>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── Delta comparison card ────────────────────────────────────────────────────
+function DeltaCard({ from, to }: { from: DexaScan; to: DexaScan }) {
+  return (
+    <Card sx={{ borderColor: 'primary.main', bgcolor: 'action.hover' }}>
+      <CardContent>
+        <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+          Scan #{from.scanNumber} → #{to.scanNumber} Changes
+        </Typography>
+        <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1.5 }}>
+          {from.date} to {to.date}
+        </Typography>
+        <Grid container spacing={2}>
+          <Grid size={{ xs: 6, sm: 4, md: 2 }}>
+            <DeltaItem label="Weight" delta={to.weightAtScanKg - from.weightAtScanKg} unit=" kg" lowerIsBetter />
+          </Grid>
+          <Grid size={{ xs: 6, sm: 4, md: 2 }}>
+            <DeltaItem label="Body Fat %" delta={to.totalBodyFatPct - from.totalBodyFatPct} unit="%" lowerIsBetter />
+          </Grid>
+          <Grid size={{ xs: 6, sm: 4, md: 2 }}>
+            <DeltaItem label="Fat Mass" delta={to.fatMassKg - from.fatMassKg} unit=" kg" lowerIsBetter />
+          </Grid>
+          <Grid size={{ xs: 6, sm: 4, md: 2 }}>
+            <DeltaItem label="Lean Mass" delta={to.totalLeanMassKg - from.totalLeanMassKg} unit=" kg" />
+          </Grid>
+          <Grid size={{ xs: 6, sm: 4, md: 2 }}>
+            <DeltaItem label="Bone Mass" delta={to.boneMassKg - from.boneMassKg} unit=" kg" />
+          </Grid>
+          <Grid size={{ xs: 6, sm: 4, md: 2 }}>
+            <DeltaItem label="BMD" delta={to.boneMineralDensityGcm2 - from.boneMineralDensityGcm2} unit=" g/cm²" />
+          </Grid>
+        </Grid>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── Page ─────────────────────────────────────────────────────────────────────
 export default function DexaPage() {
   const [data, setData] = useState<DexaData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -55,6 +235,31 @@ export default function DexaPage() {
 
   const handleChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
+  };
+
+  const handleEdit = (s: DexaScan) => {
+    setForm({
+      scanNumber: String(s.scanNumber),
+      date: s.date,
+      phase: s.phase,
+      totalBodyFatPct: String(s.totalBodyFatPct),
+      totalLeanMassKg: String(s.totalLeanMassKg),
+      fatMassKg: String(s.fatMassKg),
+      boneMineralDensityGcm2: String(s.boneMineralDensityGcm2),
+      boneMassKg: String(s.boneMassKg),
+      weightAtScanKg: String(s.weightAtScanKg),
+      trunkFatPct: s.regional.trunkFatPct != null ? String(s.regional.trunkFatPct) : '',
+      armsFatPct: s.regional.armsFatPct != null ? String(s.regional.armsFatPct) : '',
+      legsFatPct: s.regional.legsFatPct != null ? String(s.regional.legsFatPct) : '',
+      trunkLeanKg: s.regional.trunkLeanKg != null ? String(s.regional.trunkLeanKg) : '',
+      armsLeanKg: s.regional.armsLeanKg != null ? String(s.regional.armsLeanKg) : '',
+      legsLeanKg: s.regional.legsLeanKg != null ? String(s.regional.legsLeanKg) : '',
+      notes: s.notes,
+    });
+    setShowForm(true);
+    setError('');
+    setSuccess('');
+    setDriftWarning('');
   };
 
   const handleSubmit = async () => {
@@ -160,7 +365,7 @@ export default function DexaPage() {
 
   return (
     <Box>
-      <Typography variant="h4" fontWeight={700} gutterBottom>
+      <Typography variant="h3" fontWeight={700} sx={{ mb: 4 }}>
         DEXA Scans
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
@@ -171,93 +376,34 @@ export default function DexaPage() {
       {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
       {driftWarning && <Alert severity="warning" sx={{ mb: 2 }}>{driftWarning}</Alert>}
 
-      {/* Existing scans table */}
+      {/* Scan cards */}
       {scans.length > 0 && (
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>Scan History</Typography>
-            <TableContainer sx={{ overflowX: 'auto' }}>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>#</TableCell>
-                    <TableCell>Date</TableCell>
-                    <TableCell>Phase</TableCell>
-                    <TableCell>Weight</TableCell>
-                    <TableCell>Body Fat %</TableCell>
-                    <TableCell>Lean Mass</TableCell>
-                    <TableCell>Fat Mass</TableCell>
-                    <TableCell>BMD</TableCell>
-                    <TableCell>Garmin BF%</TableCell>
-                    <TableCell>BF Offset</TableCell>
-                    <TableCell></TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {scans.map((s: DexaScan) => (
-                    <TableRow key={s.scanNumber}>
-                      <TableCell>{s.scanNumber}</TableCell>
-                      <TableCell>{s.date}</TableCell>
-                      <TableCell>{s.phase}</TableCell>
-                      <TableCell>{s.weightAtScanKg} kg</TableCell>
-                      <TableCell>{s.totalBodyFatPct}%</TableCell>
-                      <TableCell>{s.totalLeanMassKg} kg</TableCell>
-                      <TableCell>{s.fatMassKg} kg</TableCell>
-                      <TableCell>{s.boneMineralDensityGcm2} g/cm²</TableCell>
-                      <TableCell>{s.garminBodyFatPct != null ? `${s.garminBodyFatPct}%` : '—'}</TableCell>
-                      <TableCell>
-                        {s.garminBodyFatPct != null
-                          ? `${s.calibration.bodyFatOffsetPct > 0 ? '+' : ''}${s.calibration.bodyFatOffsetPct.toFixed(1)}%`
-                          : '—'}
-                      </TableCell>
-                      <TableCell>
-                        <Tooltip title="Edit scan">
-                          <IconButton size="small" onClick={() => {
-                            setForm({
-                              scanNumber: String(s.scanNumber),
-                              date: s.date,
-                              phase: s.phase,
-                              totalBodyFatPct: String(s.totalBodyFatPct),
-                              totalLeanMassKg: String(s.totalLeanMassKg),
-                              fatMassKg: String(s.fatMassKg),
-                              boneMineralDensityGcm2: String(s.boneMineralDensityGcm2),
-                              boneMassKg: String(s.boneMassKg),
-                              weightAtScanKg: String(s.weightAtScanKg),
-                              trunkFatPct: s.regional.trunkFatPct != null ? String(s.regional.trunkFatPct) : '',
-                              armsFatPct: s.regional.armsFatPct != null ? String(s.regional.armsFatPct) : '',
-                              legsFatPct: s.regional.legsFatPct != null ? String(s.regional.legsFatPct) : '',
-                              trunkLeanKg: s.regional.trunkLeanKg != null ? String(s.regional.trunkLeanKg) : '',
-                              armsLeanKg: s.regional.armsLeanKg != null ? String(s.regional.armsLeanKg) : '',
-                              legsLeanKg: s.regional.legsLeanKg != null ? String(s.regional.legsLeanKg) : '',
-                              notes: s.notes,
-                            });
-                            setShowForm(true);
-                            setError('');
-                            setSuccess('');
-                            setDriftWarning('');
-                          }}>
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+        <>
+          <Grid container spacing={2} sx={{ mb: 2 }}>
+            {scans.map((s: DexaScan) => (
+              <Grid key={s.scanNumber} size={{ xs: 12, md: 6 }}>
+                <ScanCard scan={s} onEdit={handleEdit} />
+              </Grid>
+            ))}
+          </Grid>
 
-            {calibration && (
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Latest Calibration: Garmin {calibration.bodyFatOffsetPct > 0 ? 'underreads' : 'overreads'} BF by {Math.abs(calibration.bodyFatOffsetPct).toFixed(1)}% | Lean mass delta: {calibration.leanMassOffsetKg > 0 ? '+' : ''}{calibration.leanMassOffsetKg.toFixed(1)} kg
-                </Typography>
-              </Box>
-            )}
-          </CardContent>
-        </Card>
+          {/* Delta comparison — shown when 2+ scans exist */}
+          {scans.length >= 2 && (
+            <Box sx={{ mb: 2 }}>
+              <DeltaCard from={scans[scans.length - 2]} to={scans[scans.length - 1]} />
+            </Box>
+          )}
+
+          {/* Calibration footer */}
+          {calibration && (
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 3 }}>
+              Active Garmin calibration: BF {calibration.bodyFatOffsetPct > 0 ? 'underreads' : 'overreads'} by {Math.abs(calibration.bodyFatOffsetPct).toFixed(1)}% | Lean mass delta: {calibration.leanMassOffsetKg > 0 ? '+' : ''}{calibration.leanMassOffsetKg.toFixed(1)} kg
+            </Typography>
+          )}
+        </>
       )}
 
-      {/* Add scan form */}
+      {/* Add scan button */}
       {!showForm && nextScanNumber && (
         <Button variant="contained" onClick={() => {
           setForm({ ...EMPTY_FORM, scanNumber: String(nextScanNumber) });
@@ -270,6 +416,7 @@ export default function DexaPage() {
         </Button>
       )}
 
+      {/* Add / edit form — unchanged */}
       {showForm && (
         <Card sx={{ mt: 2 }}>
           <CardContent>

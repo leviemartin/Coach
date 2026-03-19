@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
-import { readGarminData, extractGarminSummary } from '@/lib/garmin';
+import { readGarminData, extractExtendedSummary } from '@/lib/garmin';
 
 export async function GET() {
   const freshness = readGarminData();
-
-  const summary = freshness.data ? extractGarminSummary(freshness.data) : null;
+  const summary = freshness.data ? extractExtendedSummary(freshness.data) : null;
 
   return NextResponse.json({
     timestamp: freshness.timestamp,

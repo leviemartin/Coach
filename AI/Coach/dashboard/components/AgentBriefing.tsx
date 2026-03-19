@@ -53,7 +53,7 @@ export default function AgentBriefing({
           <LinearProgress
             variant="determinate"
             value={totalCount > 0 ? (completedCount / totalCount) * 100 : 0}
-            sx={{ mb: 2, height: 8, borderRadius: 4 }}
+            sx={{ mb: 2 }}
           />
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             {['strength', 'endurance', 'ocr', 'nutrition', 'recovery', 'mobility', 'mental'].map((id) => {
@@ -125,7 +125,7 @@ export default function AgentBriefing({
 function StreamingIndicator() {
   return (
     <Box sx={{ display: 'inline-flex', alignItems: 'center' }}>
-      <LinearProgress sx={{ width: 60, borderRadius: 2 }} />
+      <LinearProgress sx={{ width: 60 }} />
     </Box>
   );
 }

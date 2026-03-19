@@ -235,27 +235,39 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
               <Typography variant="h6" gutterBottom>Subjective Check-In</Typography>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 2 }}>
+
+                {/* Pain & Injury */}
                 <Box>
-                  <Typography gutterBottom>Baker&apos;s Cyst Pain: {formData.bakerCystPain}/10</Typography>
-                  <Slider
-                    value={formData.bakerCystPain}
-                    onChange={(_, v) => update('bakerCystPain', v as number)}
-                    min={0} max={10} step={1} marks
-                    valueLabelDisplay="auto"
-                  />
+                  <Typography variant="subtitle2" fontWeight={600} color="text.secondary" sx={{ mb: 2 }}>
+                    Pain &amp; Injury
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    <Box>
+                      <Typography gutterBottom>Baker&apos;s Cyst Pain: {formData.bakerCystPain}/10</Typography>
+                      <Slider
+                        value={formData.bakerCystPain}
+                        onChange={(_, v) => update('bakerCystPain', v as number)}
+                        min={0} max={10} step={1} marks
+                        valueLabelDisplay="auto"
+                      />
+                    </Box>
+                    <Box>
+                      <Typography gutterBottom>Lower Back Fatigue: {formData.lowerBackFatigue}/10</Typography>
+                      <Slider
+                        value={formData.lowerBackFatigue}
+                        onChange={(_, v) => update('lowerBackFatigue', v as number)}
+                        min={0} max={10} step={1} marks
+                        valueLabelDisplay="auto"
+                      />
+                    </Box>
+                  </Box>
                 </Box>
 
-                <Box>
-                  <Typography gutterBottom>Lower Back Fatigue: {formData.lowerBackFatigue}/10</Typography>
-                  <Slider
-                    value={formData.lowerBackFatigue}
-                    onChange={(_, v) => update('lowerBackFatigue', v as number)}
-                    min={0} max={10} step={1} marks
-                    valueLabelDisplay="auto"
-                  />
-                </Box>
-
-                <Box sx={{ borderTop: '2px solid', borderColor: 'divider', pt: 3, mt: 1 }}>
+                {/* How Do You Feel? */}
+                <Box sx={{ borderTop: '2px solid', borderColor: 'divider', pt: 3 }}>
+                  <Typography variant="subtitle2" fontWeight={600} color="text.secondary" sx={{ mb: 1 }}>
+                    How Do You Feel?
+                  </Typography>
                   <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
                     How Do You Actually Feel?
                   </Typography>
@@ -283,79 +295,93 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
                   </Box>
                 </Box>
 
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                  <TextField
-                    label="Sessions Completed"
-                    type="number"
-                    value={formData.sessionsCompleted}
-                    onChange={(e) => update('sessionsCompleted', parseInt(e.target.value) || 0)}
-                    sx={{ width: 160 }}
-                  />
-                  <TextField
-                    label="Sessions Planned"
-                    type="number"
-                    value={formData.sessionsPlanned}
-                    onChange={(e) => update('sessionsPlanned', parseInt(e.target.value) || 0)}
-                    sx={{ width: 160 }}
-                  />
-                </Box>
-
-                <TextField
-                  label="Missed Sessions (what and why)"
-                  multiline rows={2} fullWidth
-                  value={formData.missedSessions}
-                  onChange={(e) => update('missedSessions', e.target.value)}
-                />
-
-                <TextField
-                  label="Strength Wins"
-                  multiline rows={2} fullWidth
-                  value={formData.strengthWins}
-                  onChange={(e) => update('strengthWins', e.target.value)}
-                />
-
-                <TextField
-                  label="Struggles"
-                  multiline rows={2} fullWidth
-                  value={formData.struggles}
-                  onChange={(e) => update('struggles', e.target.value)}
-                />
-
-                <Box>
-                  <Typography gutterBottom>Bedtime Compliance (nights before 23:00): {formData.bedtimeCompliance}/7</Typography>
-                  <Slider
-                    value={formData.bedtimeCompliance}
-                    onChange={(_, v) => update('bedtimeCompliance', v as number)}
-                    min={0} max={7} step={1} marks
-                    valueLabelDisplay="auto"
-                  />
-                </Box>
-
-                <Box>
-                  <Typography gutterBottom>Rug Protocol Days: {formData.rugProtocolDays}/7</Typography>
-                  <Slider
-                    value={formData.rugProtocolDays}
-                    onChange={(_, v) => update('rugProtocolDays', v as number)}
-                    min={0} max={7} step={1} marks
-                    valueLabelDisplay="auto"
-                  />
-                </Box>
-
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.hydrationTracked}
-                      onChange={(e) => update('hydrationTracked', e.target.checked)}
+                {/* Training Completion */}
+                <Box sx={{ borderTop: '2px solid', borderColor: 'divider', pt: 3 }}>
+                  <Typography variant="subtitle2" fontWeight={600} color="text.secondary" sx={{ mb: 2 }}>
+                    Training Completion
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    <Box sx={{ display: 'flex', gap: 2 }}>
+                      <TextField
+                        label="Sessions Completed"
+                        type="number"
+                        value={formData.sessionsCompleted}
+                        onChange={(e) => update('sessionsCompleted', parseInt(e.target.value) || 0)}
+                        sx={{ width: 160 }}
+                      />
+                      <TextField
+                        label="Sessions Planned"
+                        type="number"
+                        value={formData.sessionsPlanned}
+                        onChange={(e) => update('sessionsPlanned', parseInt(e.target.value) || 0)}
+                        sx={{ width: 160 }}
+                      />
+                    </Box>
+                    <TextField
+                      label="Missed Sessions (what and why)"
+                      multiline rows={2} fullWidth
+                      value={formData.missedSessions}
+                      onChange={(e) => update('missedSessions', e.target.value)}
                     />
-                  }
-                  label="Hydration tracked this week?"
-                />
+                    <TextField
+                      label="Strength Wins"
+                      multiline rows={2} fullWidth
+                      value={formData.strengthWins}
+                      onChange={(e) => update('strengthWins', e.target.value)}
+                    />
+                    <TextField
+                      label="Struggles"
+                      multiline rows={2} fullWidth
+                      value={formData.struggles}
+                      onChange={(e) => update('struggles', e.target.value)}
+                    />
+                  </Box>
+                </Box>
 
-                <Box sx={{ borderTop: '2px solid', borderColor: 'divider', pt: 3, mt: 1 }}>
+                {/* Protocol Compliance */}
+                <Box sx={{ borderTop: '2px solid', borderColor: 'divider', pt: 3 }}>
+                  <Typography variant="subtitle2" fontWeight={600} color="text.secondary" sx={{ mb: 2 }}>
+                    Protocol Compliance
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    <Box>
+                      <Typography gutterBottom>Bedtime Compliance (nights before 23:00): {formData.bedtimeCompliance}/7</Typography>
+                      <Slider
+                        value={formData.bedtimeCompliance}
+                        onChange={(_, v) => update('bedtimeCompliance', v as number)}
+                        min={0} max={7} step={1} marks
+                        valueLabelDisplay="auto"
+                      />
+                    </Box>
+                    <Box>
+                      <Typography gutterBottom>Rug Protocol Days: {formData.rugProtocolDays}/7</Typography>
+                      <Slider
+                        value={formData.rugProtocolDays}
+                        onChange={(_, v) => update('rugProtocolDays', v as number)}
+                        min={0} max={7} step={1} marks
+                        valueLabelDisplay="auto"
+                      />
+                    </Box>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={formData.hydrationTracked}
+                          onChange={(e) => update('hydrationTracked', e.target.checked)}
+                        />
+                      }
+                      label="Hydration tracked this week?"
+                    />
+                  </Box>
+                </Box>
+
+                {/* Last Week's Plan */}
+                <Box sx={{ borderTop: '2px solid', borderColor: 'divider', pt: 3 }}>
+                  <Typography variant="subtitle2" fontWeight={600} color="text.secondary" sx={{ mb: 1 }}>
+                    Last Week&apos;s Plan
+                  </Typography>
                   <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
                     Last Week&apos;s Plan — Your Verdict
                   </Typography>
-
                   <Box sx={{ mt: 2 }}>
                     <Typography gutterBottom>
                       Plan satisfaction: {formData.planSatisfaction}/5
@@ -373,7 +399,6 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
                       valueLabelDisplay="auto"
                     />
                   </Box>
-
                   <TextField
                     label="Plan Feedback"
                     multiline rows={3} fullWidth
@@ -385,26 +410,33 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
                   />
                 </Box>
 
-                <TextField
-                  label="Upcoming Conflicts Next Week"
-                  multiline rows={2} fullWidth
-                  value={formData.upcomingConflicts}
-                  onChange={(e) => update('upcomingConflicts', e.target.value)}
-                />
+                {/* Next Week */}
+                <Box sx={{ borderTop: '2px solid', borderColor: 'divider', pt: 3 }}>
+                  <Typography variant="subtitle2" fontWeight={600} color="text.secondary" sx={{ mb: 2 }}>
+                    Next Week
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    <TextField
+                      label="Upcoming Conflicts Next Week"
+                      multiline rows={2} fullWidth
+                      value={formData.upcomingConflicts}
+                      onChange={(e) => update('upcomingConflicts', e.target.value)}
+                    />
+                    <TextField
+                      label="Focus for Next Week"
+                      multiline rows={2} fullWidth
+                      value={formData.focusNextWeek}
+                      onChange={(e) => update('focusNextWeek', e.target.value)}
+                    />
+                    <TextField
+                      label="Questions for the Coaches"
+                      multiline rows={2} fullWidth
+                      value={formData.questionsForCoaches}
+                      onChange={(e) => update('questionsForCoaches', e.target.value)}
+                    />
+                  </Box>
+                </Box>
 
-                <TextField
-                  label="Focus for Next Week"
-                  multiline rows={2} fullWidth
-                  value={formData.focusNextWeek}
-                  onChange={(e) => update('focusNextWeek', e.target.value)}
-                />
-
-                <TextField
-                  label="Questions for the Coaches"
-                  multiline rows={2} fullWidth
-                  value={formData.questionsForCoaches}
-                  onChange={(e) => update('questionsForCoaches', e.target.value)}
-                />
               </Box>
             </CardContent>
           </Card>
@@ -429,22 +461,86 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
                 </Select>
               </FormControl>
 
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Garmin: {garminStatus?.status === 'fresh' ? 'Fresh' : garminStatus?.status || 'Not loaded'}
+              <Box sx={{ mb: 3 }}>
+                {/* Data sources */}
+                <Typography variant="subtitle2" fontWeight={600} color="text.secondary" sx={{ mb: 1 }}>
+                  Data Sources
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Hevy: {formData.hevyCsv.trim() ? `${formData.hevyCsv.split('\n').length} lines` : 'Skipped'}
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, mb: 2 }}>
+                  {[
+                    { label: 'Garmin', value: garminStatus?.status === 'fresh' ? 'Fresh' : garminStatus?.status || 'Not loaded' },
+                    { label: 'Hevy', value: formData.hevyCsv.trim() ? `${formData.hevyCsv.split('\n').length} lines` : 'Skipped' },
+                  ].map(({ label, value }) => (
+                    <Box key={label} sx={{ bgcolor: 'action.hover', borderRadius: 1, px: 1.5, py: 1 }}>
+                      <Typography variant="caption" color="text.secondary" display="block">{label}</Typography>
+                      <Typography variant="body2" fontWeight={500}>{value}</Typography>
+                    </Box>
+                  ))}
+                </Box>
+
+                {/* Training */}
+                <Typography variant="subtitle2" fontWeight={600} color="text.secondary" sx={{ mb: 1 }}>
+                  Training
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Sessions: {formData.sessionsCompleted}/{formData.sessionsPlanned} | Perceived readiness: {formData.perceivedReadiness}/5
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1, mb: 2 }}>
+                  {[
+                    { label: 'Sessions', value: `${formData.sessionsCompleted}/${formData.sessionsPlanned}` },
+                    { label: 'Readiness', value: `${formData.perceivedReadiness}/5` },
+                    { label: 'Plan Satisfaction', value: `${formData.planSatisfaction}/5` },
+                  ].map(({ label, value }) => (
+                    <Box key={label} sx={{ bgcolor: 'action.hover', borderRadius: 1, px: 1.5, py: 1 }}>
+                      <Typography variant="caption" color="text.secondary" display="block">{label}</Typography>
+                      <Typography variant="body2" fontWeight={500}>{value}</Typography>
+                    </Box>
+                  ))}
+                </Box>
+
+                {/* Protocol Compliance */}
+                <Typography variant="subtitle2" fontWeight={600} color="text.secondary" sx={{ mb: 1 }}>
+                  Protocol Compliance
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Bedtime: {formData.bedtimeCompliance}/7 | Rug: {formData.rugProtocolDays}/7 | Hydration: {formData.hydrationTracked ? 'Yes' : 'No'}
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1, mb: 2 }}>
+                  {[
+                    { label: 'Bedtime', value: `${formData.bedtimeCompliance}/7` },
+                    { label: 'Rug Protocol', value: `${formData.rugProtocolDays}/7` },
+                    { label: 'Hydration', value: formData.hydrationTracked ? 'Tracked' : 'Not tracked' },
+                  ].map(({ label, value }) => (
+                    <Box key={label} sx={{ bgcolor: 'action.hover', borderRadius: 1, px: 1.5, py: 1 }}>
+                      <Typography variant="caption" color="text.secondary" display="block">{label}</Typography>
+                      <Typography variant="body2" fontWeight={500}>{value}</Typography>
+                    </Box>
+                  ))}
+                </Box>
+
+                {/* Pain */}
+                <Typography variant="subtitle2" fontWeight={600} color="text.secondary" sx={{ mb: 1 }}>
+                  Pain &amp; Injury
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Plan satisfaction: {formData.planSatisfaction}/5{formData.planFeedback ? ` — "${formData.planFeedback.slice(0, 80)}${formData.planFeedback.length > 80 ? '...' : ''}"` : ''}
-                </Typography>
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, mb: 2 }}>
+                  {[
+                    { label: "Baker's Cyst", value: `${formData.bakerCystPain}/10` },
+                    { label: 'Lower Back', value: `${formData.lowerBackFatigue}/10` },
+                  ].map(({ label, value }) => (
+                    <Box key={label} sx={{ bgcolor: 'action.hover', borderRadius: 1, px: 1.5, py: 1 }}>
+                      <Typography variant="caption" color="text.secondary" display="block">{label}</Typography>
+                      <Typography variant="body2" fontWeight={500}>{value}</Typography>
+                    </Box>
+                  ))}
+                </Box>
+
+                {/* Plan feedback preview */}
+                {formData.planFeedback && (
+                  <>
+                    <Typography variant="subtitle2" fontWeight={600} color="text.secondary" sx={{ mb: 1 }}>
+                      Plan Feedback
+                    </Typography>
+                    <Box sx={{ bgcolor: 'action.hover', borderRadius: 1, px: 1.5, py: 1, mb: 2 }}>
+                      <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                        &ldquo;{formData.planFeedback.slice(0, 120)}{formData.planFeedback.length > 120 ? '...' : ''}&rdquo;
+                      </Typography>
+                    </Box>
+                  </>
+                )}
               </Box>
 
               <Button

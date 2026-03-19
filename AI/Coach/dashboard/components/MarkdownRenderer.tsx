@@ -1,9 +1,26 @@
 'use client';
 
+import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Box } from '@mui/material';
 import type { Components } from 'react-markdown';
+
+function processBrTags(children: React.ReactNode): React.ReactNode {
+  return React.Children.map(children, (child) => {
+    if (typeof child === 'string') {
+      const parts = child.split(/<br\s*\/?>/gi);
+      if (parts.length === 1) return child;
+      return parts.map((part, i) => (
+        <React.Fragment key={i}>
+          {part}
+          {i < parts.length - 1 && <br />}
+        </React.Fragment>
+      ));
+    }
+    return child;
+  });
+}
 
 interface MarkdownRendererProps {
   content: string;
@@ -45,9 +62,9 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
     tbody: ({ children }) => <TableBody>{children}</TableBody>,
     tr: ({ children }) => <TableRow>{children}</TableRow>,
     th: ({ children }) => (
-      <TableCell sx={{ fontWeight: 600 }}>{children}</TableCell>
+      <TableCell sx={{ fontWeight: 600 }}>{processBrTags(children)}</TableCell>
     ),
-    td: ({ children }) => <TableCell>{children}</TableCell>,
+    td: ({ children }) => <TableCell>{processBrTags(children)}</TableCell>,
     code: ({ children, className }) => {
       const isBlock = className?.startsWith('language-');
       if (isBlock) {

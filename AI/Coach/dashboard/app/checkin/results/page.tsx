@@ -137,7 +137,7 @@ export default function CheckInResultsPage() {
 
   return (
     <Box>
-      <Typography variant="h4" fontWeight={700} sx={{ mb: 3 }}>
+      <Typography variant="h3" fontWeight={700} sx={{ mb: 4 }}>
         Check-In Results
       </Typography>
 

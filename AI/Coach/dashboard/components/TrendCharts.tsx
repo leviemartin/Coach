@@ -14,9 +14,30 @@ interface TrendChartsProps {
   onExerciseChange: (exercise: string) => void;
 }
 
+const CHART_COLORS = {
+  blue: '#3b82f6',
+  green: '#22c55e',
+  purple: '#8b5cf6',
+  orange: '#f97316',
+  red: '#ef4444',
+  teal: '#14b8a6',
+  pink: '#ec4899',
+  amber: '#f59e0b',
+};
+
 // MUI X-Charts needs numbers, not null. Replace null with 0.
 function nn(val: number | null | undefined): number {
   return val ?? 0;
+}
+
+function EmptyState({ message }: { message: string }) {
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 250 }}>
+      <Typography variant="body2" color="text.disabled" sx={{ fontStyle: 'italic' }}>
+        {message}
+      </Typography>
+    </Box>
+  );
 }
 
 export default function TrendCharts({
@@ -42,174 +63,34 @@ export default function TrendCharts({
   }
 
   return (
-    <Grid container spacing={3}>
-      {/* Weight Progression */}
-      <Grid size={{ xs: 12, md: 6 }}>
-        <Card sx={{ height: '100%' }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>Weight Progression</Typography>
-            <LineChart
-              xAxis={[{ data: weeks, scaleType: 'band' }]}
-              series={[
-                {
-                  data: metrics.map((m) => nn(m.weightKg)),
-                  label: 'Weight (kg)',
-                  color: '#1565C0',
-                },
-              ]}
-              height={250}
-            />
-            <Typography variant="caption" color="success.main" sx={{ display: 'block', textAlign: 'right' }}>
-              Target: 89kg
-            </Typography>
-          </CardContent>
-        </Card>
-      </Grid>
-
-      {/* Sleep & Readiness */}
-      <Grid size={{ xs: 12, md: 6 }}>
-        <Card sx={{ height: '100%' }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>Sleep & Readiness</Typography>
-            <BarChart
-              xAxis={[{ data: weeks, scaleType: 'band' }]}
-              series={[
-                {
-                  data: metrics.map((m) => nn(m.avgSleepScore)),
-                  label: 'Sleep Score',
-                  color: '#7E57C2',
-                },
-                {
-                  data: metrics.map((m) => nn(m.avgTrainingReadiness)),
-                  label: 'Readiness',
-                  color: '#26A69A',
-                },
-              ]}
-              height={250}
-            />
-          </CardContent>
-        </Card>
-      </Grid>
-
-      {/* Protocol Compliance */}
-      <Grid size={{ xs: 12, md: 6 }}>
-        <Card sx={{ height: '100%' }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>Protocol Compliance</Typography>
-            <BarChart
-              xAxis={[{ data: weeks, scaleType: 'band' }]}
-              series={[
-                {
-                  data: metrics.map((m) => nn(m.vampireCompliancePct)),
-                  label: 'Vampire %',
-                  color: '#5C6BC0',
-                },
-                {
-                  data: metrics.map((m) => (nn(m.rugProtocolDays) / 7) * 100),
-                  label: 'Rug %',
-                  color: '#AB47BC',
-                },
-                {
-                  data: metrics.map((m) => m.hydrationTracked ? 100 : 0),
-                  label: 'Hydration',
-                  color: '#29B6F6',
-                },
-              ]}
-              height={250}
-            />
-          </CardContent>
-        </Card>
-      </Grid>
-
-      {/* Strength Ceilings */}
-      <Grid size={{ xs: 12, md: 6 }}>
-        <Card sx={{ height: '100%' }}>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-              <Typography variant="h6">Strength Ceilings</Typography>
-              <FormControl size="small" sx={{ minWidth: 180 }}>
-                <InputLabel>Exercise</InputLabel>
-                <Select
-                  value={selectedExercise}
-                  label="Exercise"
-                  onChange={(e) => onExerciseChange(e.target.value)}
-                >
-                  {exercises.map((ex) => (
-                    <MenuItem key={ex} value={ex}>{ex.replace(/_/g, ' ')}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Box>
-            {ceilings.length > 0 ? (
-              <LineChart
-                xAxis={[{ data: ceilings.map((c) => `W${c.weekNumber}`), scaleType: 'band' }]}
-                series={[
-                  {
-                    data: ceilings.map((c) => c.weightKg),
-                    label: selectedExercise.replace(/_/g, ' '),
-                    color: '#EF5350',
-                  },
-                ]}
-                height={250}
-              />
-            ) : (
-              <Typography variant="body2" color="text.secondary">Select an exercise to view history.</Typography>
-            )}
-          </CardContent>
-        </Card>
-      </Grid>
-
-      {/* Pull-Up Progression */}
-      <Grid size={{ xs: 12, md: 6 }}>
-        <Card sx={{ height: '100%' }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>Pull-Up Progression</Typography>
-            {metrics.some((m) => m.pullupCount != null) ? (
+    <Box>
+      {/* ── Body Composition ── */}
+      <Typography variant="h6" sx={{ mb: 2 }}>Body Composition</Typography>
+      <Grid container spacing={3}>
+        {/* Weight Progression */}
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>Weight Progression</Typography>
               <LineChart
                 xAxis={[{ data: weeks, scaleType: 'band' }]}
                 series={[
                   {
-                    data: metrics.map((m) => nn(m.pullupCount)),
-                    label: 'Pull-Ups',
-                    color: '#FF7043',
+                    data: metrics.map((m) => nn(m.weightKg)),
+                    label: 'Weight (kg)',
+                    color: CHART_COLORS.blue,
                   },
                 ]}
                 height={250}
               />
-            ) : (
-              <Typography variant="body2" color="text.secondary">No pull-up data yet.</Typography>
-            )}
-          </CardContent>
-        </Card>
-      </Grid>
+              <Typography variant="caption" color="success.main" sx={{ display: 'block', textAlign: 'right' }}>
+                Target: 89kg
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
 
-      {/* Nutrition */}
-      <Grid size={{ xs: 12, md: 6 }}>
-        <Card sx={{ height: '100%' }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>Nutrition</Typography>
-            <BarChart
-              xAxis={[{ data: weeks, scaleType: 'band' }]}
-              series={[
-                {
-                  data: metrics.map((m) => nn(m.caloriesAvg)),
-                  label: 'Avg Calories',
-                  color: '#FFA726',
-                },
-                {
-                  data: metrics.map((m) => nn(m.proteinAvg) * 10),
-                  label: 'Protein (g x10)',
-                  color: '#66BB6A',
-                },
-              ]}
-              height={250}
-            />
-          </CardContent>
-        </Card>
-      </Grid>
-
-      {/* Body Composition (DEXA + Garmin) */}
-      {(dexaScans.length > 0 || metrics.some((m) => m.bodyFatPct != null)) && (
+        {/* Body Composition (DEXA + Garmin) */}
         <Grid size={{ xs: 12, md: 6 }}>
           <Card sx={{ height: '100%' }}>
             <CardContent>
@@ -222,7 +103,7 @@ export default function TrendCharts({
                       {
                         data: metrics.map((m) => nn(m.bodyFatPct) || null),
                         label: 'Garmin BF%',
-                        color: '#FF7043',
+                        color: CHART_COLORS.orange,
                       },
                       ...(dexaScans.length > 0 && dexaScans.some((s) => s.garminBodyFatPct != null)
                         ? [{
@@ -232,7 +113,7 @@ export default function TrendCharts({
                               return raw > 0 ? Math.round((raw + latestDexa.calibration.bodyFatOffsetPct) * 10) / 10 : null;
                             }),
                             label: 'DEXA-corrected BF%',
-                            color: '#E91E63',
+                            color: CHART_COLORS.pink,
                           }]
                         : []),
                     ]}
@@ -244,7 +125,7 @@ export default function TrendCharts({
                       {
                         data: metrics.map((m) => nn(m.muscleMassKg) || null),
                         label: 'Muscle Mass (kg)',
-                        color: '#4CAF50',
+                        color: CHART_COLORS.green,
                       },
                     ]}
                     height={150}
@@ -270,18 +151,174 @@ export default function TrendCharts({
                     {
                       data: dexaScans.map((s, i) => ({ x: i + 1, y: s.totalBodyFatPct, id: `bf-${i}` })),
                       label: 'DEXA BF%',
-                      color: '#E91E63',
+                      color: CHART_COLORS.pink,
                     },
                   ]}
                   height={250}
                 />
               ) : (
-                <Typography variant="body2" color="text.secondary">No body composition data yet.</Typography>
+                <EmptyState message="Book your DEXA scan to unlock body composition tracking." />
               )}
             </CardContent>
           </Card>
         </Grid>
-      )}
-    </Grid>
+      </Grid>
+
+      {/* ── Performance & Recovery ── */}
+      <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>Performance &amp; Recovery</Typography>
+      <Grid container spacing={3}>
+        {/* Sleep & Readiness */}
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>Sleep &amp; Readiness</Typography>
+              <BarChart
+                xAxis={[{ data: weeks, scaleType: 'band' }]}
+                series={[
+                  {
+                    data: metrics.map((m) => nn(m.avgSleepScore)),
+                    label: 'Sleep Score',
+                    color: CHART_COLORS.purple,
+                  },
+                  {
+                    data: metrics.map((m) => nn(m.avgTrainingReadiness)),
+                    label: 'Readiness',
+                    color: CHART_COLORS.teal,
+                  },
+                ]}
+                height={250}
+              />
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Pull-Up Progression */}
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>Pull-Up Progression</Typography>
+              {metrics.some((m) => m.pullupCount != null) ? (
+                <LineChart
+                  xAxis={[{ data: weeks, scaleType: 'band' }]}
+                  series={[
+                    {
+                      data: metrics.map((m) => nn(m.pullupCount)),
+                      label: 'Pull-Ups',
+                      color: CHART_COLORS.orange,
+                    },
+                  ]}
+                  height={250}
+                />
+              ) : (
+                <EmptyState message="Complete a check-in to start tracking pull-up progress." />
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* ── Training Load ── */}
+      <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>Training Load</Typography>
+      <Grid container spacing={3}>
+        {/* Strength Ceilings */}
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                <Typography variant="h6">Strength Ceilings</Typography>
+                <FormControl size="small" sx={{ minWidth: 180 }}>
+                  <InputLabel>Exercise</InputLabel>
+                  <Select
+                    value={selectedExercise}
+                    label="Exercise"
+                    onChange={(e) => onExerciseChange(e.target.value)}
+                  >
+                    {exercises.map((ex) => (
+                      <MenuItem key={ex} value={ex}>{ex.replace(/_/g, ' ')}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+              {ceilings.length > 0 ? (
+                <LineChart
+                  xAxis={[{ data: ceilings.map((c) => `W${c.weekNumber}`), scaleType: 'band' }]}
+                  series={[
+                    {
+                      data: ceilings.map((c) => c.weightKg),
+                      label: selectedExercise.replace(/_/g, ' '),
+                      color: CHART_COLORS.red,
+                    },
+                  ]}
+                  height={250}
+                />
+              ) : (
+                <EmptyState message="Select an exercise above — data appears after your first ceiling update." />
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* ── Protocol Compliance ── */}
+      <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>Protocol Compliance</Typography>
+      <Grid container spacing={3}>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>Protocol Compliance</Typography>
+              <BarChart
+                xAxis={[{ data: weeks, scaleType: 'band' }]}
+                series={[
+                  {
+                    data: metrics.map((m) => nn(m.vampireCompliancePct)),
+                    label: 'Vampire %',
+                    color: CHART_COLORS.blue,
+                  },
+                  {
+                    data: metrics.map((m) => (nn(m.rugProtocolDays) / 7) * 100),
+                    label: 'Rug %',
+                    color: CHART_COLORS.purple,
+                  },
+                  {
+                    data: metrics.map((m) => m.hydrationTracked ? 100 : 0),
+                    label: 'Hydration',
+                    color: CHART_COLORS.teal,
+                  },
+                ]}
+                height={250}
+              />
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* ── Nutrition ── */}
+      <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>Nutrition</Typography>
+      <Grid container spacing={3}>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>Nutrition</Typography>
+              <BarChart
+                xAxis={[{ data: weeks, scaleType: 'band' }]}
+                series={[
+                  {
+                    data: metrics.map((m) => nn(m.caloriesAvg)),
+                    label: 'Avg Calories',
+                    color: CHART_COLORS.amber,
+                  },
+                  {
+                    data: metrics.map((m) => nn(m.proteinAvg) * 10),
+                    label: 'Protein (g x10)',
+                    color: CHART_COLORS.green,
+                  },
+                ]}
+                height={250}
+              />
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+    </Box>
   );
 }

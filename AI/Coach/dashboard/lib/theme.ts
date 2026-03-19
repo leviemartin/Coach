@@ -1,117 +1,137 @@
 'use client';
 
 import { createTheme, type ThemeOptions } from '@mui/material/styles';
-import {
-  argbFromHex,
-  themeFromSourceColor,
-  hexFromArgb,
-} from '@material/material-color-utilities';
 
-// Generate M3 palette from blue seed
-const sourceColor = argbFromHex('#1565C0');
-const m3Theme = themeFromSourceColor(sourceColor);
-
-function schemeToColors(scheme: Record<string, number>) {
-  const result: Record<string, string> = {};
-  for (const [key, value] of Object.entries(scheme)) {
-    result[key] = hexFromArgb(value as number);
-  }
-  return result;
-}
-
-const lightColors = schemeToColors(m3Theme.schemes.light.toJSON());
-const darkColors = schemeToColors(m3Theme.schemes.dark.toJSON());
+const palette = {
+  light: {
+    primary: '#0f172a',
+    primaryContrast: '#ffffff',
+    secondary: '#3b82f6',
+    secondaryContrast: '#ffffff',
+    error: '#ef4444',
+    errorContrast: '#ffffff',
+    warning: '#f59e0b',
+    warningContrast: '#000000',
+    success: '#22c55e',
+    successContrast: '#ffffff',
+    info: '#3b82f6',
+    infoContrast: '#ffffff',
+    background: '#f8fafc',
+    paper: '#ffffff',
+    textPrimary: '#0f172a',
+    textSecondary: '#64748b',
+    divider: '#e2e8f0',
+    surfaceHover: '#f1f5f9',
+  },
+  dark: {
+    primary: '#e2e8f0',
+    primaryContrast: '#0f172a',
+    secondary: '#60a5fa',
+    secondaryContrast: '#0f172a',
+    error: '#f87171',
+    errorContrast: '#0f172a',
+    warning: '#fbbf24',
+    warningContrast: '#0f172a',
+    success: '#4ade80',
+    successContrast: '#0f172a',
+    info: '#60a5fa',
+    infoContrast: '#0f172a',
+    background: '#0f172a',
+    paper: '#1e293b',
+    textPrimary: '#f1f5f9',
+    textSecondary: '#94a3b8',
+    divider: '#334155',
+    surfaceHover: '#1e293b',
+  },
+};
 
 function buildThemeOptions(mode: 'light' | 'dark'): ThemeOptions {
-  const colors = mode === 'light' ? lightColors : darkColors;
+  const c = mode === 'light' ? palette.light : palette.dark;
 
   return {
     palette: {
       mode,
-      primary: {
-        main: colors.primary,
-        contrastText: colors.onPrimary,
-      },
-      secondary: {
-        main: colors.secondary,
-        contrastText: colors.onSecondary,
-      },
-      error: {
-        main: colors.error,
-        contrastText: colors.onError,
-      },
-      background: {
-        default: colors.surface,
-        paper: colors.surfaceContainer || colors.surface,
-      },
-      text: {
-        primary: colors.onSurface,
-        secondary: colors.onSurfaceVariant,
-      },
-      divider: colors.outlineVariant,
+      primary: { main: c.primary, contrastText: c.primaryContrast },
+      secondary: { main: c.secondary, contrastText: c.secondaryContrast },
+      error: { main: c.error, contrastText: c.errorContrast },
+      warning: { main: c.warning, contrastText: c.warningContrast },
+      success: { main: c.success, contrastText: c.successContrast },
+      info: { main: c.info, contrastText: c.infoContrast },
+      background: { default: c.background, paper: c.paper },
+      text: { primary: c.textPrimary, secondary: c.textSecondary },
+      divider: c.divider,
     },
-    shape: {
-      borderRadius: 12,
-    },
+    shape: { borderRadius: 6 },
     typography: {
-      fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-      h1: { fontSize: '2.5rem', fontWeight: 400 },
-      h2: { fontSize: '2rem', fontWeight: 400 },
-      h3: { fontSize: '1.75rem', fontWeight: 400 },
-      h4: { fontSize: '1.5rem', fontWeight: 500 },
-      h5: { fontSize: '1.25rem', fontWeight: 500 },
-      h6: { fontSize: '1.125rem', fontWeight: 500 },
+      fontFamily: '"Inter Variable", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      h1: { fontSize: '2rem', fontWeight: 700, letterSpacing: '-0.025em' },
+      h2: { fontSize: '1.75rem', fontWeight: 700, letterSpacing: '-0.025em' },
+      h3: { fontSize: '1.5rem', fontWeight: 700, letterSpacing: '-0.02em' },
+      h4: { fontSize: '1.25rem', fontWeight: 700, letterSpacing: '-0.02em' },
+      h5: { fontSize: '1.125rem', fontWeight: 600, letterSpacing: '-0.01em' },
+      h6: { fontSize: '1rem', fontWeight: 600 },
+      subtitle1: { fontWeight: 600 },
+      subtitle2: { fontWeight: 600 },
+      body1: { fontSize: '0.9375rem' },
+      body2: { fontSize: '0.8125rem' },
+      caption: { fontSize: '0.75rem', fontWeight: 500 },
     },
     components: {
       MuiButton: {
         styleOverrides: {
           root: {
-            borderRadius: 20,
+            borderRadius: 6,
             textTransform: 'none',
-            fontWeight: 500,
-            padding: '8px 24px',
+            fontWeight: 600,
+            padding: '6px 16px',
+            fontSize: '0.8125rem',
           },
         },
-        defaultProps: {
-          disableElevation: true,
-        },
+        defaultProps: { disableElevation: true },
       },
       MuiChip: {
         styleOverrides: {
-          root: {
-            borderRadius: 8,
-          },
+          root: { borderRadius: 4, fontWeight: 600, fontSize: '0.75rem' },
         },
       },
       MuiCard: {
         styleOverrides: {
           root: {
-            borderRadius: 16,
+            borderRadius: 8,
+            border: 'none',
+            backgroundImage: 'none',
           },
         },
-        defaultProps: {
-          elevation: 0,
-          variant: 'outlined',
-        },
+        defaultProps: { elevation: 0 },
       },
-      MuiFab: {
+      MuiPaper: {
         styleOverrides: {
-          root: {
-            borderRadius: 16,
-            textTransform: 'none',
-          },
+          root: { backgroundImage: 'none' },
         },
       },
       MuiDrawer: {
         styleOverrides: {
           paper: {
             borderRadius: 0,
+            borderRight: '1px solid',
+            borderColor: c.divider,
           },
         },
       },
-      MuiAppBar: {
-        defaultProps: {
-          elevation: 0,
+      MuiAccordion: {
+        styleOverrides: {
+          root: { borderRadius: 8, '&:before': { display: 'none' } },
+        },
+        defaultProps: { disableGutters: true, elevation: 0 },
+      },
+      MuiLinearProgress: {
+        styleOverrides: {
+          root: { borderRadius: 3, height: 6 },
+        },
+      },
+      MuiTableCell: {
+        styleOverrides: {
+          root: { borderColor: c.divider, fontSize: '0.8125rem' },
         },
       },
     },
@@ -121,5 +141,4 @@ function buildThemeOptions(mode: 'light' | 'dark'): ThemeOptions {
 export const lightTheme = createTheme(buildThemeOptions('light'));
 export const darkTheme = createTheme(buildThemeOptions('dark'));
 
-// Export M3 colors for custom use
-export const m3Colors = { light: lightColors, dark: darkColors };
+export const dashboardPalette = palette;

@@ -1,5 +1,5 @@
 /** Monday of the week containing program start (Jan 1, 2026 = Wed → Mon Dec 29, 2025) */
-const PROGRAM_EPOCH = new Date('2025-12-29T00:00:00');
+export const PROGRAM_EPOCH = new Date('2025-12-29T00:00:00');
 const MS_PER_DAY = 86_400_000;
 
 /** Returns the training week number for a given date (default: today). Week 1 = Dec 29, 2025.

@@ -105,6 +105,46 @@ export interface GarminFreshness {
   data: GarminData | null;
 }
 
+export interface SparklinePoint {
+  date: string;
+  value: number;
+}
+
+export interface ExtendedGarminSummary {
+  // Current values (existing — superset of extractGarminSummary)
+  weight: number | null;
+  avgSleep: number | null;
+  avgReadiness: number | null;
+  avgRhr: number | null;
+  bodyFat: number | null;
+  muscleMass: number | null;
+  activityCount: number;
+  activities: GarminActivity[];  // Preserve existing field from extractGarminSummary
+
+  // New metrics
+  avgHrv: number | null;
+  bodyBatteryHigh: number | null;
+  avgStress: number | null;
+  acwr: number | null;
+  acwrStatus: string | null;
+  avgAerobicTE: number | null;
+  avgAnaerobicTE: number | null;
+
+  // Daily sparkline data (7 days)
+  dailyWeight: SparklinePoint[];
+  dailySleep: SparklinePoint[];
+  dailyReadiness: SparklinePoint[];
+  dailyRhr: SparklinePoint[];
+  dailyHrv: SparklinePoint[];
+  dailyBodyBattery: SparklinePoint[];
+  dailyStress: SparklinePoint[];
+
+  // Deltas (vs previous period when available)
+  weightDelta: number | null;
+  sleepDelta: number | null;
+  readinessDelta: number | null;
+}
+
 export interface CheckInFormData {
   // Hevy
   hevyCsv: string;

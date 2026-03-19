@@ -19,7 +19,7 @@ export default function CheckInPage() {
 
   return (
     <Box sx={{ maxWidth: 900, mx: 'auto' }}>
-      <Typography variant="h4" fontWeight={700} sx={{ mb: 3 }}>
+      <Typography variant="h3" fontWeight={700} sx={{ mb: 4 }}>
         Sunday Check-In
       </Typography>
       <CheckInForm onSubmit={handleSubmit} loading={loading} />

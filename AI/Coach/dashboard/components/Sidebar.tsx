@@ -30,16 +30,40 @@ import RaceCountdown from './RaceCountdown';
 
 const DRAWER_WIDTH = 220;
 
-const NAV_ITEMS = [
-  { label: 'Dashboard', path: '/', icon: <DashboardIcon /> },
-  { label: 'Check-In', path: '/checkin', icon: <CheckCircleOutlineIcon /> },
-  { label: 'Training Plan', path: '/plan', icon: <FitnessCenterIcon /> },
-  { label: 'Archive', path: '/archive', icon: <ArchiveIcon /> },
-  { label: 'Trends', path: '/trends', icon: <TrendingUpIcon /> },
-  { label: 'DEXA Scans', path: '/dexa', icon: <ScienceIcon /> },
-  { label: 'Races', path: '/races', icon: <EmojiEventsIcon /> },
-  { label: 'Profile', path: '/profile', icon: <PersonIcon /> },
+const NAV_SECTIONS = [
+  {
+    label: 'Main',
+    items: [
+      { label: 'Dashboard', path: '/', icon: <DashboardIcon /> },
+      { label: 'Check-In', path: '/checkin', icon: <CheckCircleOutlineIcon /> },
+      { label: 'Training Plan', path: '/plan', icon: <FitnessCenterIcon /> },
+    ],
+  },
+  {
+    label: 'Data',
+    items: [
+      { label: 'Archive', path: '/archive', icon: <ArchiveIcon /> },
+      { label: 'Trends', path: '/trends', icon: <TrendingUpIcon /> },
+      { label: 'DEXA Scans', path: '/dexa', icon: <ScienceIcon /> },
+    ],
+  },
+  {
+    label: 'Meta',
+    items: [
+      { label: 'Races', path: '/races', icon: <EmojiEventsIcon /> },
+      { label: 'Profile', path: '/profile', icon: <PersonIcon /> },
+    ],
+  },
 ];
+
+const sectionLabelSx = {
+  px: 2,
+  pt: 1.5,
+  pb: 0.5,
+  fontWeight: 600,
+  letterSpacing: 0.5,
+  textTransform: 'uppercase' as const,
+};
 
 /** Shared drawer content used by both permanent and temporary variants. */
 function DrawerContent({ onItemClick }: { onItemClick?: () => void }) {
@@ -61,36 +85,44 @@ function DrawerContent({ onItemClick }: { onItemClick?: () => void }) {
       </Toolbar>
       <Divider />
       <List sx={{ px: 1 }}>
-        {NAV_ITEMS.map((item) => {
-          const isActive =
-            item.path === '/'
-              ? pathname === '/'
-              : pathname.startsWith(item.path);
-          return (
-            <ListItem key={item.path} disablePadding sx={{ mb: 0.5 }}>
-              <ListItemButton
-                selected={isActive}
-                aria-current={isActive ? 'page' : undefined}
-                onClick={() => {
-                  router.push(item.path);
-                  onItemClick?.();
-                }}
-                sx={{
-                  borderRadius: 2,
-                  '&.Mui-selected': {
-                    bgcolor: 'primary.main',
-                    color: 'primary.contrastText',
-                    '& .MuiListItemIcon-root': { color: 'primary.contrastText' },
-                    '&:hover': { bgcolor: 'primary.dark' },
-                  },
-                }}
-              >
-                <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
-                <ListItemText primary={item.label} />
-              </ListItemButton>
-            </ListItem>
-          );
-        })}
+        {NAV_SECTIONS.map((section, sectionIndex) => (
+          <React.Fragment key={section.label}>
+            {sectionIndex > 0 && <Divider sx={{ my: 0.5 }} />}
+            <Typography variant="caption" color="text.secondary" sx={sectionLabelSx}>
+              {section.label}
+            </Typography>
+            {section.items.map((item) => {
+              const isActive =
+                item.path === '/'
+                  ? pathname === '/'
+                  : pathname.startsWith(item.path);
+              return (
+                <ListItem key={item.path} disablePadding sx={{ mb: 0.5 }}>
+                  <ListItemButton
+                    selected={isActive}
+                    aria-current={isActive ? 'page' : undefined}
+                    onClick={() => {
+                      router.push(item.path);
+                      onItemClick?.();
+                    }}
+                    sx={{
+                      borderRadius: 1,
+                      '&.Mui-selected': {
+                        bgcolor: 'action.selected',
+                        color: 'secondary.main',
+                        '& .MuiListItemIcon-root': { color: 'secondary.main' },
+                        '&:hover': { bgcolor: 'action.hover' },
+                      },
+                    }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
+                    <ListItemText primary={item.label} />
+                  </ListItemButton>
+                </ListItem>
+              );
+            })}
+          </React.Fragment>
+        ))}
       </List>
       <Box sx={{ mt: 'auto', p: 2 }}>
         <RaceCountdown />

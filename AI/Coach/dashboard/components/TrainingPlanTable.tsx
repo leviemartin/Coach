@@ -162,14 +162,7 @@ export default function TrainingPlanTable({
             variant="determinate"
             value={progress}
             aria-label={`Training plan progress: ${completedCount} of ${total} complete`}
-            sx={{
-              height: 8,
-              borderRadius: 4,
-              bgcolor: 'action.hover',
-              '& .MuiLinearProgress-bar': {
-                borderRadius: 4,
-              },
-            }}
+            sx={{ bgcolor: 'action.hover' }}
           />
         </CardContent>
       </Card>

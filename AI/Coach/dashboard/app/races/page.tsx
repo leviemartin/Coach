@@ -3,12 +3,13 @@
 import React, { useEffect, useState } from 'react';
 import {
   Typography, Box, Card, CardContent, Grid, TextField, Button,
-  Alert, Table, TableHead, TableRow, TableCell, TableBody, TableContainer,
-  IconButton, Tooltip, Chip, MenuItem, Select, FormControl, InputLabel,
+  Alert, IconButton, Tooltip, Chip, MenuItem, Select, FormControl, InputLabel,
+  LinearProgress, Accordion, AccordionSummary, AccordionDetails,
   type SelectChangeEvent,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import type { Race, RaceStatus } from '@/lib/types';
 
 const STATUS_COLORS: Record<RaceStatus, 'success' | 'warning' | 'default' | 'info'> = {
@@ -16,6 +17,13 @@ const STATUS_COLORS: Record<RaceStatus, 'success' | 'warning' | 'default' | 'inf
   planned: 'warning',
   tentative: 'default',
   completed: 'info',
+};
+
+const STATUS_BORDER: Record<RaceStatus, string> = {
+  registered: '#4caf50',
+  planned: '#ff9800',
+  tentative: '#9e9e9e',
+  completed: '#2196f3',
 };
 
 const EMPTY_FORM = {
@@ -27,6 +35,151 @@ const EMPTY_FORM = {
   status: 'planned' as RaceStatus,
   notes: '',
 };
+
+// Program epoch: Monday Dec 29, 2025
+const PROGRAM_EPOCH = new Date('2025-12-29').getTime();
+
+function daysUntil(dateStr: string): number {
+  const diff = new Date(dateStr).getTime() - new Date().getTime();
+  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+}
+
+function formatCountdown(days: number): string {
+  if (days === 0) return 'Today';
+  if (days < 0) return 'Past';
+  const weeks = Math.floor(days / 7);
+  const rem = days % 7;
+  if (weeks === 0) return `${rem}d`;
+  if (rem === 0) return `${weeks}w`;
+  return `${weeks}w ${rem}d`;
+}
+
+/** Percent of training journey elapsed toward a future race date */
+function journeyProgress(dateStr: string): number {
+  const raceTs = new Date(dateStr).getTime();
+  const now = Date.now();
+  const total = raceTs - PROGRAM_EPOCH;
+  const elapsed = now - PROGRAM_EPOCH;
+  if (total <= 0) return 100;
+  return Math.min(100, Math.max(0, (elapsed / total) * 100));
+}
+
+interface RaceCardProps {
+  race: Race;
+  confirmDelete: string | null;
+  onEdit: (race: Race) => void;
+  onDelete: (id: string) => void;
+  onConfirmDelete: (id: string | null) => void;
+}
+
+function RaceCard({ race, confirmDelete, onEdit, onDelete, onConfirmDelete }: RaceCardProps) {
+  const days = daysUntil(race.date);
+  const isPast = days <= 0;
+  const progress = isPast ? 100 : journeyProgress(race.date);
+  const borderColor = STATUS_BORDER[race.status];
+
+  return (
+    <Card
+      sx={{
+        borderLeft: `4px solid ${borderColor}`,
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
+        {/* Header row: name + status chip */}
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1 }}>
+          <Typography variant="h6" fontWeight={700} sx={{ lineHeight: 1.2 }}>
+            {race.name}
+          </Typography>
+          <Chip
+            label={race.status}
+            color={STATUS_COLORS[race.status]}
+            size="small"
+            sx={{ flexShrink: 0, mt: 0.25 }}
+          />
+        </Box>
+
+        {/* Countdown */}
+        <Box>
+          <Typography
+            variant="h3"
+            fontWeight={800}
+            color={isPast ? 'text.disabled' : 'text.primary'}
+            sx={{ lineHeight: 1, letterSpacing: '-0.5px' }}
+          >
+            {formatCountdown(days)}
+          </Typography>
+          {!isPast && (
+            <Box sx={{ mt: 1 }}>
+              <LinearProgress
+                variant="determinate"
+                value={progress}
+                sx={{
+                  height: 4,
+                  borderRadius: 2,
+                  bgcolor: 'action.hover',
+                  '& .MuiLinearProgress-bar': { borderRadius: 2 },
+                }}
+              />
+              <Typography variant="caption" color="text.disabled" sx={{ mt: 0.25, display: 'block' }}>
+                {Math.round(progress)}% of training journey elapsed
+              </Typography>
+            </Box>
+          )}
+        </Box>
+
+        {/* Meta */}
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 0.5 }}>
+          {race.date && (
+            <Typography variant="body2" color="text.secondary">
+              {race.date}
+            </Typography>
+          )}
+          {race.location && (
+            <Typography variant="body2" color="text.secondary">
+              · {race.location}
+            </Typography>
+          )}
+          {race.type && (
+            <Typography variant="body2" color="text.secondary">
+              · {race.type}
+            </Typography>
+          )}
+        </Box>
+
+        {/* Notes */}
+        {race.notes && (
+          <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', mt: 'auto', pt: 0.5 }}>
+            {race.notes}
+          </Typography>
+        )}
+
+        {/* Actions */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 1 }}>
+          <Tooltip title="Edit">
+            <IconButton size="small" onClick={() => onEdit(race)}>
+              <EditIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          {confirmDelete === race.id ? (
+            <>
+              <Button size="small" color="error" onClick={() => onDelete(race.id)}>Confirm</Button>
+              <Button size="small" onClick={() => onConfirmDelete(null)}>Cancel</Button>
+            </>
+          ) : (
+            <Tooltip title="Delete">
+              <IconButton size="small" onClick={() => onConfirmDelete(race.id)}>
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+        </Box>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function RacesPage() {
   const [races, setRaces] = useState<Race[]>([]);
@@ -126,16 +279,16 @@ export default function RacesPage() {
     }
   };
 
-  const daysUntil = (dateStr: string) => {
-    const diff = new Date(dateStr).getTime() - new Date().getTime();
-    return Math.ceil(diff / (1000 * 60 * 60 * 24));
-  };
-
   if (loading) return null;
+
+  const upcomingRaces = races.filter((r) => daysUntil(r.date) > 0);
+  const pastRaces = races.filter((r) => daysUntil(r.date) <= 0);
+
+  const cardProps = { confirmDelete, onEdit: handleEdit, onDelete: handleDelete, onConfirmDelete: setConfirmDelete };
 
   return (
     <Box>
-      <Typography variant="h4" fontWeight={700} gutterBottom>Races</Typography>
+      <Typography variant="h3" fontWeight={700} sx={{ mb: 4 }}>Races</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
         Manage race calendar. Dashboard countdowns and coaching context update automatically.
       </Typography>
@@ -143,73 +296,36 @@ export default function RacesPage() {
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
 
-      {races.length > 0 && (
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>Race Calendar</Typography>
-            <TableContainer sx={{ overflowX: 'auto' }}>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Name</TableCell>
-                    <TableCell>Date</TableCell>
-                    <TableCell>Location</TableCell>
-                    <TableCell>Type</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Countdown</TableCell>
-                    <TableCell>Notes</TableCell>
-                    <TableCell></TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {races.map((race) => {
-                    const days = daysUntil(race.date);
-                    return (
-                      <TableRow key={race.id}>
-                        <TableCell sx={{ fontWeight: 600 }}>{race.name}</TableCell>
-                        <TableCell>{race.date}</TableCell>
-                        <TableCell>{race.location}</TableCell>
-                        <TableCell>{race.type}</TableCell>
-                        <TableCell>
-                          <Chip label={race.status} color={STATUS_COLORS[race.status]} size="small" />
-                        </TableCell>
-                        <TableCell>
-                          {days > 0 ? `${Math.floor(days / 7)}w ${days % 7}d` : days === 0 ? 'Today' : 'Past'}
-                        </TableCell>
-                        <TableCell sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {race.notes}
-                        </TableCell>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', gap: 0.5 }}>
-                            <Tooltip title="Edit">
-                              <IconButton size="small" onClick={() => handleEdit(race)}>
-                                <EditIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                            {confirmDelete === race.id ? (
-                              <>
-                                <Button size="small" color="error" onClick={() => handleDelete(race.id)}>Confirm</Button>
-                                <Button size="small" onClick={() => setConfirmDelete(null)}>Cancel</Button>
-                              </>
-                            ) : (
-                              <Tooltip title="Delete">
-                                <IconButton size="small" onClick={() => setConfirmDelete(race.id)}>
-                                  <DeleteIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                            )}
-                          </Box>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </CardContent>
-        </Card>
+      {/* Upcoming races */}
+      {upcomingRaces.length > 0 && (
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          {upcomingRaces.map((race) => (
+            <Grid key={race.id} size={{ xs: 12, md: 6 }}>
+              <RaceCard race={race} {...cardProps} />
+            </Grid>
+          ))}
+        </Grid>
       )}
 
+      {/* Past races — collapsible */}
+      {pastRaces.length > 0 && (
+        <Accordion disableGutters sx={{ mb: 3, '&:before': { display: 'none' } }}>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography fontWeight={600}>Past Races ({pastRaces.length})</Typography>
+          </AccordionSummary>
+          <AccordionDetails sx={{ pt: 0 }}>
+            <Grid container spacing={2}>
+              {pastRaces.map((race) => (
+                <Grid key={race.id} size={{ xs: 12, md: 6 }}>
+                  <RaceCard race={race} {...cardProps} />
+                </Grid>
+              ))}
+            </Grid>
+          </AccordionDetails>
+        </Accordion>
+      )}
+
+      {/* Add button */}
       {!showForm && (
         <Button variant="contained" onClick={() => {
           setForm(EMPTY_FORM);
@@ -222,6 +338,7 @@ export default function RacesPage() {
         </Button>
       )}
 
+      {/* Add / Edit form */}
       {showForm && (
         <Card sx={{ mt: 2 }}>
           <CardContent>

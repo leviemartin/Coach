@@ -40,7 +40,7 @@ export default function RaceCountdown() {
   const overallProgress = furthestRace ? progressPercent(TRAINING_START, new Date(furthestRace.date)) : 0;
 
   return (
-    <Card variant="outlined" sx={{ bgcolor: 'background.default' }}>
+    <Card variant="outlined" sx={{ bgcolor: 'background.paper' }}>
       <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
         <Typography variant="caption" color="text.secondary" fontWeight={600}>
           RACE COUNTDOWN
@@ -67,7 +67,7 @@ export default function RaceCountdown() {
             <LinearProgress
               variant="determinate"
               value={overallProgress}
-              sx={{ borderRadius: 4, height: 6 }}
+              sx={{}}
             />
             <Typography variant="caption" color="text.secondary">
               {Math.round(overallProgress)}% of journey

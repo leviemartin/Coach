@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
+import Link from 'next/link';
 import {
   Box,
   Alert,
   Card,
   CardHeader,
   CardContent,
+  Chip,
   Collapse,
   IconButton,
   Tooltip,
@@ -17,13 +19,14 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import TrainingPlanTable from '@/components/TrainingPlanTable';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
 import type { PlanItem, SubTask } from '@/lib/types';
+import { PROGRAM_EPOCH } from '@/lib/week';
 
 export default function PlanPage() {
   const [items, setItems] = useState<PlanItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [synthesis, setSynthesis] = useState('');
   const [weekNumber, setWeekNumber] = useState<number | null>(null);
-  const [briefingOpen, setBriefingOpen] = useState(false);
+  const [briefingOpen, setBriefingOpen] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const loadPlan = useCallback(async () => {
@@ -97,12 +100,44 @@ export default function PlanPage() {
     });
   };
 
+  // Compute Mon–Sun date range for the current week number
+  const weekDateRange = weekNumber != null ? (() => {
+    const MS_PER_DAY = 86_400_000;
+    const epochLocal = new Date(PROGRAM_EPOCH.getFullYear(), PROGRAM_EPOCH.getMonth(), PROGRAM_EPOCH.getDate());
+    const monday = new Date(epochLocal.getTime() + (weekNumber - 1) * 7 * MS_PER_DAY);
+    const sunday = new Date(monday.getTime() + 6 * MS_PER_DAY);
+    const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return `${fmt(monday)}–${fmt(sunday)}`;
+  })() : null;
+
+  // Completion percentage
+  const completionPct = items.length > 0
+    ? Math.round((items.filter((i) => i.completed).length / items.length) * 100)
+    : null;
+
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h5" fontWeight={700}>
-          Week {weekNumber ?? '?'}
+      {/* Breadcrumb */}
+      <Link href="/" style={{ textDecoration: 'none' }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1, '&:hover': { color: 'text.primary' } }}>
+          ← Dashboard
         </Typography>
+      </Link>
+
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Typography variant="h3" fontWeight={700}>
+            Week {weekNumber ?? '?'}{weekDateRange ? ` · ${weekDateRange}` : ''}
+          </Typography>
+          {completionPct != null && (
+            <Chip
+              label={`${completionPct}%`}
+              size="small"
+              color={completionPct === 100 ? 'success' : completionPct >= 50 ? 'primary' : 'default'}
+              sx={{ fontWeight: 600 }}
+            />
+          )}
+        </Box>
         <Tooltip title="Reload plan data">
           <IconButton onClick={handleRefresh} disabled={refreshing} size="small">
             <RefreshIcon sx={{
@@ -114,7 +149,7 @@ export default function PlanPage() {
       </Box>
 
       {synthesis && (
-        <Card variant="outlined" sx={{ mb: 2 }}>
+        <Card sx={{ mb: 3 }}>
           <CardHeader
             title={`Coach Briefing — Week ${weekNumber ?? '?'}`}
             titleTypographyProps={{ variant: 'h6', fontWeight: 600 }}
