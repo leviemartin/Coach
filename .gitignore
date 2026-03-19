@@ -12,3 +12,9 @@ node_modules/
 
 # OS
 .DS_Store
+
+# Next.js
+.next/
+
+# Claude Code
+.claude/
