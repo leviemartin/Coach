@@ -72,40 +72,17 @@ What the deliverable looks like (if applicable).
 
 - **Under 200 lines per skill.** Reference material goes in sibling files.
 - **Skills reference each other.** `greenfield` invokes `test-first`. `bugfix` invokes `code-review-gate`. Keeps individual skills focused.
-- **No duplication with superpowers.** Custom skills add preferences on top of existing plugin workflows, not reimplement them.
+- **No duplication with superpowers.** Custom skills are thin wrappers or complements that add personal preferences on top of existing plugin workflows. They never reimplement what superpowers already covers. Specifically:
+  - `test-first` wraps `superpowers:test-driven-development` and adds framework defaults + chaining to `code-review-gate`.
+  - `code-review-gate` complements `superpowers:verification-before-completion` with a personal quality checklist (console.logs, TODOs, conventions, UI review).
+  - `bugfix` complements `superpowers:systematic-debugging` with test-writing and review-gate chaining.
+  - `explore-codebase` is more prescriptive than brainstorming's step 1 — it runs a specific scan procedure and outputs a summary. Brainstorming may invoke it, but they don't conflict.
 - **`user_invocable: true`** for workflow skills called directly (`/test-first`, `/bugfix`, `/greenfield`). **`false`** for context-activated skills (`enforce-conventions`, `react-components`).
+- **Context-activated skills are rulesets, not hooks.** Skills with `user_invocable: false` are instructions Claude should apply when the context matches (e.g., working in a Next.js project, writing code changes). They rely on Claude's skill-matching, not an automated trigger mechanism.
 
 ## Skill Inventory
 
 ### Tier 1: Pain Point Skills
-
-#### `test-first` (user_invocable: true)
-- Triggered via `/test-first` or automatically when implementing features/fixes
-- Write failing tests BEFORE implementation code
-- Run tests, confirm they fail for the right reason
-- Write minimum implementation to pass
-- Refactor, run tests again
-- Rules: Never write implementation without a failing test. Prefer the test framework already in the project. Default to Vitest (JS/TS) or pytest (Python) if none exists.
-- Chains into: `code-review-gate`
-
-#### `enforce-conventions` (user_invocable: false)
-- Fires automatically on every code change
-- Scans surrounding codebase for: naming conventions, file organization, import/export style, error handling patterns, test patterns
-- Rule: Match what's there. Never introduce a new pattern when an existing one covers the case.
-- Rule: If conventions conflict or are unclear, ask — don't guess.
-
-#### `code-review-gate` (user_invocable: true)
-- Invoked before claiming work is done
-- Checklist:
-  1. All new code has tests. Tests pass.
-  2. No console.logs, TODOs, or commented-out code left behind
-  3. Changes follow existing project conventions
-  4. No unnecessary files created
-  5. Commit message is clear and descriptive
-  6. If UI changed: flag for user review
-- Rule: Fix failures before presenting work.
-
-### Tier 2: Workflow Skills
 
 #### `explore-codebase` (user_invocable: true)
 - Read README, CLAUDE.md, package.json / pyproject.toml
@@ -114,6 +91,35 @@ What the deliverable looks like (if applicable).
 - Find conventions — linting config, naming patterns, file organization
 - Summarize findings in 10 lines or less
 - Rule: Never make changes to an existing codebase without running this first
+- Note: More prescriptive than brainstorming's "explore project context" step. Outputs a concrete summary that other skills can reference.
+
+#### `test-first` (user_invocable: true)
+- **Wraps `superpowers:test-driven-development`** — does not reimplement the Red-Green-Refactor cycle
+- Adds personal preferences on top:
+  - Framework defaults: Vitest for JS/TS, pytest for Python (when no test setup exists)
+  - If project has no test setup, set it up before proceeding
+  - Chains into `code-review-gate` when done
+- Rule: Defer to superpowers TDD for the core workflow. This skill adds the preferences layer.
+
+#### `enforce-conventions` (user_invocable: false)
+- **Ruleset Claude applies when writing or modifying code** (not a hook or automated trigger)
+- Before writing code, scan surrounding codebase for: naming conventions, file organization, import/export style, error handling patterns, test patterns
+- Rule: Match what's there. Never introduce a new pattern when an existing one covers the case.
+- Rule: If conventions conflict or are unclear, ask — don't guess.
+- Rule: If the codebase itself has inconsistent conventions, follow the majority pattern in the directory being modified. If no majority exists, flag the inconsistency to the user and ask which pattern to follow.
+
+#### `code-review-gate` (user_invocable: true)
+- **Complements `superpowers:verification-before-completion`** — adds a personal quality checklist
+- Superpowers handles: running verification commands, confirming tests pass, evidence before assertions
+- This skill adds these additional checks:
+  1. No console.logs, TODOs, or commented-out code left behind
+  2. Changes follow existing project conventions (invoke `enforce-conventions` check)
+  3. No unnecessary files created
+  4. Commit message is clear and descriptive
+  5. If UI changed: flag for user review
+- Rule: Fix failures before presenting work.
+
+### Tier 2: Workflow Skills
 
 #### `bugfix` (user_invocable: true)
 - Reproduce: confirm the bug exists
@@ -127,7 +133,11 @@ What the deliverable looks like (if applicable).
 
 #### `greenfield` (user_invocable: true)
 - Confirm stack choice with user
-- Scaffold with opinionated defaults (linting, formatting, test setup, git)
+- Scaffold with opinionated defaults:
+  - **JS/TS:** Biome (lint + format), Vitest, TypeScript strict
+  - **Python:** Ruff (lint + format), pytest, pyproject.toml
+  - **Both:** .gitignore, .env.example, editorconfig
+  - Override defaults if user specifies preferences
 - Write a single end-to-end test that proves the scaffold works
 - Create CLAUDE.md with project conventions
 - Initial commit
@@ -198,8 +208,8 @@ What the deliverable looks like (if applicable).
 
 ## Implementation Order
 
-1. **Tier 1 first** — `test-first`, `enforce-conventions`, `code-review-gate` (highest impact on pain points)
-2. **Tier 2 next** — `explore-codebase`, `bugfix`, `greenfield` (workflow foundation)
+1. **Tier 1 first** — `explore-codebase`, `enforce-conventions`, `test-first`, `code-review-gate` (highest impact on pain points; explore-codebase is prerequisite for enforce-conventions)
+2. **Tier 2 next** — `bugfix`, `greenfield` (workflow foundation)
 3. **Tier 5** — `refactor-safely` (quality)
 4. **Tier 3** — `nextjs`, `react-components`, `api-design` (stack-specific)
 5. **Tier 4 last** — writing skills (important but less urgent than code quality)
