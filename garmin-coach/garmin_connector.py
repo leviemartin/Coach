@@ -100,7 +100,7 @@ def authenticate() -> Garmin:
         try:
             logger.info("Attempting to resume session from saved tokens...")
             client = Garmin()
-            client.login(TOKEN_DIR)
+            client.login(str(TOKEN_DIR))
             logger.info("✅ Resumed session successfully.")
             return client
         except Exception:
