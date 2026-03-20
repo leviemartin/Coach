@@ -12,8 +12,6 @@ import {
 } from '@/lib/db';
 import type { CheckInFormData, WeeklyMetrics, CeilingEntry } from '@/lib/types';
 
-export const maxDuration = 300; // 5 minutes for full agent pipeline
-
 export async function POST(request: Request) {
   // Validate API key early
   if (!process.env.ANTHROPIC_API_KEY) {
@@ -46,6 +44,15 @@ export async function POST(request: Request) {
           // Controller may be closed if client disconnected
         }
       }
+
+      // Heartbeat every 30s to prevent Railway proxy idle timeout
+      const heartbeat = setInterval(() => {
+        try {
+          controller.enqueue(encoder.encode(': heartbeat\n\n'));
+        } catch {
+          clearInterval(heartbeat);
+        }
+      }, 30_000);
 
       try {
         // Phase 1: Run 7 specialists sequentially (avoids rate limits on Pro accounts)
@@ -160,6 +167,7 @@ export async function POST(request: Request) {
           message: error instanceof Error ? error.message : 'Unknown error',
         });
       } finally {
+        clearInterval(heartbeat);
         controller.close();
       }
     },
