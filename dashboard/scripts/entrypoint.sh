@@ -13,11 +13,10 @@ for var in $REQUIRED_VARS; do
   fi
 done
 
-# 2. Verify migration
+# 2. Auto-run migration if not yet complete
 if [ ! -f "$COACH_ROOT/.migration-complete" ]; then
-  echo "ERROR: Data migration not complete."
-  echo "Run: docker exec <container> /app/scripts/migrate-to-volume.sh"
-  exit 1
+  echo "Migration not found — running automatically..."
+  /app/scripts/migrate-to-volume.sh
 fi
 
 # 3. Sync coach personas from repo (updates on deploy)
