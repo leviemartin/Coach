@@ -113,7 +113,13 @@ def authenticate() -> Garmin:
         password = getpass.getpass("Garmin Connect password: ")
 
     try:
-        client = Garmin(email, password, prompt_mfa=prompt_for_mfa)
+        # Support both old (no prompt_mfa) and new garminconnect versions
+        import inspect
+        init_params = inspect.signature(Garmin.__init__).parameters
+        if 'prompt_mfa' in init_params:
+            client = Garmin(email, password, prompt_mfa=prompt_for_mfa)
+        else:
+            client = Garmin(email, password)
         client.login()
 
         # Save tokens for next time
