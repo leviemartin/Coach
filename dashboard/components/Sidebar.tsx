@@ -78,7 +78,7 @@ function DrawerContent({ onItemClick }: { onItemClick?: () => void }) {
   const { data: session } = useSession();
 
   return (
-    <>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Toolbar>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
           <Typography variant="h6" noWrap sx={{ fontWeight: 700, flex: 1 }}>
@@ -90,7 +90,7 @@ function DrawerContent({ onItemClick }: { onItemClick?: () => void }) {
         </Box>
       </Toolbar>
       <Divider />
-      <List sx={{ px: 1 }}>
+      <List sx={{ px: 1, overflowY: 'auto', flex: 1 }}>
         {NAV_SECTIONS.map((section, sectionIndex) => (
           <React.Fragment key={section.label}>
             {sectionIndex > 0 && <Divider sx={{ my: 0.5 }} />}
@@ -132,23 +132,23 @@ function DrawerContent({ onItemClick }: { onItemClick?: () => void }) {
       </List>
       <Box sx={{ mt: 'auto', p: 2 }}>
         <RaceCountdown />
+        {session?.user && (
+          <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Avatar
+              src={session.user.image || undefined}
+              alt={session.user.name || ''}
+              sx={{ width: 32, height: 32 }}
+            />
+            <Typography variant="body2" sx={{ flex: 1 }} noWrap>
+              {session.user.name || session.user.email}
+            </Typography>
+            <IconButton size="small" onClick={() => signOut()} aria-label="Sign out">
+              <LogoutIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        )}
       </Box>
-      {session?.user && (
-        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Avatar
-            src={session.user.image || undefined}
-            alt={session.user.name || ''}
-            sx={{ width: 32, height: 32 }}
-          />
-          <Typography variant="body2" sx={{ flex: 1 }} noWrap>
-            {session.user.name || session.user.email}
-          </Typography>
-          <IconButton size="small" onClick={() => signOut()} aria-label="Sign out">
-            <LogoutIcon fontSize="small" />
-          </IconButton>
-        </Box>
-      )}
-    </>
+    </Box>
   );
 }
 
