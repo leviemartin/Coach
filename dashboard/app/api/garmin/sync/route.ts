@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
-import { GARMIN_CONNECTOR_DIR, GARMIN_CONNECTOR_SCRIPT } from '@/lib/constants';
+import { GARMIN_CONNECTOR_DIR, GARMIN_CONNECTOR_SCRIPT, GARMIN_DATA_PATH, GARMIN_TOKEN_DIR } from '@/lib/constants';
 
 const execFileAsync = promisify(execFile);
 
@@ -21,7 +21,7 @@ export async function POST() {
   try {
     const { stdout, stderr } = await execFileAsync(
       'python3',
-      [GARMIN_CONNECTOR_SCRIPT],
+      [GARMIN_CONNECTOR_SCRIPT, '--output', GARMIN_DATA_PATH, '--token-dir', GARMIN_TOKEN_DIR],
       { cwd: GARMIN_CONNECTOR_DIR, timeout: 120_000, maxBuffer: 5 * 1024 * 1024 }
     );
 
