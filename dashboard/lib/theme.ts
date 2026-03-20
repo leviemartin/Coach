@@ -74,7 +74,13 @@ function buildThemeOptions(mode: 'light' | 'dark'): ThemeOptions {
       subtitle2: { fontWeight: 600 },
       body1: { fontSize: '0.9375rem' },
       body2: { fontSize: '0.8125rem' },
-      caption: { fontSize: '0.75rem', fontWeight: 500 },
+      caption: {
+        fontSize: '0.75rem',
+        fontWeight: 500,
+        '@media (max-width:600px)': {
+          fontSize: '0.8rem',
+        },
+      },
     },
     components: {
       MuiButton: {
@@ -142,3 +148,9 @@ export const lightTheme = createTheme(buildThemeOptions('light'));
 export const darkTheme = createTheme(buildThemeOptions('dark'));
 
 export const dashboardPalette = palette;
+
+export const cardContentSx = {
+  pb: '12px !important',
+  pt: 1.5,
+  px: { xs: 1.5, sm: 2 },
+};
