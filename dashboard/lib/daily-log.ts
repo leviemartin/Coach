@@ -21,7 +21,8 @@ export function findPlanItemForDate(dateStr: string): { id: number } | null {
   const dayName = getDayName(dateStr);
   const items = getPlanItems(weekNumber);
   const match = items.find((item: { day: string }) => item.day === dayName);
-  return match ? { id: match.id } : null;
+  if (!match || match.id == null) return null;
+  return { id: match.id };
 }
 
 /** Convert a standard time (HH:MM) to 24h+ format for storage.
