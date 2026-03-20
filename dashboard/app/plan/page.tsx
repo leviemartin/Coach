@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import Link from 'next/link';
 import {
   Box,
   Alert,
+  Button,
   Card,
   CardHeader,
   CardContent,
@@ -17,6 +17,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import TrainingPlanTable from '@/components/TrainingPlanTable';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
+import PageBreadcrumb from '@/components/PageBreadcrumb';
 import type { PlanItem } from '@/lib/types';
 import { PROGRAM_EPOCH } from '@/lib/week';
 
@@ -27,6 +28,7 @@ export default function PlanPage() {
   const [weekNumber, setWeekNumber] = useState<number | null>(null);
   const [briefingOpen, setBriefingOpen] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadPlan = useCallback(async () => {
     try {
@@ -36,8 +38,8 @@ export default function PlanPage() {
         setItems(data.items || []);
         setWeekNumber(data.weekNumber ?? null);
       }
-    } catch {
-      // ignore
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load training plan');
     } finally {
       setLoading(false);
     }
@@ -51,8 +53,8 @@ export default function PlanPage() {
         setSynthesis(data.synthesis || '');
         if (data.weekNumber) setWeekNumber(data.weekNumber);
       }
-    } catch {
-      // ignore
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load briefing');
     }
   }, []);
 
@@ -79,12 +81,20 @@ export default function PlanPage() {
 
   return (
     <Box>
-      {/* Breadcrumb */}
-      <Link href="/" style={{ textDecoration: 'none' }}>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1, '&:hover': { color: 'text.primary' } }}>
-          ← Dashboard
-        </Typography>
-      </Link>
+      <PageBreadcrumb items={[
+        { label: 'Dashboard', href: '/' },
+        { label: 'Training Plan' },
+      ]} />
+
+      {error && (
+        <Alert
+          severity="error"
+          action={<Button onClick={() => { setError(null); loadPlan(); loadBriefing(); }}>Retry</Button>}
+          sx={{ mb: 2 }}
+        >
+          {error}
+        </Alert>
+      )}
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>

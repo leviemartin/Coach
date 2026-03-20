@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { Typography, Box, Button, Alert, CircularProgress } from '@mui/material';
+import { Typography, Box, Button, Alert } from '@mui/material';
 import TrendCharts from '@/components/TrendCharts';
+import PageBreadcrumb from '@/components/PageBreadcrumb';
+import PageSkeleton from '@/components/PageSkeleton';
 import type { WeeklyMetrics, CeilingEntry, DexaScan } from '@/lib/types';
 
 export default function TrendsPage() {
@@ -14,6 +15,7 @@ export default function TrendsPage() {
   const [selectedExercise, setSelectedExercise] = useState('');
   const [loading, setLoading] = useState(true);
   const [rebuilding, setRebuilding] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchTrends = async (exercise?: string) => {
     try {
@@ -34,8 +36,8 @@ export default function TrendsPage() {
           setSelectedExercise(uniqueExercises[0]);
         }
       }
-    } catch {
-      // ignore
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load trend data');
     } finally {
       setLoading(false);
     }
@@ -55,29 +57,19 @@ export default function TrendsPage() {
     try {
       await fetch('/api/trends', { method: 'POST' });
       await fetchTrends(selectedExercise);
-    } catch {
-      // ignore
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to rebuild trends');
     } finally {
       setRebuilding(false);
     }
   };
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
   return (
     <Box>
-      {/* Breadcrumb */}
-      <Link href="/" style={{ textDecoration: 'none' }}>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1, '&:hover': { color: 'text.primary' } }}>
-          ← Dashboard
-        </Typography>
-      </Link>
+      <PageBreadcrumb items={[
+        { label: 'Dashboard', href: '/' },
+        { label: 'Trends' },
+      ]} />
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
         <Typography variant="h3" fontWeight={700}>
@@ -92,11 +84,23 @@ export default function TrendsPage() {
         </Button>
       </Box>
 
-      {metrics.length === 0 ? (
+      {error && (
+        <Alert
+          severity="error"
+          action={<Button onClick={() => { setError(null); fetchTrends(); }}>Retry</Button>}
+          sx={{ mb: 2 }}
+        >
+          {error}
+        </Alert>
+      )}
+
+      {loading && !error && <PageSkeleton variant="charts" />}
+
+      {!loading && metrics.length === 0 ? (
         <Alert severity="info">
           No trend data yet. Complete your first check-in to start tracking.
         </Alert>
-      ) : (
+      ) : !loading ? (
         <TrendCharts
           metrics={metrics}
           ceilings={ceilings}
@@ -105,7 +109,7 @@ export default function TrendsPage() {
           selectedExercise={selectedExercise}
           onExerciseChange={handleExerciseChange}
         />
-      )}
+      ) : null}
     </Box>
   );
 }

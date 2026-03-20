@@ -1,14 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
-  Typography, Box, Card, CardContent, Grid, CircularProgress,
+  Typography, Box, Card, CardContent, Grid,
   Accordion, AccordionSummary, AccordionDetails, Link as MuiLink,
-  Chip,
+  Chip, Alert, Button,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import Link from 'next/link';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
+import PageBreadcrumb from '@/components/PageBreadcrumb';
+import PageSkeleton from '@/components/PageSkeleton';
 import type { ExtendedGarminSummary } from '@/lib/types';
 import type { Race } from '@/lib/types';
 
@@ -81,25 +83,29 @@ export default function ProfilePage() {
   const [garminSummary, setGarminSummary] = useState<ExtendedGarminSummary | null>(null);
   const [periodizationData, setPeriodizationData] = useState<PeriodizationResponse | null>(null);
   const [nextRace, setNextRace] = useState<Race | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadData = useCallback(() => {
+    setLoading(true);
+    setError(null);
+
     const profileFetch = fetch('/api/profile')
       .then((r) => r.json())
       .then((data) => {
         setProfile(data.profile || '');
         setPeriodization(data.periodization || '');
       })
-      .catch(() => {});
+      .catch((err: Error) => setError(err.message || 'Failed to load profile'));
 
     const garminFetch = fetch('/api/garmin')
       .then((r) => r.json())
       .then((data) => setGarminSummary(data.summary || null))
-      .catch(() => {});
+      .catch((err: Error) => setError(err.message || 'Failed to load Garmin data'));
 
     const periodizationFetch = fetch('/api/periodization')
       .then((r) => r.json())
       .then((data: PeriodizationResponse) => setPeriodizationData(data))
-      .catch(() => {});
+      .catch((err: Error) => setError(err.message || 'Failed to load periodization'));
 
     const racesFetch = fetch('/api/races')
       .then((r) => r.json())
@@ -110,20 +116,14 @@ export default function ProfilePage() {
           .sort((a, b) => a.date.localeCompare(b.date));
         setNextRace(upcoming[0] || null);
       })
-      .catch(() => {});
+      .catch((err: Error) => setError(err.message || 'Failed to load races'));
 
     Promise.all([profileFetch, garminFetch, periodizationFetch, racesFetch]).finally(() =>
       setLoading(false)
     );
   }, []);
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
+  useEffect(() => { loadData(); }, [loadData]);
 
   const currentPhase = periodizationData?.currentPhase;
   const currentWeight = garminSummary?.weight;
@@ -131,12 +131,24 @@ export default function ProfilePage() {
 
   return (
     <Box>
-      {/* Breadcrumb */}
-      <Box sx={{ mb: 2 }}>
-        <MuiLink component={Link} href="/" underline="hover" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
-          ← Dashboard
-        </MuiLink>
-      </Box>
+      <PageBreadcrumb items={[
+        { label: 'Dashboard', href: '/' },
+        { label: 'Profile' },
+      ]} />
+
+      {error && (
+        <Alert
+          severity="error"
+          action={<Button onClick={() => { setError(null); loadData(); }}>Retry</Button>}
+          sx={{ mb: 2 }}
+        >
+          {error}
+        </Alert>
+      )}
+
+      {loading && !error && <PageSkeleton variant="profile" />}
+
+      {loading ? null : (<>
 
       <Typography variant="h3" fontWeight={700} sx={{ mb: 4 }}>
         Athlete Profile
@@ -232,6 +244,7 @@ export default function ProfilePage() {
           View Races →
         </MuiLink>
       </Box>
+      </>)}
     </Box>
   );
 }

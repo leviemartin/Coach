@@ -3,11 +3,13 @@
 import React, { useEffect, useState } from 'react';
 import {
   Typography, Box, Card, CardContent, Grid, TextField, Button,
-  Alert, Divider, CircularProgress, IconButton, Tooltip, Chip,
+  Alert, Divider, IconButton, Tooltip, Chip,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import PageBreadcrumb from '@/components/PageBreadcrumb';
+import PageSkeleton from '@/components/PageSkeleton';
 import type { DexaScan, DexaData } from '@/lib/types';
 
 const EMPTY_FORM = {
@@ -351,20 +353,17 @@ export default function DexaPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
   const scans = data?.scans || [];
   const calibration = data?.latest_calibration;
   const nextScanNumber = scans.length < 3 ? (scans.length + 1) as 1 | 2 | 3 : null;
 
   return (
     <Box>
+      <PageBreadcrumb items={[
+        { label: 'Dashboard', href: '/' },
+        { label: 'DEXA Scans' },
+      ]} />
+
       <Typography variant="h3" fontWeight={700} sx={{ mb: 4 }}>
         DEXA Scans
       </Typography>
@@ -372,7 +371,16 @@ export default function DexaPage() {
         Ground truth body composition. 3 scans planned: March 2026, November 2026, May 2027.
       </Typography>
 
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {error && (
+        <Alert
+          severity="error"
+          action={<Button onClick={() => { setError(''); fetchData(); }}>Retry</Button>}
+          sx={{ mb: 2 }}
+        >
+          {error}
+        </Alert>
+      )}
+      {loading && !error && <PageSkeleton variant="cards" />}
       {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
       {driftWarning && <Alert severity="warning" sx={{ mb: 2 }}>{driftWarning}</Alert>}
 
@@ -514,10 +522,21 @@ export default function DexaPage() {
         </Card>
       )}
 
-      {scans.length === 0 && !showForm && (
-        <Alert severity="info" sx={{ mt: 2 }}>
-          No DEXA scans recorded yet. Add your first scan to establish ground truth body composition.
-        </Alert>
+      {scans.length === 0 && !showForm && !loading && (
+        <Box sx={{ textAlign: 'center', py: 6 }}>
+          <Typography color="text.secondary" sx={{ mb: 2 }}>
+            No DEXA scans recorded yet. Add your first scan to establish ground truth body composition.
+          </Typography>
+          <Button variant="contained" onClick={() => {
+            setForm({ ...EMPTY_FORM, scanNumber: '1' });
+            setShowForm(true);
+            setError('');
+            setSuccess('');
+            setDriftWarning('');
+          }}>
+            Add DEXA Scan
+          </Button>
+        </Box>
       )}
     </Box>
   );

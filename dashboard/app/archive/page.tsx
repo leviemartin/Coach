@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Typography, Box, Card, CardActionArea, CardContent, Chip, Stack } from '@mui/material';
+import { useEffect, useState, useCallback } from 'react';
+import { Typography, Box, Card, CardActionArea, CardContent, Chip, Stack, Alert, Button } from '@mui/material';
 import Link from 'next/link';
+import PageBreadcrumb from '@/components/PageBreadcrumb';
 import type { WeeklyMetrics } from '@/lib/types';
 
 interface LogEntry {
@@ -26,12 +27,14 @@ function SleepChip({ score }: { score: number }) {
 export default function ArchivePage() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [metricsMap, setMetricsMap] = useState<Map<number, WeeklyMetrics>>(new Map());
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadData = useCallback(() => {
+    setError(null);
     fetch('/api/archive')
       .then((r) => r.json())
       .then((data) => setLogs(data.logs || []))
-      .catch(() => {});
+      .catch((err: Error) => setError(err.message || 'Failed to load archive'));
 
     fetch('/api/trends')
       .then((r) => r.json())
@@ -42,14 +45,31 @@ export default function ArchivePage() {
         }
         setMetricsMap(map);
       })
-      .catch(() => {});
+      .catch((err: Error) => setError(err.message || 'Failed to load trends'));
   }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   return (
     <Box>
+      <PageBreadcrumb items={[
+        { label: 'Dashboard', href: '/' },
+        { label: 'Archive' },
+      ]} />
+
       <Typography variant="h3" fontWeight={700} sx={{ mb: 4 }}>
         Archive
       </Typography>
+
+      {error && (
+        <Alert
+          severity="error"
+          action={<Button onClick={() => { setError(null); loadData(); }}>Retry</Button>}
+          sx={{ mb: 2 }}
+        >
+          {error}
+        </Alert>
+      )}
 
       {logs.length === 0 ? (
         <Card>

@@ -10,6 +10,7 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import PageBreadcrumb from '@/components/PageBreadcrumb';
 import type { Race, RaceStatus } from '@/lib/types';
 
 const STATUS_COLORS: Record<RaceStatus, 'success' | 'warning' | 'default' | 'info'> = {
@@ -288,12 +289,25 @@ export default function RacesPage() {
 
   return (
     <Box>
+      <PageBreadcrumb items={[
+        { label: 'Dashboard', href: '/' },
+        { label: 'Races' },
+      ]} />
+
       <Typography variant="h3" fontWeight={700} sx={{ mb: 4 }}>Races</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
         Manage race calendar. Dashboard countdowns and coaching context update automatically.
       </Typography>
 
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {error && (
+        <Alert
+          severity="error"
+          action={<Button onClick={() => { setError(''); fetchRaces(); }}>Retry</Button>}
+          sx={{ mb: 2 }}
+        >
+          {error}
+        </Alert>
+      )}
       {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
 
       {/* Upcoming races */}
@@ -388,9 +402,20 @@ export default function RacesPage() {
       )}
 
       {races.length === 0 && !showForm && (
-        <Alert severity="info" sx={{ mt: 2 }}>
-          No races in the calendar. Add your first race to start tracking countdowns.
-        </Alert>
+        <Box sx={{ textAlign: 'center', py: 6 }}>
+          <Typography color="text.secondary" sx={{ mb: 2 }}>
+            No races in the calendar. Add your first race to start tracking countdowns.
+          </Typography>
+          <Button variant="contained" onClick={() => {
+            setForm(EMPTY_FORM);
+            setEditingId(null);
+            setShowForm(true);
+            setError('');
+            setSuccess('');
+          }}>
+            Add Race
+          </Button>
+        </Box>
       )}
     </Box>
   );

@@ -22,13 +22,14 @@ function progressPercent(start: Date, target: Date): number {
 export default function RaceCountdown() {
   const [mounted, setMounted] = useState(false);
   const [races, setRaces] = useState<Race[]>([]);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     setMounted(true);
     fetch('/api/races')
       .then((r) => r.json())
       .then((data) => setRaces(data.races || []))
-      .catch(() => {});
+      .catch(() => setError(true));
   }, []);
 
   const upcomingRaces = mounted
@@ -46,6 +47,11 @@ export default function RaceCountdown() {
           RACE COUNTDOWN
         </Typography>
 
+        {error ? (
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+            Race data unavailable
+          </Typography>
+        ) : (<>
         {mounted && upcomingRaces.map((race) => {
           const days = daysUntil(new Date(race.date));
           const weeks = Math.floor(days / 7);
@@ -80,6 +86,7 @@ export default function RaceCountdown() {
             No upcoming races
           </Typography>
         )}
+        </>)}
       </CardContent>
     </Card>
   );

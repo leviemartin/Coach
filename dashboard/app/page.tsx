@@ -43,6 +43,7 @@ export default function DashboardHome() {
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const syncAbortRef = useRef<AbortController | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const isSunday = new Date().getDay() === 0;
 
@@ -50,7 +51,7 @@ export default function DashboardHome() {
     fetch('/api/garmin')
       .then((r) => r.json())
       .then((data) => setSummary(data.summary))
-      .catch(() => {});
+      .catch((err: Error) => setError(err.message || 'Failed to load Garmin data'));
   }, []);
 
   const loadPlan = useCallback(async () => {
@@ -70,7 +71,7 @@ export default function DashboardHome() {
   useEffect(() => {
     refreshSummary();
     loadPlan();
-    fetch('/api/periodization').then(r => r.json()).then(setPeriodization).catch(() => {});
+    fetch('/api/periodization').then(r => r.json()).then(setPeriodization).catch((err: Error) => setError(err.message || 'Failed to load periodization'));
   }, [refreshSummary, loadPlan]);
 
   useEffect(() => {
@@ -133,6 +134,16 @@ export default function DashboardHome() {
             </Button>
           </Box>
         </Box>
+      )}
+
+      {error && (
+        <Alert
+          severity="error"
+          action={<Button onClick={() => { setError(null); refreshSummary(); loadPlan(); }}>Retry</Button>}
+          sx={{ mb: 2 }}
+        >
+          {error}
+        </Alert>
       )}
 
       {/* Phase Timeline */}
