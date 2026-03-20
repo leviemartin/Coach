@@ -3,6 +3,7 @@ import { getDailyLogsByWeek, getPlanItems } from './db';
 import type { DailyLog } from './db';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const DAY_ABBREVS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 /** Get the full English day name from a date string (YYYY-MM-DD) */
 export function getDayName(dateStr: string): string {
@@ -10,17 +11,27 @@ export function getDayName(dateStr: string): string {
   return DAY_NAMES[d.getDay()];
 }
 
+/** Get the 3-letter day abbreviation from a date string (YYYY-MM-DD) */
+export function getDayAbbrev(dateStr: string): string {
+  const d = new Date(dateStr + 'T12:00:00');
+  return DAY_ABBREVS[d.getDay()];
+}
+
 /** Get the training week number for a date string */
 export function getWeekForDate(dateStr: string): number {
   return getTrainingWeek(new Date(dateStr + 'T12:00:00'));
 }
 
-/** Find the plan_item matching a date (by week_number + day name) */
+/** Find the plan_item matching a date (by week_number + day).
+ *  Handles both day formats: "Monday" and "Mon Mar 17" */
 export function findPlanItemForDate(dateStr: string): { id: number } | null {
   const weekNumber = getWeekForDate(dateStr);
   const dayName = getDayName(dateStr);
+  const dayAbbrev = getDayAbbrev(dateStr);
   const items = getPlanItems(weekNumber);
-  const match = items.find((item: { day: string }) => item.day === dayName);
+  const match = items.find((item: { day: string }) =>
+    item.day === dayName || item.day.startsWith(dayAbbrev)
+  );
   if (!match || match.id == null) return null;
   return { id: match.id };
 }

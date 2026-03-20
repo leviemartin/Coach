@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDailyLog, upsertDailyLog, getPlanItems } from '@/lib/db';
-import { getWeekForDate, getDayName, findPlanItemForDate } from '@/lib/daily-log';
+import { getWeekForDate, getDayName, getDayAbbrev, findPlanItemForDate } from '@/lib/daily-log';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -14,7 +14,10 @@ export async function GET(request: Request) {
   const weekNumber = getWeekForDate(date);
   const dayName = getDayName(date);
   const planItems = getPlanItems(weekNumber);
-  const plannedSession = planItems.find((item: { day: string }) => item.day === dayName) || null;
+  const dayAbbrev = getDayAbbrev(date);
+  const plannedSession = planItems.find((item: { day: string }) =>
+    item.day === dayName || item.day.startsWith(dayAbbrev)
+  ) || null;
 
   return NextResponse.json({
     log: log || {
