@@ -54,8 +54,8 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
       </Typography>
     ),
     table: ({ children }) => (
-      <TableContainer component={Paper} variant="outlined" sx={{ my: 2 }}>
-        <Table size="small">{children}</Table>
+      <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto', mb: 2 }}>
+        <Table size="small" sx={{ '& td, & th': { fontSize: { xs: '0.65rem', sm: '0.75rem' } } }}>{children}</Table>
       </TableContainer>
     ),
     thead: ({ children }) => <TableHead>{children}</TableHead>,

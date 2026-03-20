@@ -1,8 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Card, CardContent, Typography, Grid, Box, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { Card, CardContent, Typography, Grid, Box, FormControl, InputLabel, Select, MenuItem, Button } from '@mui/material';
 import { LineChart, BarChart, ScatterChart } from '@mui/x-charts';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { useTheme } from '@mui/material/styles';
 import type { WeeklyMetrics, CeilingEntry, DexaScan } from '@/lib/types';
 
 interface TrendChartsProps {
@@ -48,17 +50,19 @@ export default function TrendCharts({
   selectedExercise,
   onExerciseChange,
 }: TrendChartsProps) {
+  const theme = useTheme();
+  const isXs = useMediaQuery(theme.breakpoints.down('sm'));
+  const isSm = useMediaQuery(theme.breakpoints.between('sm', 'md'));
+  const chartHeight = isXs ? 200 : isSm ? 250 : 300;
+
   const weeks = metrics.map((m) => `W${m.weekNumber}`);
 
   if (!metrics.length) {
     return (
-      <Card>
-        <CardContent>
-          <Typography variant="h6" color="text.secondary">
-            No trend data yet. Complete your first check-in to see trends.
-          </Typography>
-        </CardContent>
-      </Card>
+      <Box sx={{ textAlign: 'center', py: 4 }}>
+        <Typography color="text.secondary">No trend data yet.</Typography>
+        <Button variant="contained" href="/checkin" sx={{ mt: 2 }}>Start Check-In</Button>
+      </Box>
     );
   }
 
@@ -81,7 +85,7 @@ export default function TrendCharts({
                     color: CHART_COLORS.blue,
                   },
                 ]}
-                height={250}
+                height={chartHeight}
               />
               <Typography variant="caption" color="success.main" sx={{ display: 'block', textAlign: 'right' }}>
                 Target: 89kg
@@ -117,7 +121,7 @@ export default function TrendCharts({
                           }]
                         : []),
                     ]}
-                    height={200}
+                    height={isXs ? 160 : 200}
                   />
                   <LineChart
                     xAxis={[{ data: weeks, scaleType: 'band' }]}
@@ -128,7 +132,7 @@ export default function TrendCharts({
                         color: CHART_COLORS.green,
                       },
                     ]}
-                    height={150}
+                    height={isXs ? 120 : 150}
                   />
                   {dexaScans.length > 0 && (
                     <Box sx={{ mt: 1 }}>
@@ -154,7 +158,7 @@ export default function TrendCharts({
                       color: CHART_COLORS.pink,
                     },
                   ]}
-                  height={250}
+                  height={chartHeight}
                 />
               ) : (
                 <EmptyState message="Book your DEXA scan to unlock body composition tracking." />
@@ -186,7 +190,7 @@ export default function TrendCharts({
                     color: CHART_COLORS.teal,
                   },
                 ]}
-                height={250}
+                height={chartHeight}
               />
             </CardContent>
           </Card>
@@ -207,7 +211,7 @@ export default function TrendCharts({
                       color: CHART_COLORS.orange,
                     },
                   ]}
-                  height={250}
+                  height={chartHeight}
                 />
               ) : (
                 <EmptyState message="Complete a check-in to start tracking pull-up progress." />
@@ -249,7 +253,7 @@ export default function TrendCharts({
                       color: CHART_COLORS.red,
                     },
                   ]}
-                  height={250}
+                  height={chartHeight}
                 />
               ) : (
                 <EmptyState message="Select an exercise above — data appears after your first ceiling update." />
@@ -285,7 +289,7 @@ export default function TrendCharts({
                     color: CHART_COLORS.teal,
                   },
                 ]}
-                height={250}
+                height={chartHeight}
               />
             </CardContent>
           </Card>
@@ -313,7 +317,7 @@ export default function TrendCharts({
                     color: CHART_COLORS.green,
                   },
                 ]}
-                height={250}
+                height={chartHeight}
               />
             </CardContent>
           </Card>

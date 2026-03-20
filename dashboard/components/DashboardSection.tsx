@@ -2,6 +2,8 @@
 
 import { Accordion, AccordionSummary, AccordionDetails, Typography, Box } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { useTheme } from '@mui/material/styles';
 
 interface DashboardSectionProps {
   title: string;
@@ -18,9 +20,12 @@ export default function DashboardSection({
   defaultExpanded = true,
   icon,
 }: DashboardSectionProps) {
+  const theme = useTheme();
+  const isXs = useMediaQuery(theme.breakpoints.down('sm'), { noSsr: true });
+
   return (
     <Accordion
-      defaultExpanded={defaultExpanded}
+      defaultExpanded={defaultExpanded && !isXs}
       disableGutters
       sx={{
         '&:before': { display: 'none' },
