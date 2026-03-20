@@ -6,7 +6,7 @@ import { normalizeWorkoutText } from './parse-schedule';
 import { DB_PATH } from './constants';
 
 // Schema version — bump this when adding tables or columns to force re-init on cached connections
-const SCHEMA_VERSION = 3; // v3: added races table
+const SCHEMA_VERSION = 4; // v4: added daily_logs table
 
 // Use globalThis to persist across hot reloads in dev
 const globalForDb = globalThis as unknown as { _coachDb?: Database.Database; _coachDbSchema?: number };
@@ -119,6 +119,28 @@ function initTables(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_ceiling_history_exercise ON ceiling_history(exercise);
     CREATE INDEX IF NOT EXISTS idx_ceiling_history_week ON ceiling_history(week_number);
     CREATE INDEX IF NOT EXISTS idx_plan_items_week ON plan_items(week_number);
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS daily_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      date TEXT NOT NULL UNIQUE,
+      week_number INTEGER NOT NULL,
+      workout_completed INTEGER DEFAULT 0,
+      workout_plan_item_id INTEGER,
+      core_work_done INTEGER DEFAULT 0,
+      rug_protocol_done INTEGER DEFAULT 0,
+      vampire_bedtime TEXT,
+      hydration_tracked INTEGER DEFAULT 0,
+      kitchen_cutoff_hit INTEGER DEFAULT 0,
+      is_sick_day INTEGER DEFAULT 0,
+      notes TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (workout_plan_item_id) REFERENCES plan_items(id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_daily_logs_week ON daily_logs(week_number);
+    CREATE INDEX IF NOT EXISTS idx_daily_logs_date ON daily_logs(date);
   `);
 
   // Migration: add sub_tasks column if it doesn't exist
@@ -536,4 +558,70 @@ export function getRaces(): Race[] {
 export function deleteRace(id: string): void {
   const db = getDb();
   db.prepare('DELETE FROM races WHERE id = ?').run(id);
+}
+
+// Daily Logs
+export interface DailyLog {
+  id: number;
+  date: string;
+  week_number: number;
+  workout_completed: number;
+  workout_plan_item_id: number | null;
+  core_work_done: number;
+  rug_protocol_done: number;
+  vampire_bedtime: string | null;
+  hydration_tracked: number;
+  kitchen_cutoff_hit: number;
+  is_sick_day: number;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export function getDailyLog(date: string): DailyLog | null {
+  const db = getDb();
+  return db.prepare('SELECT * FROM daily_logs WHERE date = ?').get(date) as DailyLog | null;
+}
+
+export function getDailyLogsByWeek(weekNumber: number): DailyLog[] {
+  const db = getDb();
+  return db.prepare('SELECT * FROM daily_logs WHERE week_number = ? ORDER BY date').all(weekNumber) as DailyLog[];
+}
+
+export function upsertDailyLog(log: Omit<DailyLog, 'id' | 'created_at' | 'updated_at'>): DailyLog {
+  const db = getDb();
+  const now = new Date().toISOString();
+  const existing = getDailyLog(log.date);
+
+  if (existing) {
+    db.prepare(`
+      UPDATE daily_logs SET
+        week_number = ?, workout_completed = ?, workout_plan_item_id = ?,
+        core_work_done = ?, rug_protocol_done = ?, vampire_bedtime = ?,
+        hydration_tracked = ?, kitchen_cutoff_hit = ?, is_sick_day = ?,
+        notes = ?, updated_at = ?
+      WHERE date = ?
+    `).run(
+      log.week_number, log.workout_completed, log.workout_plan_item_id,
+      log.core_work_done, log.rug_protocol_done, log.vampire_bedtime,
+      log.hydration_tracked, log.kitchen_cutoff_hit, log.is_sick_day,
+      log.notes, now, log.date
+    );
+  } else {
+    db.prepare(`
+      INSERT INTO daily_logs (
+        date, week_number, workout_completed, workout_plan_item_id,
+        core_work_done, rug_protocol_done, vampire_bedtime,
+        hydration_tracked, kitchen_cutoff_hit, is_sick_day,
+        notes, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      log.date, log.week_number, log.workout_completed, log.workout_plan_item_id,
+      log.core_work_done, log.rug_protocol_done, log.vampire_bedtime,
+      log.hydration_tracked, log.kitchen_cutoff_hit, log.is_sick_day,
+      log.notes, now, now
+    );
+  }
+
+  return getDailyLog(log.date)!;
 }
