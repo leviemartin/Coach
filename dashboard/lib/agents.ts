@@ -3,6 +3,8 @@ import { readAgentPersona, readAthleteProfile, readTrainingHistory, readCeilings
 import { SPECIALIST_IDS, AGENT_LABELS, DEFAULT_MODEL, OPUS_MODEL } from './constants';
 import type { GarminData, CheckInFormData, AgentOutput } from './types';
 import { formatHevySummary, parseHevyCsv } from './parse-hevy';
+import { computeWeekSummary, formatWeekSummaryForAgents } from './daily-log';
+import { getTrainingWeek } from './week';
 
 let _client: Anthropic | null = null;
 
@@ -86,6 +88,15 @@ export function buildSharedContext(
   context += combinedReadinessSection + `\n`;
 
   context += `## Hevy Training Log\n${hevySummary}\n\n`;
+
+  // Daily Log Summary
+  const currentWeek = getTrainingWeek();
+  const weekSummary = computeWeekSummary(currentWeek);
+  if (weekSummary.days_logged > 0) {
+    context += formatWeekSummaryForAgents(weekSummary) + '\n';
+  } else {
+    context += '## Daily Log Summary\nNo daily logs recorded this week.\n\n';
+  }
 
   if (formData.hevyCsv.trim()) {
     context += `### Raw Hevy CSV\n\`\`\`csv\n${formData.hevyCsv}\n\`\`\`\n\n`;
