@@ -37,10 +37,11 @@ COPY --from=deps /usr/lib/python3.12/site-packages/ /usr/lib/python3.12/site-pac
 COPY dashboard/scripts/ /app/scripts/
 RUN chmod +x /app/scripts/*.sh
 
-# Copy initial data for migration (state, coaches, DB)
+# Copy initial data for migration (state, coaches)
+# Note: trends.db is gitignored and created fresh by the app on first run.
+# To migrate an existing DB, upload it to the volume manually via `railway volume upload`.
 COPY state/ /app/init-data/state/
 COPY coaches/ /app/init-data/coaches/
-COPY dashboard/data/trends.db /app/init-data/trends.db
 
 ENV NODE_ENV=production
 ENV PORT=3000
