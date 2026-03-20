@@ -136,52 +136,73 @@ Starting Next.js on port 3000...
 
 ## Step 9: Bootstrap Garmin Authentication
 
-The Garmin connector needs interactive MFA on first login, which doesn't work in Railway's non-interactive SSH. The solution: authenticate locally, then upload the tokens to Railway.
+Garmin requires interactive MFA on first login. Railway SSH is non-interactive. The solution: generate tokens locally using a standalone script, then upload to Railway.
 
-### 9a: Authenticate locally
+**Do NOT use `garmin_connector.py` for this** — it has version compatibility issues. Use the dedicated bootstrap script instead.
+
+### 9a: Generate tokens locally
 
 ```bash
-cd /Users/martinlevie/garmin-coach
-GARMIN_EMAIL="leviemartin5@gmail.com" \
-GARMIN_PASSWORD="<your-garmin-password>" \
-python3 garmin_connector.py --output /tmp/garmin_test.json --token-dir /tmp/garmin_tokens_fresh --days 1
+cd /Users/martinlevie/AI/Coach
+python3 scripts/garmin-token-bootstrap.py /tmp/garmin_tokens_fresh
 ```
 
-- Enter the MFA code when prompted
-- Verify it completes successfully and creates `/tmp/garmin_tokens_fresh/oauth1_token.json` and `oauth2_token.json`
+- Enter your Garmin email and password when prompted (or set `GARMIN_EMAIL` and `GARMIN_PASSWORD` env vars)
+- Enter the MFA code from your email when prompted
+- Verify output shows: `Tokens saved to /tmp/garmin_tokens_fresh/`
+- Verify files exist: `ls /tmp/garmin_tokens_fresh/oauth*.json`
 
-### 9b: Upload tokens to Railway via CLI
+### 9b: Upload tokens to Railway
 
 ```bash
-# Set your Railway project IDs (get these from `railway status` or the Railway dashboard URL)
+# Set your Railway IDs (these are specific to your deployment)
 PROJECT="7b45d31c-6e8a-4119-9700-38392bc443ae"
 ENV="6cdfc9a2-9fd5-4143-a24a-0be8a4723b50"
 SERVICE="83b2adec-3e30-424b-8b00-d04305aa503a"
 
 # Create token directory on the volume
-railway ssh --project=$PROJECT --environment=$ENV --service=$SERVICE -- "mkdir -p /data/garmin/.tokens"
+railway ssh --project=$PROJECT --environment=$ENV --service=$SERVICE -- \
+  "mkdir -p /data/garmin/.tokens"
 
-# Upload oauth1 token
+# Upload both token files
 railway ssh --project=$PROJECT --environment=$ENV --service=$SERVICE -- \
   "cat > /data/garmin/.tokens/oauth1_token.json" < /tmp/garmin_tokens_fresh/oauth1_token.json
 
-# Upload oauth2 token
 railway ssh --project=$PROJECT --environment=$ENV --service=$SERVICE -- \
   "cat > /data/garmin/.tokens/oauth2_token.json" < /tmp/garmin_tokens_fresh/oauth2_token.json
 ```
 
-### 9c: Verify Garmin sync works on Railway
+### 9c: Verify tokens are on the volume
 
 ```bash
 railway ssh --project=$PROJECT --environment=$ENV --service=$SERVICE -- \
-  "cd /app/garmin-coach && python3 garmin_connector.py --output /data/garmin/garmin_coach_data.json --token-dir /data/garmin/.tokens --days 1"
+  "ls -la /data/garmin/.tokens/ && echo '---' && head -c 50 /data/garmin/.tokens/oauth1_token.json"
 ```
 
-This should complete without MFA (using the uploaded tokens). If it says "Resumed session successfully" — you're done. The cron will auto-sync every 6 hours.
+Should show both files with non-zero sizes.
+
+### 9d: Test Garmin sync on Railway
+
+```bash
+railway ssh --project=$PROJECT --environment=$ENV --service=$SERVICE -- \
+  "cd /app/garmin-coach && python3 garmin_connector.py --output /data/garmin/garmin_coach_data.json --token-dir /data/garmin/.tokens --days 1 2>&1 | tail -5"
+```
+
+Should show "Resumed session successfully" and complete without MFA. The cron will auto-sync every 6 hours after this.
 
 ### Token refresh
 
-Tokens are valid for ~1 year. When they expire, repeat steps 9a-9c. The dashboard shows a "stale data" indicator when Garmin data is outdated, which signals it's time to refresh tokens.
+Tokens are valid for ~1 year. When they expire, the dashboard shows a "stale data" indicator and the Garmin sync cron logs errors. To refresh: repeat steps 9a-9b.
+
+### Troubleshooting
+
+| Problem | Fix |
+|---------|-----|
+| `garth not installed` | `pip3 install garth` |
+| MFA code not arriving | Check spam folder, wait 2 min, retry |
+| `429 Too Many Requests` | Wait 1 hour, Garmin rate limits reset |
+| `railway ssh` times out | Check Railway service is running, retry |
+| Tokens uploaded but sync fails | Verify file contents: `railway ssh ... -- "cat /data/garmin/.tokens/oauth1_token.json"` |
 
 ---
 
