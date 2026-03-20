@@ -1,6 +1,7 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
+import { useSession, signOut } from 'next-auth/react';
 import {
   Drawer,
   List,
@@ -14,6 +15,7 @@ import {
   Divider,
   IconButton,
 } from '@mui/material';
+import Avatar from '@mui/material/Avatar';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
@@ -24,6 +26,7 @@ import ScienceIcon from '@mui/icons-material/Science';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
+import LogoutIcon from '@mui/icons-material/Logout';
 import React from 'react';
 import { ThemeModeContext } from './ThemeRegistry';
 import RaceCountdown from './RaceCountdown';
@@ -70,6 +73,7 @@ function DrawerContent({ onItemClick }: { onItemClick?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const { mode, toggleMode } = React.useContext(ThemeModeContext);
+  const { data: session } = useSession();
 
   return (
     <>
@@ -127,6 +131,21 @@ function DrawerContent({ onItemClick }: { onItemClick?: () => void }) {
       <Box sx={{ mt: 'auto', p: 2 }}>
         <RaceCountdown />
       </Box>
+      {session?.user && (
+        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Avatar
+            src={session.user.image || undefined}
+            alt={session.user.name || ''}
+            sx={{ width: 32, height: 32 }}
+          />
+          <Typography variant="body2" sx={{ flex: 1 }} noWrap>
+            {session.user.name || session.user.email}
+          </Typography>
+          <IconButton size="small" onClick={() => signOut()} aria-label="Sign out">
+            <LogoutIcon fontSize="small" />
+          </IconButton>
+        </Box>
+      )}
     </>
   );
 }
