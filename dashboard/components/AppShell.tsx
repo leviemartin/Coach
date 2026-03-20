@@ -25,6 +25,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           zIndex: (theme) => theme.zIndex.drawer + 1,
           bgcolor: 'background.paper',
           boxShadow: 1,
+          minWidth: 48,
+          minHeight: 48,
           '&:hover': { bgcolor: 'action.hover' },
         }}
       >
@@ -37,7 +39,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           flexGrow: 1,
           minWidth: 0,
           overflowX: 'hidden',
-          p: { xs: 1.5, sm: 2, md: 2.5 },
+          p: { xs: 2, sm: 2, md: 2.5 },
           pt: { xs: 7, sm: 7, md: 2.5 },
         }}
       >

@@ -6,6 +6,8 @@ import {
   TextField, Slider, Switch, FormControlLabel, Select, MenuItem, FormControl,
   InputLabel, Alert, Chip, CircularProgress, LinearProgress,
 } from '@mui/material';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { useTheme } from '@mui/material/styles';
 import type { CheckInFormData } from '@/lib/types';
 import { getTrainingWeek } from '@/lib/week';
 
@@ -30,12 +32,20 @@ interface CheckInFormProps {
 }
 
 export default function CheckInForm({ onSubmit, loading = false }: CheckInFormProps) {
+  const theme = useTheme();
+  const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
+  const stepLabels = isSmall
+    ? ['Garmin', 'Hevy', 'Survey', 'Review']
+    : STEPS;
+
   const [activeStep, setActiveStep] = useState(0);
   const [garminStatus, setGarminStatus] = useState<GarminStatus | null>(null);
   const [garminLoading, setGarminLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [syncSuccess, setSyncSuccess] = useState(false);
+  const [syncElapsed, setSyncElapsed] = useState(0);
+  const syncTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [formData, setFormData] = useState<CheckInFormData>({
     hevyCsv: '',
@@ -94,15 +104,24 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
   }, []);
 
   useEffect(() => {
-    return () => { syncAbortRef.current?.abort(); };
+    return () => {
+      syncAbortRef.current?.abort();
+      if (syncTimerRef.current) {
+        clearInterval(syncTimerRef.current);
+      }
+    };
   }, []);
 
   const handleSync = async () => {
     setSyncing(true);
     setSyncError(null);
     setSyncSuccess(false);
+    setSyncElapsed(0);
     const controller = new AbortController();
     syncAbortRef.current = controller;
+    syncTimerRef.current = setInterval(() => {
+      setSyncElapsed((prev) => prev + 1);
+    }, 1000);
     try {
       const res = await fetch('/api/garmin/sync', { method: 'POST', signal: controller.signal });
       const data = await res.json();
@@ -117,6 +136,10 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
         setSyncError('Network error — could not reach sync endpoint');
       }
     } finally {
+      if (syncTimerRef.current) {
+        clearInterval(syncTimerRef.current);
+        syncTimerRef.current = null;
+      }
       setSyncing(false);
     }
   };
@@ -159,9 +182,16 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
                       disabled={syncing}
                       startIcon={syncing ? <CircularProgress size={18} color="inherit" /> : null}
                     >
-                      {syncing ? 'Syncing Garmin... (~20s)' : 'Sync Garmin Data'}
+                      {syncing ? `Syncing Garmin data... (${syncElapsed}s elapsed)` : 'Sync Garmin Data'}
                     </Button>
-                    {syncing && <LinearProgress aria-label="Syncing Garmin data" sx={{ mt: 1, borderRadius: 1 }} />}
+                    {syncing && (
+                      <Box aria-live="polite">
+                        <LinearProgress aria-label="Syncing Garmin data" sx={{ mt: 1, borderRadius: 1 }} />
+                        <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                          Syncing Garmin data... ({syncElapsed}s elapsed)
+                        </Typography>
+                      </Box>
+                    )}
                   </Box>
                   {syncSuccess && (
                     <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSyncSuccess(false)}>
@@ -270,21 +300,23 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
                   </Typography>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                     <Box>
-                      <Typography gutterBottom>Baker&apos;s Cyst Pain: {formData.bakerCystPain}/10</Typography>
+                      <Typography gutterBottom sx={{ mb: 1 }}>Baker&apos;s Cyst Pain: {formData.bakerCystPain}/10</Typography>
                       <Slider
                         value={formData.bakerCystPain}
                         onChange={(_, v) => update('bakerCystPain', v as number)}
                         min={0} max={10} step={1} marks
                         valueLabelDisplay="auto"
+                        sx={{ '& .MuiSlider-thumb': { height: 28, width: 28 } }}
                       />
                     </Box>
                     <Box>
-                      <Typography gutterBottom>Lower Back Fatigue: {formData.lowerBackFatigue}/10</Typography>
+                      <Typography gutterBottom sx={{ mb: 1 }}>Lower Back Fatigue: {formData.lowerBackFatigue}/10</Typography>
                       <Slider
                         value={formData.lowerBackFatigue}
                         onChange={(_, v) => update('lowerBackFatigue', v as number)}
                         min={0} max={10} step={1} marks
                         valueLabelDisplay="auto"
+                        sx={{ '& .MuiSlider-thumb': { height: 28, width: 28 } }}
                       />
                     </Box>
                   </Box>
@@ -302,7 +334,7 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
                     Garmin readiness is one signal. Your body is another. This gets combined with Garmin data (60% you / 40% Garmin) to set training intensity.
                   </Typography>
                   <Box sx={{ mt: 2 }}>
-                    <Typography gutterBottom>
+                    <Typography gutterBottom sx={{ mb: 1 }}>
                       Perceived readiness: {formData.perceivedReadiness}/5
                       {formData.perceivedReadiness === 1 ? ' — Wrecked' : formData.perceivedReadiness === 2 ? ' — Tired but can move' : formData.perceivedReadiness === 3 ? ' — Normal' : formData.perceivedReadiness === 4 ? ' — Feeling strong' : ' — Peaked'}
                     </Typography>
@@ -318,6 +350,7 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
                         { value: 5, label: 'Peaked' },
                       ]}
                       valueLabelDisplay="auto"
+                      sx={{ '& .MuiSlider-thumb': { height: 28, width: 28 } }}
                     />
                   </Box>
                 </Box>
@@ -335,6 +368,7 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
                         value={formData.sessionsCompleted}
                         onChange={(e) => update('sessionsCompleted', parseInt(e.target.value) || 0)}
                         sx={{ width: 160 }}
+                        slotProps={{ htmlInput: { min: 0, max: 7 } }}
                       />
                       <TextField
                         label="Sessions Planned"
@@ -342,6 +376,7 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
                         value={formData.sessionsPlanned}
                         onChange={(e) => update('sessionsPlanned', parseInt(e.target.value) || 0)}
                         sx={{ width: 160 }}
+                        slotProps={{ htmlInput: { min: 0, max: 7 } }}
                       />
                     </Box>
                     <TextField
@@ -372,21 +407,23 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
                   </Typography>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                     <Box>
-                      <Typography gutterBottom>Bedtime Compliance (nights before 23:00): {formData.bedtimeCompliance}/7</Typography>
+                      <Typography gutterBottom sx={{ mb: 1 }}>Bedtime Compliance (nights before 23:00): {formData.bedtimeCompliance}/7</Typography>
                       <Slider
                         value={formData.bedtimeCompliance}
                         onChange={(_, v) => update('bedtimeCompliance', v as number)}
                         min={0} max={7} step={1} marks
                         valueLabelDisplay="auto"
+                        sx={{ '& .MuiSlider-thumb': { height: 28, width: 28 } }}
                       />
                     </Box>
                     <Box>
-                      <Typography gutterBottom>Rug Protocol Days: {formData.rugProtocolDays}/7</Typography>
+                      <Typography gutterBottom sx={{ mb: 1 }}>Rug Protocol Days: {formData.rugProtocolDays}/7</Typography>
                       <Slider
                         value={formData.rugProtocolDays}
                         onChange={(_, v) => update('rugProtocolDays', v as number)}
                         min={0} max={7} step={1} marks
                         valueLabelDisplay="auto"
+                        sx={{ '& .MuiSlider-thumb': { height: 28, width: 28 } }}
                       />
                     </Box>
                     <FormControlLabel
@@ -410,7 +447,7 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
                     Last Week&apos;s Plan — Your Verdict
                   </Typography>
                   <Box sx={{ mt: 2 }}>
-                    <Typography gutterBottom>
+                    <Typography gutterBottom sx={{ mb: 1 }}>
                       Plan satisfaction: {formData.planSatisfaction}/5
                       {formData.planSatisfaction <= 2 ? ' — Too light' : formData.planSatisfaction >= 4 ? ' — Too much' : ' — About right'}
                     </Typography>
@@ -424,6 +461,7 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
                         { value: 5, label: 'Too much' },
                       ]}
                       valueLabelDisplay="auto"
+                      sx={{ '& .MuiSlider-thumb': { height: 28, width: 28 } }}
                     />
                   </Box>
                   <TextField
@@ -432,7 +470,7 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
                     placeholder="How was last week's plan? Think about: volume (too much/little?), intensity, exercise selection, session length, anything you'd change. Be specific — the coaches read this first."
                     value={formData.planFeedback}
                     onChange={(e) => update('planFeedback', e.target.value)}
-                    inputProps={{ maxLength: 1000 }}
+                    slotProps={{ htmlInput: { maxLength: 1000 } }}
                     sx={{ mt: 2 }}
                   />
                 </Box>
@@ -591,7 +629,7 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
   return (
     <Box>
       <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
-        {STEPS.map((label) => (
+        {stepLabels.map((label) => (
           <Step key={label}>
             <StepLabel>{label}</StepLabel>
           </Step>
