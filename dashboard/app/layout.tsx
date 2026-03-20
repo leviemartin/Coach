@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import ThemeRegistry from '@/components/ThemeRegistry';
 import AppShell from '@/components/AppShell';
+import Providers from '@/components/Providers';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -16,9 +17,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <ThemeRegistry>
-          <AppShell>{children}</AppShell>
-        </ThemeRegistry>
+        <Providers>
+          <ThemeRegistry>
+            <AppShell>{children}</AppShell>
+          </ThemeRegistry>
+        </Providers>
       </body>
     </html>
   );
