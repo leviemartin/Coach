@@ -158,23 +158,12 @@ export function upsertDailyLog(log: Omit<DailyLog, 'id' | 'created_at' | 'update
 }
 ```
 
-- [ ] **Step 4: Remove dead completion helpers**
-
-Remove these functions from `lib/db.ts` (they will have no callers after Task 6):
-- `togglePlanItemComplete`
-- `updatePlanItemSubTasks`
-- `updatePlanItemNotes`
-
-Also remove their exports. Check if any types related to these are also only used here and can be removed.
-
-- [ ] **Step 5: Verify build**
+- [ ] **Step 4: Verify build**
 
 Run: `cd /Users/martinlevie/AI/Coach/dashboard && npm run build`
-Expected: Build succeeds (dead code removal may cause errors if still imported — fix any remaining imports in Task 6).
+Expected: Build succeeds. Dead completion helpers (`togglePlanItemComplete`, `updatePlanItemSubTasks`, `updatePlanItemNotes`) are NOT removed yet — they are still imported by `plan/complete/route.ts`. They will be removed in Task 6 after that route is deleted.
 
-Note: If the build fails because `plan/complete/route.ts` still imports the removed functions, that's expected — it will be fixed in Task 6. In that case, temporarily keep the functions and remove them after Task 6.
-
-- [ ] **Step 6: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 git add dashboard/lib/db.ts
@@ -615,12 +604,117 @@ export default function DailyLog({ date, log, plannedSession, onSave }: DailyLog
 }
 ```
 
-The implementer should follow the spec Section 5 wireframe and behavior rules exactly. Key behaviors:
-- Auto-save: debounce 500ms, retry once on failure after 2s, persistent error indicator
-- Sick day: hides workout section, core, rug, kitchen. Shows hydration + bedtime + notes.
-- Bedtime: standard time input, times 00:00-05:59 show "After midnight" note, stored as 24h+
-- Today's Session: shows plan_item info if exists, "Rest Day" or "Family Day" if not
-- Family day: hardcoded Saturday
+The implementer should build this following the spec Section 5 wireframe. Key implementation details:
+
+**Auto-save with debounce and retry:**
+```typescript
+const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
+const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+
+const debouncedSave = useCallback((data: Record<string, unknown>) => {
+  if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+  saveTimerRef.current = setTimeout(async () => {
+    setSaveStatus('saving');
+    try {
+      await onSave(data);
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    } catch {
+      // Retry once after 2 seconds
+      setSaveStatus('error');
+      setTimeout(async () => {
+        try {
+          await onSave(data);
+          setSaveStatus('saved');
+          setTimeout(() => setSaveStatus('idle'), 2000);
+        } catch {
+          setSaveStatus('error'); // Persistent error
+        }
+      }, 2000);
+    }
+  }, 500);
+}, [onSave]);
+```
+
+**Sick day conditional rendering:**
+```typescript
+const [isSickDay, setIsSickDay] = useState(!!log.is_sick_day);
+
+// In render:
+<FormControlLabel
+  control={<Switch checked={isSickDay} onChange={(_, checked) => { setIsSickDay(checked); triggerSave({ is_sick_day: checked }); }} />}
+  label="Sick Day"
+  sx={{ '& .MuiSwitch-track': isSickDay ? { bgcolor: 'error.main' } : {} }}
+/>
+
+{/* Only show these when NOT sick */}
+{!isSickDay && (
+  <>
+    {/* Today's Session card with completion checkbox */}
+    {/* Core work checkbox */}
+    {/* Rug Protocol checkbox */}
+    {/* Kitchen Cutoff checkbox */}
+  </>
+)}
+
+{/* Always show these (even on sick day) */}
+{/* Hydration tracked checkbox */}
+{/* Bedtime time picker */}
+{/* Notes text field */}
+```
+
+**Bedtime time input with after-midnight detection:**
+```typescript
+const [bedtimeDisplay, setBedtimeDisplay] = useState(
+  log.vampire_bedtime ? fromBedtimeStorage(log.vampire_bedtime) : ''
+);
+const isAfterMidnight = bedtimeDisplay && parseInt(bedtimeDisplay.split(':')[0]) < 6;
+
+<TextField
+  type="time"
+  label="Bedtime"
+  value={bedtimeDisplay}
+  onChange={(e) => {
+    setBedtimeDisplay(e.target.value);
+    triggerSave({ vampire_bedtime: toBedtimeStorage(e.target.value) });
+  }}
+/>
+{isAfterMidnight && (
+  <Typography variant="caption" color="warning.main">
+    After midnight — logged as next-day bedtime
+  </Typography>
+)}
+```
+
+**Today's Session section:**
+```typescript
+{plannedSession ? (
+  <Card>
+    <CardContent>
+      <Typography variant="subtitle2">{plannedSession.session_type}</Typography>
+      <Typography variant="body2" color="text.secondary">{plannedSession.focus}</Typography>
+      <FormControlLabel
+        control={<Checkbox checked={!!workoutCompleted} onChange={...} />}
+        label="Session completed"
+      />
+    </CardContent>
+  </Card>
+) : (
+  <Card>
+    <CardContent>
+      <Typography color="text.secondary">
+        {new Date(date + 'T12:00:00').getDay() === 6 ? 'Family Day' : 'Rest Day'}
+      </Typography>
+    </CardContent>
+  </Card>
+)}
+```
+
+**Save status indicator:**
+```typescript
+{saveStatus === 'saved' && <Typography variant="caption" color="success.main">Saved</Typography>}
+{saveStatus === 'error' && <Typography variant="caption" color="error.main">Save failed — retrying</Typography>}
+```
 
 - [ ] **Step 3: Create daily log page**
 
@@ -708,6 +802,8 @@ export default function LogPage() {
         <IconButton onClick={() => navigate(1)} disabled={currentDate >= today}>
           <ChevronRightIcon />
         </IconButton>
+        {/* Optional: add a date picker on the date header click. Use <input type="date">
+            in a Popover, or just rely on arrow navigation for v1. */}
       </Box>
 
       {/* Daily log form */}
@@ -725,7 +821,7 @@ export default function LogPage() {
         <CardContent>
           <Typography variant="subtitle2" gutterBottom>Week Overview</Typography>
           <WeekDots
-            days={/* computed from weekLogs */[]}
+            days={weekDotData}
             currentDate={currentDate}
             onDayClick={(date) => setCurrentDate(date)}
           />
@@ -736,7 +832,45 @@ export default function LogPage() {
 }
 ```
 
-The implementer should complete the week dots data computation (map weekLogs to DayStatus array, mark Saturday as family day, determine complete/partial/empty status).
+**Week dots data computation** (add this inside the component, above the return):
+
+```typescript
+import { PROGRAM_EPOCH } from '@/lib/week';
+
+// Compute Monday-Sunday dates for the current week
+function getWeekDates(weekNumber: number): string[] {
+  const epoch = new Date(PROGRAM_EPOCH.getFullYear(), PROGRAM_EPOCH.getMonth(), PROGRAM_EPOCH.getDate());
+  const monday = new Date(epoch.getTime() + (weekNumber - 1) * 7 * 86400000);
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday.getTime() + i * 86400000);
+    return d.toISOString().split('T')[0];
+  });
+}
+
+const weekDates = getWeekDates(weekNumber);
+const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+const weekDotData = weekDates.map((date, i) => {
+  const dayName = DAY_NAMES[i];
+  const log = weekLogs.find(l => l.date === date);
+  const isFamilyDay = i === 5; // Saturday (index 5 in Mon-Sun)
+
+  let status: 'complete' | 'partial' | 'empty' | 'family';
+  if (isFamilyDay) {
+    status = 'family';
+  } else if (!log) {
+    status = 'empty';
+  } else {
+    // Check if all applicable fields are filled
+    const checks = [log.workout_completed, log.core_work_done, log.rug_protocol_done,
+                     log.kitchen_cutoff_hit, log.hydration_tracked, log.vampire_bedtime ? 1 : 0];
+    const filled = checks.filter(Boolean).length;
+    status = filled === checks.length ? 'complete' : filled > 0 ? 'partial' : 'empty';
+  }
+
+  return { date, day: dayName, status };
+});
+```
 
 - [ ] **Step 4: Add Daily Log to Sidebar navigation**
 
@@ -800,10 +934,23 @@ Read `dashboard/components/CheckInForm.tsx` in full. Then add the pre-fill logic
 
 Add a `useEffect` that fetches the week summary on mount and pre-fills form fields:
 
+Import `getTrainingWeek` from `@/lib/week` (safe in client components — uses `Date` only, no server imports):
+
 ```typescript
+import { getTrainingWeek } from '@/lib/week';
+```
+
+Add state and effect:
+
+```typescript
+const [prefilledFromLogs, setPrefilledFromLogs] = useState(false);
+
 // After the existing useEffect hooks, add:
 useEffect(() => {
-  fetch(`/api/log/week-summary?week=${/* current training week */}`)
+  // Use getTrainingWeek() for TODAY's week (the week being reviewed),
+  // NOT getPlanWeekNumber() which returns next week on Sundays.
+  const currentWeek = getTrainingWeek(new Date());
+  fetch(`/api/log/week-summary?week=${currentWeek}`)
     .then(res => res.json())
     .then(summary => {
       if (summary.days_logged > 0) {
@@ -821,7 +968,7 @@ useEffect(() => {
 }, []);
 ```
 
-Add a state variable `const [prefilledFromLogs, setPrefilledFromLogs] = useState(false);` and show an indicator in the form when pre-filled:
+Show an indicator in the form when pre-filled (e.g., at the top of the Subjective Check-In step):
 
 ```typescript
 {prefilledFromLogs && (
@@ -830,8 +977,6 @@ Add a state variable `const [prefilledFromLogs, setPrefilledFromLogs] = useState
   </Alert>
 )}
 ```
-
-The implementer needs to compute the current training week. Import `getTrainingWeek` from `@/lib/week` — but note this is a client component. `getTrainingWeek` uses `Date` only (no server imports), so it can be imported directly.
 
 - [ ] **Step 3: Verify build**
 
@@ -878,11 +1023,11 @@ export async function GET(request: Request) {
 
 Read each file first, then update fetch URLs.
 
-In `dashboard/app/page.tsx`: Find all `fetch('/api/plan/complete` calls and replace with `fetch('/api/plan`. Remove any PATCH calls to `/api/plan/complete`. Remove any completion toggle handlers.
+In `dashboard/app/page.tsx`: Find all `fetch('/api/plan/complete` calls and replace with `fetch('/api/plan`. Drop the `?action=list` query param if present (it was always ignored by the handler). Remove any PATCH calls to `/api/plan/complete`. Remove any completion toggle handlers (including `handleUpdateSubTasks` and the `onToggleSubTask` prop passed to `<TodaySession>`).
 
-In `dashboard/app/plan/page.tsx`: Same — replace fetch URL, remove PATCH calls and completion toggle handlers.
+In `dashboard/app/plan/page.tsx`: Same — replace fetch URL (drop `?action=list`), remove PATCH calls and completion toggle handlers.
 
-In `dashboard/app/plan/[weekNumber]/page.tsx`: Replace fetch URL.
+In `dashboard/app/plan/[weekNumber]/page.tsx`: Replace fetch URL (drop `?action=list`).
 
 - [ ] **Step 3: Make TrainingPlanTable read-only**
 
@@ -895,15 +1040,28 @@ Read `dashboard/components/TrainingPlanTable.tsx` in full. Then:
 - Keep the read-only display: Day, Session Type, Focus, Workout Plan (expandable), Coach's Cues
 - Simplify the component props to only accept `items` (read-only data)
 
-- [ ] **Step 4: Delete plan/complete route**
+- [ ] **Step 4: Update TodaySession component**
+
+Read `dashboard/components/TodaySession.tsx`. This component likely has an `onToggleSubTask` prop and renders sub-task checkboxes. Make it read-only:
+- Remove the `onToggleSubTask` prop
+- Remove any checkbox/toggle UI for sub-tasks
+- Keep the read-only display of today's session info
+- In `app/page.tsx`, remove the `onToggleSubTask` handler and prop passed to `<TodaySession>`
+
+- [ ] **Step 5: Delete plan/complete route**
 
 Remove `dashboard/app/api/plan/complete/route.ts`.
 
-- [ ] **Step 5: Remove dead DB helpers (if not done in Task 1)**
+- [ ] **Step 6: Remove dead DB helpers**
 
-If `togglePlanItemComplete`, `updatePlanItemSubTasks`, and `updatePlanItemNotes` were not removed in Task 1 Step 4 (due to build dependency), remove them now from `lib/db.ts`.
+Now that `plan/complete/route.ts` is deleted, remove these functions from `lib/db.ts`:
+- `togglePlanItemComplete`
+- `updatePlanItemSubTasks`
+- `updatePlanItemNotes`
 
-- [ ] **Step 6: Verify build and check for dead imports**
+Also remove their exports and any types only used by these functions.
+
+- [ ] **Step 7: Verify build and check for dead imports**
 
 Run: `cd /Users/martinlevie/AI/Coach/dashboard && npm run build`
 Expected: Build succeeds with no errors. No remaining imports of removed functions.
@@ -915,11 +1073,11 @@ grep -r "togglePlanItemComplete\|updatePlanItemSubTasks\|updatePlanItemNotes" da
 ```
 Expected: No matches.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
 git add dashboard/app/api/plan/ dashboard/components/TrainingPlanTable.tsx \
-  dashboard/app/page.tsx dashboard/app/plan/ dashboard/lib/db.ts
+  dashboard/components/TodaySession.tsx dashboard/app/page.tsx dashboard/app/plan/ dashboard/lib/db.ts
 git rm dashboard/app/api/plan/complete/route.ts
 git commit -m "feat: simplify plan table to read-only, migrate GET to /api/plan, remove completion tracking"
 ```
