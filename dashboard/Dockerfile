@@ -1,0 +1,50 @@
+# Stage 1: Dependencies
+FROM node:20-alpine AS deps
+RUN apk add --no-cache python3 py3-pip make g++ linux-headers
+WORKDIR /app
+
+# Node dependencies
+COPY dashboard/package.json dashboard/package-lock.json ./
+RUN npm ci
+
+# Python dependencies for Garmin connector
+COPY garmin-coach/garmin_connector.py /app/garmin-coach/
+RUN python3 -m pip install --break-system-packages garminconnect
+
+# Stage 2: Build
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY dashboard/ .
+RUN npm run build
+
+# Stage 3: Runtime
+FROM node:20-alpine AS runner
+RUN apk add --no-cache python3 dcron sqlite
+
+WORKDIR /app
+
+# Copy standalone build
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public 2>/dev/null || true
+
+# Copy Python connector + site-packages
+COPY --from=deps /app/garmin-coach /app/garmin-coach/
+COPY --from=deps /usr/lib/python3.12/site-packages/ /usr/lib/python3.12/site-packages/
+
+# Copy scripts
+COPY dashboard/scripts/ /app/scripts/
+RUN chmod +x /app/scripts/*.sh
+
+# Copy initial data for migration (state, coaches, DB)
+COPY state/ /app/init-data/state/
+COPY coaches/ /app/init-data/coaches/
+COPY dashboard/data/trends.db /app/init-data/trends.db
+
+ENV NODE_ENV=production
+ENV PORT=3000
+
+EXPOSE 3000
+
+ENTRYPOINT ["/app/scripts/entrypoint.sh"]

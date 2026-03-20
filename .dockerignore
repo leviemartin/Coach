@@ -1,0 +1,8 @@
+.git
+.worktrees
+dashboard/node_modules
+dashboard/.next
+dashboard/.env.local
+dashboard/data/
+garmin-coach/archive/
+garmin-coach/*.json
