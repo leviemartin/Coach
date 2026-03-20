@@ -3,8 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import type { PlanItem, WeeklyMetrics, CeilingEntry, SubTask, DexaScan, Race, RaceStatus } from './types';
 import { normalizeWorkoutText } from './parse-schedule';
-
-const DB_PATH = path.join(process.cwd(), 'data', 'trends.db');
+import { DB_PATH } from './constants';
 
 // Schema version — bump this when adding tables or columns to force re-init on cached connections
 const SCHEMA_VERSION = 3; // v3: added races table

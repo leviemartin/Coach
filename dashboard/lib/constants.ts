@@ -1,7 +1,7 @@
 import path from 'path';
 
-// Root of the Coach project (parent of dashboard/)
-export const COACH_ROOT = path.resolve(process.cwd(), '..');
+// Root of coach project data (defaults are for `next dev` only — production MUST set env vars)
+export const COACH_ROOT = process.env.COACH_ROOT || path.resolve(process.cwd(), '..');
 
 // State files
 export const STATE_DIR = path.join(COACH_ROOT, 'state');
@@ -17,10 +17,22 @@ export const RACES_PATH = path.join(STATE_DIR, 'races.json');
 // Coach persona files
 export const COACHES_DIR = path.join(COACH_ROOT, 'coaches');
 
-// Garmin data
-export const GARMIN_DATA_PATH = '/Users/martinlevie/garmin-coach/garmin_coach_data.json';
-export const GARMIN_CONNECTOR_DIR = '/Users/martinlevie/garmin-coach';
+// Garmin data (output on persistent volume)
+export const GARMIN_DATA_PATH = process.env.GARMIN_DATA_PATH
+  || path.join(COACH_ROOT, 'garmin', 'garmin_coach_data.json');
+
+// Garmin connector script (in Docker image, not volume)
+export const GARMIN_CONNECTOR_DIR = process.env.GARMIN_CONNECTOR_DIR
+  || '/app/garmin-coach';
 export const GARMIN_CONNECTOR_SCRIPT = 'garmin_connector.py';
+
+// Garmin token directory
+export const GARMIN_TOKEN_DIR = process.env.GARMIN_TOKEN_DIR
+  || path.join(COACH_ROOT, 'garmin', '.tokens');
+
+// Database
+export const DB_PATH = process.env.DB_PATH
+  || path.join(process.cwd(), 'data', 'trends.db');
 
 // Agent IDs mapped to their persona files
 export const AGENT_FILES: Record<string, string> = {
