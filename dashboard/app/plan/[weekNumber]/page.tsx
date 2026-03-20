@@ -13,7 +13,7 @@ export default function HistoricalPlanPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`/api/plan/complete?action=list&week=${weekNumber}`)
+    fetch(`/api/plan?week=${weekNumber}`)
       .then((r) => r.json())
       .then((data) => setItems(data.items || []))
       .catch(() => {})
@@ -29,7 +29,7 @@ export default function HistoricalPlanPage() {
       {!loading && items.length === 0 ? (
         <Alert severity="info">No plan found for week {weekNumber}.</Alert>
       ) : (
-        <TrainingPlanTable items={items} readOnly />
+        <TrainingPlanTable items={items} />
       )}
     </Box>
   );

@@ -2,16 +2,15 @@
 
 import { Typography, Box, Chip, Button, Skeleton } from '@mui/material';
 import { useRouter } from 'next/navigation';
-import type { PlanItem, SubTask } from '@/lib/types';
+import type { PlanItem } from '@/lib/types';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 interface TodaySessionProps {
   items: PlanItem[] | null;
-  onToggleSubTask?: (id: number, subTasks: SubTask[]) => void;
 }
 
-export default function TodaySession({ items, onToggleSubTask }: TodaySessionProps) {
+export default function TodaySession({ items }: TodaySessionProps) {
   const router = useRouter();
   const todayName = DAY_NAMES[new Date().getDay()];
 
@@ -38,8 +37,6 @@ export default function TodaySession({ items, onToggleSubTask }: TodaySessionPro
 
   if (!todayItem) return null;
 
-  const allDone = todayItem.subTasks.length > 0 && todayItem.subTasks.every(st => st.completed);
-
   return (
     <Box
       sx={{
@@ -51,7 +48,6 @@ export default function TodaySession({ items, onToggleSubTask }: TodaySessionPro
         borderBottom: 1,
         borderColor: 'divider',
         flexWrap: 'wrap',
-        ...(allDone && { opacity: 0.6 }),
       }}
     >
       <Typography variant="body1" fontWeight={700}>
@@ -60,8 +56,7 @@ export default function TodaySession({ items, onToggleSubTask }: TodaySessionPro
       <Chip
         label={todayItem.sessionType}
         size="small"
-        color={allDone ? 'success' : 'default'}
-        variant={allDone ? 'outlined' : 'filled'}
+        variant="filled"
       />
       {todayItem.focus && (
         <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
@@ -69,32 +64,7 @@ export default function TodaySession({ items, onToggleSubTask }: TodaySessionPro
         </Typography>
       )}
 
-      {todayItem.subTasks.length > 0 && (
-        <Box sx={{ display: 'flex', gap: 0.5, ml: 'auto' }}>
-          {todayItem.subTasks.map((st) => (
-            <Chip
-              key={st.key}
-              label={st.label}
-              size="small"
-              color={st.completed ? 'success' : 'default'}
-              variant={st.completed ? 'filled' : 'outlined'}
-              onClick={
-                onToggleSubTask && todayItem.id != null
-                  ? () => {
-                      const updated = todayItem.subTasks.map(s =>
-                        s.key === st.key ? { ...s, completed: !s.completed } : s
-                      );
-                      onToggleSubTask(todayItem.id!, updated);
-                    }
-                  : undefined
-              }
-              sx={{ cursor: onToggleSubTask ? 'pointer' : 'default' }}
-            />
-          ))}
-        </Box>
-      )}
-
-      <Button size="small" variant="text" onClick={() => router.push('/plan')} sx={{ ml: todayItem.subTasks.length > 0 ? 0 : 'auto' }}>
+      <Button size="small" variant="text" onClick={() => router.push('/plan')} sx={{ ml: 'auto' }}>
         View Plan →
       </Button>
     </Box>

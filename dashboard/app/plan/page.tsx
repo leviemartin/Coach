@@ -8,7 +8,6 @@ import {
   Card,
   CardHeader,
   CardContent,
-  Chip,
   Collapse,
   IconButton,
   Tooltip,
@@ -18,7 +17,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import TrainingPlanTable from '@/components/TrainingPlanTable';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
-import type { PlanItem, SubTask } from '@/lib/types';
+import type { PlanItem } from '@/lib/types';
 import { PROGRAM_EPOCH } from '@/lib/week';
 
 export default function PlanPage() {
@@ -31,7 +30,7 @@ export default function PlanPage() {
 
   const loadPlan = useCallback(async () => {
     try {
-      const res = await fetch('/api/plan/complete?action=list');
+      const res = await fetch('/api/plan');
       if (res.ok) {
         const data = await res.json();
         setItems(data.items || []);
@@ -68,38 +67,6 @@ export default function PlanPage() {
     setRefreshing(false);
   }, [loadPlan, loadBriefing]);
 
-  const handleUpdateSubTasks = async (id: number, subTasks: SubTask[]) => {
-    const allCompleted = subTasks.length > 0 && subTasks.every((st) => st.completed);
-
-    // Optimistic update
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              subTasks,
-              completed: allCompleted,
-              completedAt: allCompleted ? new Date().toISOString() : null,
-            }
-          : item
-      )
-    );
-
-    await fetch('/api/plan/complete', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, subTasks }),
-    });
-  };
-
-  const handleUpdateNotes = async (id: number, notes: string) => {
-    await fetch('/api/plan/complete', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, athleteNotes: notes }),
-    });
-  };
-
   // Compute Mon–Sun date range for the current week number
   const weekDateRange = weekNumber != null ? (() => {
     const MS_PER_DAY = 86_400_000;
@@ -109,11 +76,6 @@ export default function PlanPage() {
     const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     return `${fmt(monday)}–${fmt(sunday)}`;
   })() : null;
-
-  // Completion percentage
-  const completionPct = items.length > 0
-    ? Math.round((items.filter((i) => i.completed).length / items.length) * 100)
-    : null;
 
   return (
     <Box>
@@ -129,14 +91,6 @@ export default function PlanPage() {
           <Typography variant="h3" fontWeight={700}>
             Week {weekNumber ?? '?'}{weekDateRange ? ` · ${weekDateRange}` : ''}
           </Typography>
-          {completionPct != null && (
-            <Chip
-              label={`${completionPct}%`}
-              size="small"
-              color={completionPct === 100 ? 'success' : completionPct >= 50 ? 'primary' : 'default'}
-              sx={{ fontWeight: 600 }}
-            />
-          )}
         </Box>
         <Tooltip title="Reload plan data">
           <IconButton onClick={handleRefresh} disabled={refreshing} size="small">
@@ -181,11 +135,7 @@ export default function PlanPage() {
           No training plan for the current week. Run a check-in to generate one.
         </Alert>
       ) : (
-        <TrainingPlanTable
-          items={items}
-          onUpdateSubTasks={handleUpdateSubTasks}
-          onUpdateNotes={handleUpdateNotes}
-        />
+        <TrainingPlanTable items={items} />
       )}
     </Box>
   );

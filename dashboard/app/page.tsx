@@ -18,7 +18,7 @@ import RecoverySummary from '@/components/RecoverySummary';
 import PrioritiesList from '@/components/PrioritiesList';
 import { getTrainingWeek } from '@/lib/week';
 import type { PhaseInfo } from '@/components/PhaseTimeline';
-import type { PlanItem, SubTask, ExtendedGarminSummary } from '@/lib/types';
+import type { PlanItem, ExtendedGarminSummary } from '@/lib/types';
 
 interface PeriodizationResponse {
   phases: PhaseInfo[];
@@ -55,7 +55,7 @@ export default function DashboardHome() {
 
   const loadPlan = useCallback(async () => {
     try {
-      const res = await fetch('/api/plan/complete?action=list');
+      const res = await fetch('/api/plan');
       if (res.ok) {
         const data = await res.json();
         setPlanItems(data.items || []);
@@ -102,22 +102,6 @@ export default function DashboardHome() {
     } finally {
       setSyncing(false);
     }
-  };
-
-  const handleUpdateSubTasks = async (id: number, subTasks: SubTask[]) => {
-    const allCompleted = subTasks.length > 0 && subTasks.every((st) => st.completed);
-    setPlanItems((prev) =>
-      prev?.map((item) =>
-        item.id === id
-          ? { ...item, subTasks, completed: allCompleted, completedAt: allCompleted ? new Date().toISOString() : null }
-          : item
-      ) ?? null
-    );
-    await fetch('/api/plan/complete', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, subTasks }),
-    });
   };
 
   const selectedPhaseData = periodization?.phases.find(p => p.number === selectedPhase);
@@ -173,7 +157,7 @@ export default function DashboardHome() {
       </Typography>
 
       {/* Today's Session — one-liner */}
-      <TodaySession items={planItems} onToggleSubTask={handleUpdateSubTasks} />
+      <TodaySession items={planItems} />
 
       {/* Sparkline Metric Cards — 3 per row */}
       <Grid container spacing={3} sx={{ mb: 4 }}>

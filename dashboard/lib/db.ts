@@ -372,31 +372,6 @@ export function getPlanItems(weekNumber: number): PlanItem[] {
   return rows.map(mapPlanRow);
 }
 
-export function togglePlanItemComplete(id: number, completed: boolean): void {
-  const db = getDb();
-  db.prepare(
-    'UPDATE plan_items SET completed = ?, completed_at = ? WHERE id = ?'
-  ).run(completed ? 1 : 0, completed ? new Date().toISOString() : null, id);
-}
-
-export function updatePlanItemNotes(id: number, notes: string): void {
-  const db = getDb();
-  db.prepare('UPDATE plan_items SET athlete_notes = ? WHERE id = ?').run(notes, id);
-}
-
-export function updatePlanItemSubTasks(id: number, subTasks: SubTask[]): void {
-  const db = getDb();
-  const allCompleted = subTasks.length > 0 && subTasks.every((st) => st.completed);
-  db.prepare(
-    'UPDATE plan_items SET sub_tasks = ?, completed = ?, completed_at = ? WHERE id = ?'
-  ).run(
-    JSON.stringify(subTasks),
-    allCompleted ? 1 : 0,
-    allCompleted ? new Date().toISOString() : null,
-    id
-  );
-}
-
 function mapPlanRow(row: unknown): PlanItem {
   const r = row as Record<string, unknown>;
   let subTasks: SubTask[] = [];
