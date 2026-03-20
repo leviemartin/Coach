@@ -27,7 +27,7 @@ WORKDIR /app
 # Copy standalone build
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/public ./public 2>/dev/null || true
+COPY --from=builder /app/public ./public
 
 # Copy Python connector + site-packages
 COPY --from=deps /app/garmin-coach /app/garmin-coach/
