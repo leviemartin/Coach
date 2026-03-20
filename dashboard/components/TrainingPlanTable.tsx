@@ -5,6 +5,7 @@ import {
   Box, Typography, Card, CardContent,
   Chip, Collapse, IconButton,
 } from '@mui/material';
+import { cardContentSx } from '@/lib/theme';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
@@ -69,7 +70,7 @@ export default function TrainingPlanTable({ items }: TrainingPlanTableProps) {
     <Box>
       {/* Header */}
       <Card sx={{ mb: 2 }}>
-        <CardContent sx={{ pb: '16px !important' }}>
+        <CardContent sx={cardContentSx}>
           <Typography variant="h6">Training Plan</Typography>
         </CardContent>
       </Card>
@@ -95,7 +96,7 @@ export default function TrainingPlanTable({ items }: TrainingPlanTableProps) {
                 },
               }}
             >
-              <CardContent sx={{ pb: '12px !important', pt: 1.5 }}>
+              <CardContent sx={cardContentSx}>
                 {/* Row 1: Day + Session Type + Starting Weight + Expand */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                   <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
@@ -127,7 +128,14 @@ export default function TrainingPlanTable({ items }: TrainingPlanTableProps) {
                       aria-label={isExpanded ? 'Collapse details' : 'Expand details'}
                       aria-expanded={isExpanded}
                       onClick={() => toggleExpanded(item.id ?? item.dayOrder)}
-                      sx={{ ml: hasStartingWeight ? 0 : 'auto' }}
+                      sx={{
+                        ml: hasStartingWeight ? 0 : 'auto',
+                        '&:focus-visible': {
+                          outline: '2px solid',
+                          outlineColor: 'primary.main',
+                          outlineOffset: 2,
+                        },
+                      }}
                     >
                       {isExpanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
                     </IconButton>

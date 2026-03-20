@@ -6,6 +6,7 @@ import {
   TextField, Slider, Switch, FormControlLabel, Select, MenuItem, FormControl,
   InputLabel, Alert, Chip, CircularProgress, LinearProgress,
 } from '@mui/material';
+import { cardContentSx } from '@/lib/theme';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
 import type { CheckInFormData } from '@/lib/types';
@@ -160,7 +161,7 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
       case 0: // Garmin Data
         return (
           <Card>
-            <CardContent>
+            <CardContent sx={cardContentSx}>
               <Typography variant="h6" gutterBottom>Garmin Data Status</Typography>
               {garminLoading ? (
                 <CircularProgress size={24} />
@@ -261,7 +262,7 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
       case 1: // Hevy
         return (
           <Card>
-            <CardContent>
+            <CardContent sx={cardContentSx}>
               <Typography variant="h6" gutterBottom>Hevy Training Log</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 Export your Hevy data as CSV and paste below. Optional — skip if no gym data this week.
@@ -282,7 +283,7 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
       case 2: // Subjective
         return (
           <Card>
-            <CardContent>
+            <CardContent sx={cardContentSx}>
               <Typography variant="h6" gutterBottom>Subjective Check-In</Typography>
 
               {prefilledFromLogs && (
@@ -510,7 +511,7 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
       case 3: // Review & Submit
         return (
           <Card>
-            <CardContent>
+            <CardContent sx={cardContentSx}>
               <Typography variant="h6" gutterBottom>Review & Submit</Typography>
 
               <FormControl sx={{ mb: 3, minWidth: 280 }}>

@@ -7,6 +7,7 @@ import {
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import MarkdownRenderer from './MarkdownRenderer';
+import { cardContentSx } from '@/lib/theme';
 
 const AGENT_COLORS: Record<string, string> = {
   strength: '#C62828',
@@ -46,7 +47,7 @@ export default function AgentBriefing({
     <Box>
       {/* Specialist progress */}
       <Card sx={{ mb: 3 }}>
-        <CardContent>
+        <CardContent sx={cardContentSx}>
           <Typography variant="h6" gutterBottom>
             Specialist Analyses ({completedCount}/{totalCount})
           </Typography>
@@ -107,7 +108,7 @@ export default function AgentBriefing({
       {/* Head Coach Synthesis */}
       {(allDone || synthesis) && (
         <Card>
-          <CardContent>
+          <CardContent sx={cardContentSx}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
               <Typography variant="h5" fontWeight={700}>
                 Head Coach Synthesis

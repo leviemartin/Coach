@@ -2,6 +2,7 @@
 
 import { Card, CardContent, Typography, Box } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
+import { cardContentSx } from '@/lib/theme';
 import { SparkLineChart } from '@mui/x-charts/SparkLineChart';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
@@ -65,7 +66,7 @@ export default function SparklineCard({
 
   return (
     <Card sx={{ minHeight, display: 'flex', flexDirection: 'column' }}>
-      <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', pb: '12px !important', pt: 1.5, px: 2 }}>
+      <CardContent sx={{ ...cardContentSx, flex: 1, display: 'flex', flexDirection: 'column' }}>
         <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, letterSpacing: 0.3 }}>
           {label}
         </Typography>

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Card, CardContent, Typography, Grid, Box, FormControl, InputLabel, Select, MenuItem, Button } from '@mui/material';
+import { cardContentSx } from '@/lib/theme';
 import { LineChart, BarChart, ScatterChart } from '@mui/x-charts';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
@@ -74,7 +75,7 @@ export default function TrendCharts({
         {/* Weight Progression */}
         <Grid size={{ xs: 12, md: 6 }}>
           <Card sx={{ height: '100%' }}>
-            <CardContent>
+            <CardContent sx={cardContentSx}>
               <Typography variant="h6" gutterBottom>Weight Progression</Typography>
               <LineChart
                 xAxis={[{ data: weeks, scaleType: 'band' }]}
@@ -97,7 +98,7 @@ export default function TrendCharts({
         {/* Body Composition (DEXA + Garmin) */}
         <Grid size={{ xs: 12, md: 6 }}>
           <Card sx={{ height: '100%' }}>
-            <CardContent>
+            <CardContent sx={cardContentSx}>
               <Typography variant="h6" gutterBottom>Body Composition</Typography>
               {metrics.some((m) => m.bodyFatPct != null) ? (
                 <>
@@ -174,7 +175,7 @@ export default function TrendCharts({
         {/* Sleep & Readiness */}
         <Grid size={{ xs: 12, md: 6 }}>
           <Card sx={{ height: '100%' }}>
-            <CardContent>
+            <CardContent sx={cardContentSx}>
               <Typography variant="h6" gutterBottom>Sleep &amp; Readiness</Typography>
               <BarChart
                 xAxis={[{ data: weeks, scaleType: 'band' }]}
@@ -199,7 +200,7 @@ export default function TrendCharts({
         {/* Pull-Up Progression */}
         <Grid size={{ xs: 12, md: 6 }}>
           <Card sx={{ height: '100%' }}>
-            <CardContent>
+            <CardContent sx={cardContentSx}>
               <Typography variant="h6" gutterBottom>Pull-Up Progression</Typography>
               {metrics.some((m) => m.pullupCount != null) ? (
                 <LineChart
@@ -227,7 +228,7 @@ export default function TrendCharts({
         {/* Strength Ceilings */}
         <Grid size={{ xs: 12, md: 6 }}>
           <Card sx={{ height: '100%' }}>
-            <CardContent>
+            <CardContent sx={cardContentSx}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
                 <Typography variant="h6">Strength Ceilings</Typography>
                 <FormControl size="small" sx={{ minWidth: 180 }}>
@@ -268,7 +269,7 @@ export default function TrendCharts({
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, md: 6 }}>
           <Card sx={{ height: '100%' }}>
-            <CardContent>
+            <CardContent sx={cardContentSx}>
               <Typography variant="h6" gutterBottom>Protocol Compliance</Typography>
               <BarChart
                 xAxis={[{ data: weeks, scaleType: 'band' }]}
@@ -301,7 +302,7 @@ export default function TrendCharts({
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, md: 6 }}>
           <Card sx={{ height: '100%' }}>
-            <CardContent>
+            <CardContent sx={cardContentSx}>
               <Typography variant="h6" gutterBottom>Nutrition</Typography>
               <BarChart
                 xAxis={[{ data: weeks, scaleType: 'band' }]}
