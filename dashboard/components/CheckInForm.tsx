@@ -7,6 +7,7 @@ import {
   InputLabel, Alert, Chip, CircularProgress, LinearProgress,
 } from '@mui/material';
 import type { CheckInFormData } from '@/lib/types';
+import { getTrainingWeek } from '@/lib/week';
 
 const STEPS = ['Garmin Data', 'Hevy Training Log', 'Subjective Check-In', 'Review & Submit'];
 
@@ -57,6 +58,7 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
     model: 'sonnet',
   });
 
+  const [prefilledFromLogs, setPrefilledFromLogs] = useState(false);
   const syncAbortRef = useRef<AbortController | null>(null);
 
   const refreshGarminStatus = useCallback(() => {
@@ -71,6 +73,25 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
   useEffect(() => {
     refreshGarminStatus();
   }, [refreshGarminStatus]);
+
+  useEffect(() => {
+    const currentWeek = getTrainingWeek(new Date());
+    fetch(`/api/log/week-summary?week=${currentWeek}`)
+      .then(res => res.json())
+      .then(summary => {
+        if (summary.days_logged > 0) {
+          setFormData(prev => ({
+            ...prev,
+            sessionsCompleted: summary.workouts.completed,
+            rugProtocolDays: summary.rug_protocol.done,
+            bedtimeCompliance: summary.vampire.compliant,
+            hydrationTracked: summary.hydration.tracked > 0,
+          }));
+          setPrefilledFromLogs(true);
+        }
+      })
+      .catch(() => {}); // Silent fail — form works without pre-fill
+  }, []);
 
   useEffect(() => {
     return () => { syncAbortRef.current?.abort(); };
@@ -233,6 +254,12 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>Subjective Check-In</Typography>
+
+              {prefilledFromLogs && (
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  Pre-filled from daily logs. You can adjust values before submitting.
+                </Alert>
+              )}
 
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 2 }}>
 
