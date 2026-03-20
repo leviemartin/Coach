@@ -136,17 +136,52 @@ Starting Next.js on port 3000...
 
 ## Step 9: Bootstrap Garmin Authentication
 
-The Garmin connector needs an interactive MFA login the first time. In Railway shell:
+The Garmin connector needs interactive MFA on first login, which doesn't work in Railway's non-interactive SSH. The solution: authenticate locally, then upload the tokens to Railway.
+
+### 9a: Authenticate locally
 
 ```bash
-cd /app/garmin-coach
-python3 garmin_connector.py --output /data/garmin/garmin_coach_data.json --token-dir /data/garmin/.tokens
+cd /Users/martinlevie/garmin-coach
+GARMIN_EMAIL="leviemartin5@gmail.com" \
+GARMIN_PASSWORD="<your-garmin-password>" \
+python3 garmin_connector.py --output /tmp/garmin_test.json --token-dir /tmp/garmin_tokens_fresh --days 1
 ```
 
-- It will prompt for an MFA code sent to your email
-- Enter the code
-- Tokens are saved to `/data/garmin/.tokens/` (persistent volume)
-- Subsequent cron runs will use the saved tokens
+- Enter the MFA code when prompted
+- Verify it completes successfully and creates `/tmp/garmin_tokens_fresh/oauth1_token.json` and `oauth2_token.json`
+
+### 9b: Upload tokens to Railway via CLI
+
+```bash
+# Set your Railway project IDs (get these from `railway status` or the Railway dashboard URL)
+PROJECT="7b45d31c-6e8a-4119-9700-38392bc443ae"
+ENV="6cdfc9a2-9fd5-4143-a24a-0be8a4723b50"
+SERVICE="83b2adec-3e30-424b-8b00-d04305aa503a"
+
+# Create token directory on the volume
+railway ssh --project=$PROJECT --environment=$ENV --service=$SERVICE -- "mkdir -p /data/garmin/.tokens"
+
+# Upload oauth1 token
+railway ssh --project=$PROJECT --environment=$ENV --service=$SERVICE -- \
+  "cat > /data/garmin/.tokens/oauth1_token.json" < /tmp/garmin_tokens_fresh/oauth1_token.json
+
+# Upload oauth2 token
+railway ssh --project=$PROJECT --environment=$ENV --service=$SERVICE -- \
+  "cat > /data/garmin/.tokens/oauth2_token.json" < /tmp/garmin_tokens_fresh/oauth2_token.json
+```
+
+### 9c: Verify Garmin sync works on Railway
+
+```bash
+railway ssh --project=$PROJECT --environment=$ENV --service=$SERVICE -- \
+  "cd /app/garmin-coach && python3 garmin_connector.py --output /data/garmin/garmin_coach_data.json --token-dir /data/garmin/.tokens --days 1"
+```
+
+This should complete without MFA (using the uploaded tokens). If it says "Resumed session successfully" — you're done. The cron will auto-sync every 6 hours.
+
+### Token refresh
+
+Tokens are valid for ~1 year. When they expire, repeat steps 9a-9c. The dashboard shows a "stale data" indicator when Garmin data is outdated, which signals it's time to refresh tokens.
 
 ---
 
