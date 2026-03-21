@@ -57,8 +57,7 @@ export function fromBedtimeStorage(stored: string): string {
 
 /** Is this bedtime compliant with the 23:00 Vampire Protocol target? */
 export function isBedtimeCompliant(storedTime: string): boolean {
-  const [h] = storedTime.split(':').map(Number);
-  return h < 23;
+  return getBedtimeComplianceLevel(storedTime) === 'on-time';
 }
 
 export interface WeekSummary {
