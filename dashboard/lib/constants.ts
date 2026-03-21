@@ -21,11 +21,6 @@ export const COACHES_DIR = path.join(COACH_ROOT, 'coaches');
 export const GARMIN_DATA_PATH = process.env.GARMIN_DATA_PATH
   || path.join(COACH_ROOT, 'garmin', 'garmin_coach_data.json');
 
-// Garmin connector script (in Docker image, not volume)
-export const GARMIN_CONNECTOR_DIR = process.env.GARMIN_CONNECTOR_DIR
-  || '/app/garmin-coach';
-export const GARMIN_CONNECTOR_SCRIPT = 'garmin_connector.py';
-
 // Garmin token directory
 export const GARMIN_TOKEN_DIR = process.env.GARMIN_TOKEN_DIR
   || path.join(COACH_ROOT, 'garmin', '.tokens');
