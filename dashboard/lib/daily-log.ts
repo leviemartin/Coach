@@ -305,6 +305,35 @@ export function computeStreak(
   return { current, best };
 }
 
+/** Compute compliance % for each of the last N weeks. */
+export function getComplianceTrend(
+  currentWeek: number,
+  weeks: number,
+): Array<{ week_number: number; compliance_pct: number; days_logged: number }> {
+  const result: Array<{ week_number: number; compliance_pct: number; days_logged: number }> = [];
+
+  for (let w = currentWeek - weeks + 1; w <= currentWeek; w++) {
+    if (w < 1) continue;
+    const logs = getDailyLogsByWeek(w);
+    if (logs.length === 0) {
+      result.push({ week_number: w, compliance_pct: 0, days_logged: 0 });
+      continue;
+    }
+    const planItems = getPlanItems(w);
+    const hasPlanned = logs.map(l => {
+      const dn = getDayName(l.date);
+      const da = getDayAbbrev(l.date);
+      return planItems.some((item: { day: string }) =>
+        item.day === dn || item.day.startsWith(da)
+      );
+    });
+    const pct = computeWeekCompliancePct(logs, hasPlanned);
+    result.push({ week_number: w, compliance_pct: pct, days_logged: logs.length });
+  }
+
+  return result;
+}
+
 /** Format the week summary as a markdown block for agent context injection */
 export function formatWeekSummaryForAgents(summary: WeekSummary): string {
   let md = `## Daily Log Summary (Week ${summary.week_number})\n`;
