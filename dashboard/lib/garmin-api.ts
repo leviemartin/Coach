@@ -24,6 +24,7 @@ export async function connectApi(
   oauth1: OAuth1Token,
   oauth2: OAuth2Token,
   tokenDir?: string,
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<{ data: any; oauth2: OAuth2Token }> {
   let currentOAuth2 = oauth2;
 

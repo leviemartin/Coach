@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { buildAuthHeader, connectApiUrl } from '@/lib/garmin-api';
 
 describe('garmin-api', () => {
@@ -7,6 +7,7 @@ describe('garmin-api', () => {
       const header = buildAuthHeader({
         token_type: 'Bearer',
         access_token: 'abc123',
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
       expect(header).toBe('Bearer abc123');
     });

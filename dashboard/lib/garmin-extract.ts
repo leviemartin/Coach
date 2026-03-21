@@ -8,7 +8,9 @@
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Dict = Record<string, any>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ApiFn = (path: string) => Promise<any>;
 
 // ---------------------------------------------------------------------------
@@ -51,6 +53,7 @@ export function ensureDict(data: unknown): Dict {
 }
 
 /** Safe API call wrapper — returns null on failure */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function safeCall(apiFn: ApiFn, path: string): Promise<any> {
   try {
     return await apiFn(path);
@@ -587,7 +590,9 @@ export function extractNutrition(
         const foodItems = meal.foodItems ?? meal.items ?? [];
         if (Array.isArray(foodItems) && foodItems.length > 0) {
           mealInfo.food_items = foodItems
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             .filter((item: any) => item && typeof item === 'object')
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             .map((item: any) => ({
               name: item.foodName ?? item.name,
               calories: item.calories,
@@ -662,7 +667,9 @@ export function extractNutrition(
 export function extractHrZones(raw: unknown): Array<Dict> {
   if (!raw || !Array.isArray(raw)) return [];
   return raw
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .filter((z: any) => z && typeof z === 'object' && z.secsInZone)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .map((z: any) => ({
       zone_number: z.zoneNumber,
       seconds_in_zone: z.secsInZone,
@@ -932,7 +939,7 @@ export async function buildExport(
   }
 
   // --- Training status / load focus ---
-  let trainingStatusData: Dict = {};
+  const trainingStatusData: Dict = {};
 
   let ts = await safeCall(
     apiFn,

@@ -203,6 +203,7 @@ describe('garmin-extract', () => {
         { bedtime: '23:30' },
         { bedtime: '01:30' },
       ];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = computeWeeklyAverages([], sleep as any, [], [], []);
       expect(result.nights_before_2300).toBe(1);
       expect(result.nights_tracked).toBe(3);
