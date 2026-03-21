@@ -409,6 +409,8 @@ export function extractSleep(raw: unknown, dateStr: string): Dict {
       bedtime = new Date(sleepStart).toTimeString().slice(0, 5);
     } else if (typeof sleepStart === 'string' && sleepStart.includes('T')) {
       bedtime = sleepStart.split('T')[1].slice(0, 5);
+    } else if (typeof sleepStart === 'string' && /^\d{2}:\d{2}/.test(sleepStart)) {
+      bedtime = sleepStart.slice(0, 5);
     }
   }
   if (sleepEnd) {
@@ -416,6 +418,8 @@ export function extractSleep(raw: unknown, dateStr: string): Dict {
       wakeTime = new Date(sleepEnd).toTimeString().slice(0, 5);
     } else if (typeof sleepEnd === 'string' && sleepEnd.includes('T')) {
       wakeTime = sleepEnd.split('T')[1].slice(0, 5);
+    } else if (typeof sleepEnd === 'string' && /^\d{2}:\d{2}/.test(sleepEnd)) {
+      wakeTime = sleepEnd.slice(0, 5);
     }
   }
 
