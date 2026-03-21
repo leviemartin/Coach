@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import OAuth from 'oauth-1.0a';
-import { CookieJar, Cookie } from 'tough-cookie';
+import { CookieJar } from 'tough-cookie';
 import type { OAuth1Token, OAuth2Token } from './garmin-tokens';
 
 // ---------------------------------------------------------------------------
