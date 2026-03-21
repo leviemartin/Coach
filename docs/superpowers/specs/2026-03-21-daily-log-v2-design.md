@@ -124,7 +124,7 @@ Each checkbox item shows a small inline indicator of the week's running tally fo
   - Normal day: 6 items (session, core, rug, kitchen, hydration, bedtime)
   - Sick day: 2 items (hydration, bedtime)
   - Rest day with no session: 5 items (no session to complete)
-  - Family day (Saturday): not applicable (no daily log expected)
+  - Family day (Saturday): progress ring and streak counter are hidden entirely. The page shows only the "Family Day" chip.
 - Fills in real-time as checkboxes are toggled
 - At 100%: ring turns green with a subtle pulse animation
 
@@ -248,9 +248,26 @@ Returns weekly compliance percentages for the last N weeks.
 }
 ```
 
+### Modified: `PUT /api/log`
+
+The client now sends `workout_plan_item_id` explicitly in the request body (the selected session from the SessionPicker). The server no longer computes this via `findPlanItemForDate()` — it accepts the client-provided value directly. This enables flexible completion where Tuesday's session is logged on Wednesday.
+
+The `workout_plan_item_id` may now reference a `plan_item` from a different day than the log's `date`. Queries that join `daily_logs` to `plan_items` should not assume date alignment.
+
+Request body adds optional field:
+```json
+{
+  "date": "2026-03-19",
+  "workout_plan_item_id": 41,
+  "workout_completed": 1,
+  "..."
+}
+```
+
+If `workout_plan_item_id` is not provided (e.g. rest day, no session selected), the server falls back to `findPlanItemForDate()` for backwards compatibility.
+
 ### Unchanged
 
-- `PUT /api/log` — no changes, but `workout_plan_item_id` may now reference a session from a different day (flexible completion)
 - `GET /api/log/week` — unchanged, still returns week logs for dot states and client-side compliance computation
 - `GET /api/log/week-summary` — unchanged, used by check-in integration
 
@@ -291,8 +308,8 @@ Computes final compliance % for each of the last N weeks.
 | `components/DailyLog.tsx` | Refactor into orchestrator — distribute state to new sub-components |
 | `lib/daily-log.ts` | Add streak computation, day/week compliance %, compliance trend |
 | `app/api/log/route.ts` | Add `uncompleted_sessions` and `streak` to GET response |
-| `components/TrendCharts.tsx` | Add weekly compliance chart |
-| `app/api/trends/route.ts` | Include compliance trend data (or consumed from new endpoint) |
+| `components/TrendCharts.tsx` | Add weekly compliance chart, consuming data from `/api/log/compliance-trend` |
+| `app/trends/page.tsx` | Fetch compliance trend data and pass to TrendCharts |
 
 ### Removed Files
 
