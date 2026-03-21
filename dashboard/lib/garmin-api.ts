@@ -24,6 +24,7 @@ export async function connectApi(
   oauth1: OAuth1Token,
   oauth2: OAuth2Token,
   tokenDir?: string,
+  maxRetries: number = 3,
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<{ data: any; oauth2: OAuth2Token }> {
   let currentOAuth2 = oauth2;
@@ -38,21 +39,35 @@ export async function connectApi(
 
   const domain = oauth1.domain || 'garmin.com';
   const url = connectApiUrl(path, domain);
-  const resp = await fetch(url, {
-    headers: {
-      Authorization: buildAuthHeader(currentOAuth2),
-      'User-Agent': API_USER_AGENT,
-    },
-  });
 
-  if (!resp.ok) {
-    throw new Error(`Garmin API ${path} failed: ${resp.status} ${resp.statusText}`);
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const resp = await fetch(url, {
+      headers: {
+        Authorization: buildAuthHeader(currentOAuth2),
+        'User-Agent': API_USER_AGENT,
+      },
+    });
+
+    if (resp.status === 429 && attempt < maxRetries) {
+      const retryAfter = resp.headers.get('retry-after');
+      const waitMs = retryAfter
+        ? parseInt(retryAfter, 10) * 1000
+        : Math.min(2000 * Math.pow(2, attempt), 15000);
+      await new Promise((r) => setTimeout(r, waitMs));
+      continue;
+    }
+
+    if (!resp.ok) {
+      throw new Error(`Garmin API ${path} failed: ${resp.status} ${resp.statusText}`);
+    }
+
+    if (resp.status === 204) {
+      return { data: null, oauth2: currentOAuth2 };
+    }
+
+    const data = await resp.json();
+    return { data, oauth2: currentOAuth2 };
   }
 
-  if (resp.status === 204) {
-    return { data: null, oauth2: currentOAuth2 };
-  }
-
-  const data = await resp.json();
-  return { data, oauth2: currentOAuth2 };
+  throw new Error(`Garmin API ${path} failed: 429 Too Many Requests (after ${maxRetries} retries)`);
 }
