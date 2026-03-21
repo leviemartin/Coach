@@ -113,24 +113,52 @@ async function cookieFetch(
   jar: CookieJar,
   init: RequestInit = {},
 ): Promise<Response> {
-  const cookieString = await jar.getCookieString(url);
-  const headers = new Headers(init.headers);
-  if (cookieString) headers.set('Cookie', cookieString);
-  if (!headers.has('User-Agent')) headers.set('User-Agent', USER_AGENT);
+  let currentUrl = url;
+  let redirectCount = 0;
+  const MAX_REDIRECTS = 10;
 
-  const resp = await fetch(url, { ...init, headers, redirect: 'manual' });
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const cookieString = await jar.getCookieString(currentUrl);
+    const headers = new Headers(init.headers);
+    if (cookieString) headers.set('Cookie', cookieString);
+    if (!headers.has('User-Agent')) headers.set('User-Agent', USER_AGENT);
 
-  // Store cookies from response
-  const setCookies = resp.headers.getSetCookie?.() ?? [];
-  for (const sc of setCookies) {
-    try {
-      await jar.setCookie(sc, url);
-    } catch {
-      // ignore malformed cookies
+    const resp = await fetch(currentUrl, {
+      ...init,
+      headers,
+      redirect: 'manual',
+    });
+
+    // Store cookies from response
+    const setCookies = resp.headers.getSetCookie?.() ?? [];
+    for (const sc of setCookies) {
+      try {
+        await jar.setCookie(sc, currentUrl);
+      } catch {
+        // ignore malformed cookies
+      }
     }
-  }
 
-  return resp;
+    // Follow redirects manually to preserve cookies across hops
+    if (
+      resp.status >= 300 &&
+      resp.status < 400 &&
+      resp.headers.has('location')
+    ) {
+      redirectCount++;
+      if (redirectCount > MAX_REDIRECTS) {
+        throw new Error('Too many redirects');
+      }
+      const location = resp.headers.get('location')!;
+      currentUrl = new URL(location, currentUrl).href;
+      // Redirects always become GET requests
+      init = { ...init, method: 'GET', body: undefined };
+      continue;
+    }
+
+    return resp;
+  }
 }
 
 // ---------------------------------------------------------------------------
