@@ -62,7 +62,21 @@ export async function POST() {
 
     const dir = path.dirname(GARMIN_DATA_PATH);
     fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(GARMIN_DATA_PATH, JSON.stringify(exportData, null, 2));
+    const exportJson = JSON.stringify(exportData, null, 2);
+    fs.writeFileSync(GARMIN_DATA_PATH, exportJson);
+
+    // Archive to dated file (garmin_YYYY-MM-DD.json)
+    const archiveDir = path.join(dir, 'archive');
+    fs.mkdirSync(archiveDir, { recursive: true });
+    const today = new Date().toISOString().split('T')[0];
+    let archiveName = `garmin_${today}.json`;
+    if (fs.existsSync(path.join(archiveDir, archiveName))) {
+      for (let seq = 2; seq <= 99; seq++) {
+        archiveName = `garmin_${today}_${seq}.json`;
+        if (!fs.existsSync(path.join(archiveDir, archiveName))) break;
+      }
+    }
+    fs.writeFileSync(path.join(archiveDir, archiveName), exportJson);
 
     saveTokens(GARMIN_TOKEN_DIR, tokens.oauth1, currentOAuth2);
 
