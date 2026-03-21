@@ -320,8 +320,6 @@ export interface WeightHistoryPoint {
 export interface PhaseTarget {
   phaseNumber: number;
   name: string;
-  startWeek: number;
-  endWeek: number;
   targetWeightKg: number;
 }
 
