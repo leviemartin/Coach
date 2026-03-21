@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { readGarminData, extractGarminSummary } from '@/lib/garmin';
+import { readGarminData, extractExtendedSummary } from '@/lib/garmin';
 import { buildSharedContext, runSpecialistsSequentially, streamHeadCoachSynthesis } from '@/lib/agents';
 import { writeWeeklyLog, appendTrainingHistory, readCeilings, writeCeilings } from '@/lib/state';
 import { getPlanWeekNumber } from '@/lib/week';
@@ -109,7 +109,7 @@ export async function POST(request: Request) {
         }
 
         // Extract Garmin summary for metrics
-        const garminSummary = garmin.data ? extractGarminSummary(garmin.data) : null;
+        const garminSummary = garmin.data ? extractExtendedSummary(garmin.data) : null;
 
         // Save weekly metrics to SQLite
         const modelName = formData.model === 'opus' ? 'opus' : formData.model === 'mixed' ? 'mixed' : 'sonnet';
@@ -122,9 +122,9 @@ export async function POST(request: Request) {
           avgSleepScore: garminSummary?.avgSleep ?? null,
           avgTrainingReadiness: garminSummary?.avgReadiness ?? null,
           avgRhr: garminSummary?.avgRhr ?? null,
-          avgHrv: null, // Not extracted in current summary
-          caloriesAvg: null, // Would need nutrition data parsing
-          proteinAvg: null,
+          avgHrv: garminSummary?.avgHrv ?? null,
+          caloriesAvg: garminSummary?.caloriesAvg ?? null,
+          proteinAvg: garminSummary?.proteinAvg ?? null,
           hydrationTracked: formData.hydrationTracked,
           vampireCompliancePct: (formData.bedtimeCompliance / 7) * 100,
           rugProtocolDays: formData.rugProtocolDays,

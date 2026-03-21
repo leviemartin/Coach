@@ -129,6 +129,8 @@ export interface ExtendedGarminSummary {
   acwrStatus: string | null;
   avgAerobicTE: number | null;
   avgAnaerobicTE: number | null;
+  caloriesAvg: number | null;
+  proteinAvg: number | null;
 
   // Daily sparkline data (7 days)
   dailyWeight: SparklinePoint[];

@@ -140,6 +140,18 @@ export function extractExtendedSummary(data: GarminData): ExtendedGarminSummary 
   const avgAerobicTE = te?.aerobic?.avg ?? null;
   const avgAnaerobicTE = te?.anaerobic?.avg ?? null;
 
+  // Nutrition averages
+  const nutritionData = data.nutrition_stats_7d as Record<string, unknown> | undefined;
+  const nutritionDaily = (nutritionData?.daily as Array<Record<string, unknown>>) || [];
+  const calDays = nutritionDaily.filter(d => (d.calories_consumed as number | undefined) != null);
+  const caloriesAvg = calDays.length
+    ? Math.round(calDays.reduce((s, d) => s + (d.calories_consumed as number), 0) / calDays.length)
+    : null;
+  const protDays = nutritionDaily.filter(d => (d.protein_g as number | undefined) != null);
+  const proteinAvg = protDays.length
+    ? Math.round(protDays.reduce((s, d) => s + (d.protein_g as number), 0) / protDays.length)
+    : null;
+
   const weightDelta = dailyWeight.length >= 2
     ? Math.round((dailyWeight[dailyWeight.length - 1].value - dailyWeight[0].value) * 10) / 10
     : null;
@@ -153,6 +165,8 @@ export function extractExtendedSummary(data: GarminData): ExtendedGarminSummary 
     acwrStatus,
     avgAerobicTE,
     avgAnaerobicTE,
+    caloriesAvg,
+    proteinAvg,
     dailyWeight,
     dailySleep,
     dailyReadiness,
