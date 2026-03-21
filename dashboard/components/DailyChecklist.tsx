@@ -1,7 +1,7 @@
 'use client';
 
 import { Box, Card, CardContent, Checkbox, Chip, FormControlLabel, Typography } from '@mui/material';
-import { getComplianceColor } from '@/lib/daily-log';
+import { getComplianceColor } from '@/lib/compliance';
 
 export interface WeekTallies {
   core: number;

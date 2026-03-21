@@ -1,7 +1,7 @@
 'use client';
 
 import { Box, Chip, Typography } from '@mui/material';
-import { getComplianceColor } from '@/lib/daily-log';
+import { getComplianceColor } from '@/lib/compliance';
 
 interface MetricTally {
   label: string;

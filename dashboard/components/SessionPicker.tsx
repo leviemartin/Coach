@@ -17,7 +17,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useRouter } from 'next/navigation';
-import { getComplianceColor } from '@/lib/daily-log';
+import { getComplianceColor } from '@/lib/compliance';
 
 export interface UncompletedSession {
   id: number;
