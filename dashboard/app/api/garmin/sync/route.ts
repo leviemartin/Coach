@@ -64,9 +64,15 @@ export async function POST() {
 
     saveTokens(GARMIN_TOKEN_DIR, tokens.oauth1, currentOAuth2);
 
+    // Read the sync report from the export data
+    const syncReport = exportData._sync_report ?? null;
+
     return NextResponse.json({
       success: true,
-      message: 'Garmin data synced successfully',
+      message: syncReport && syncReport.failed_calls > 0
+        ? `Synced with ${syncReport.failed_calls} failed API calls (${syncReport.success_rate}% success)`
+        : 'Garmin data synced successfully',
+      syncReport,
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Unknown error';

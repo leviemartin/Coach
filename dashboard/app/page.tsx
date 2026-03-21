@@ -92,7 +92,11 @@ export default function DashboardHome() {
       const data = await res.json();
       if (data.success) {
         refreshSummary();
-        setSyncResult({ type: 'success', message: 'Garmin data synced' });
+        const hasFails = data.syncReport && data.syncReport.failed_calls > 0;
+        const msg = hasFails
+          ? `Synced (${data.syncReport.success_rate}% success — ${data.syncReport.failed_calls} API calls failed)`
+          : 'Garmin data synced';
+        setSyncResult({ type: hasFails ? 'error' : 'success', message: msg });
       } else {
         setSyncResult({ type: 'error', message: data.error || 'Sync failed' });
       }
