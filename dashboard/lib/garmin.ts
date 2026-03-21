@@ -111,11 +111,11 @@ export function extractExtendedSummary(data: GarminData): ExtendedGarminSummary 
     .map(d => ({ date: d.date || '', value: d.weight_kg! }));
 
   const hrv4w = perf?.hrv_4w as Record<string, unknown> | undefined;
-  const hrvDaily = (hrv4w?.daily as Array<{ date: string; value: number }>) || [];
-  const dailyHrv = hrvDaily
+  const hrvRawDaily = (hrv4w?.daily as Array<Record<string, unknown>>) || [];
+  const dailyHrv = hrvRawDaily
     .slice(-7)
-    .filter(d => d.value != null)
-    .map(d => ({ date: d.date, value: d.value }));
+    .filter(d => (d.weekly_avg_hrv as number | undefined) != null)
+    .map(d => ({ date: d.date as string, value: d.weekly_avg_hrv as number }));
   const avgHrv = dailyHrv.length
     ? Math.round(dailyHrv.reduce((s, d) => s + d.value, 0) / dailyHrv.length)
     : null;
