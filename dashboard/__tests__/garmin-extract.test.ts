@@ -10,7 +10,24 @@ import {
   formatNutrition,
   computeWeeklyAverages,
   ensureDict,
+  safeCall,
 } from '@/lib/garmin-extract';
+
+describe('safeCall', () => {
+  it('returns data and records success', async () => {
+    const failures: string[] = [];
+    const result = await safeCall(async () => ({ value: 42 }), '/test', failures);
+    expect(result).toEqual({ value: 42 });
+    expect(failures).toEqual([]);
+  });
+
+  it('returns null and records failure path', async () => {
+    const failures: string[] = [];
+    const result = await safeCall(async () => { throw new Error('boom'); }, '/test', failures);
+    expect(result).toBeNull();
+    expect(failures).toEqual(['/test']);
+  });
+});
 
 describe('garmin-extract', () => {
   describe('ensureDict', () => {

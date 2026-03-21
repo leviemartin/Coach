@@ -52,12 +52,13 @@ export function ensureDict(data: unknown): Dict {
   return {};
 }
 
-/** Safe API call wrapper — returns null on failure */
+/** Safe API call wrapper — returns null on failure, records path in failures array */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function safeCall(apiFn: ApiFn, path: string): Promise<any> {
+export async function safeCall(apiFn: ApiFn, path: string, failures?: string[]): Promise<any> {
   try {
     return await apiFn(path);
   } catch {
+    if (failures) failures.push(path);
     return null;
   }
 }
@@ -790,10 +791,15 @@ export async function buildExport(
   const start28dStr = isoDate(start28d);
   const start7dStr = isoDate(start7d);
 
+  const failures: string[] = [];
+  let totalCalls = 0;
+
   // --- Activities (full 28-day window) ---
+  totalCalls += 1;
   const activitiesRaw = await safeCall(
     apiFn,
     `/activitylist-service/activities/search/activities?startDate=${start28dStr}&endDate=${todayStr}`,
+    failures,
   );
   const rawActivities: Dict[] = Array.isArray(activitiesRaw)
     ? activitiesRaw
@@ -806,16 +812,19 @@ export async function buildExport(
     const actId = act.activityId;
 
     if (category === 'strength') {
+      totalCalls += 2;
       const [setsData, hrZonesRaw] = await Promise.all([
-        safeCall(apiFn, `/activity-service/activity/${actId}/exerciseSets`),
-        safeCall(apiFn, `/activity-service/activity/${actId}/hrTimeInZones`),
+        safeCall(apiFn, `/activity-service/activity/${actId}/exerciseSets`, failures),
+        safeCall(apiFn, `/activity-service/activity/${actId}/hrTimeInZones`, failures),
       ]);
       const hrZones = extractHrZones(hrZonesRaw);
       allActivities.push(extractStrengthDetails(act, setsData, hrZones));
     } else if (category === 'cardio') {
+      totalCalls += 1;
       const hrZonesRaw = await safeCall(
         apiFn,
         `/activity-service/activity/${actId}/hrTimeInZones`,
+        failures,
       );
       const hrZones = extractHrZones(hrZonesRaw);
       allActivities.push(extractCardioDetails(act, hrZones));
@@ -857,25 +866,33 @@ export async function buildExport(
     const dateStr = isoDate(date);
 
     // Run per-day calls in parallel
+    totalCalls += 7;
     const [statsRaw, sleepRaw, hrvRaw, readinessRaw, hydrationRaw, foodLogsRaw, mealsRaw] =
       await Promise.all([
-        safeCall(apiFn, `/usersummary-service/stats/${dateStr}`),
-        safeCall(apiFn, `/wellness-service/wellness/dailySleepData/${dateStr}`),
-        safeCall(apiFn, `/hrv-service/hrv/${dateStr}`),
-        safeCall(apiFn, `/metrics-service/metrics/trainingreadiness/${dateStr}`),
-        safeCall(apiFn, `/usersummary-service/usersummary/hydration/daily/${dateStr}`),
-        safeCall(apiFn, `/nutrition-service/food/logs/${dateStr}`),
-        safeCall(apiFn, `/nutrition-service/meals/${dateStr}`),
+        safeCall(apiFn, `/usersummary-service/stats/${dateStr}`, failures),
+        safeCall(apiFn, `/wellness-service/wellness/dailySleepData/${dateStr}`, failures),
+        safeCall(apiFn, `/hrv-service/hrv/${dateStr}`, failures),
+        safeCall(apiFn, `/metrics-service/metrics/trainingreadiness/${dateStr}`, failures),
+        safeCall(apiFn, `/usersummary-service/usersummary/hydration/daily/${dateStr}`, failures),
+        safeCall(apiFn, `/nutrition-service/food/logs/${dateStr}`, failures),
+        safeCall(apiFn, `/nutrition-service/meals/${dateStr}`, failures),
       ]);
 
     // Settings only if food logs didn't have goals
     let settingsRaw = null;
     const fl = foodLogsRaw as Dict | null;
     if (!fl?.dailyNutritionGoals || Object.keys(fl.dailyNutritionGoals).length === 0) {
+      totalCalls += 1;
       settingsRaw = await safeCall(
         apiFn,
         `/nutrition-service/settings/${dateStr}`,
+        failures,
       );
+    }
+
+    // Throttle: small delay between days to avoid Garmin rate limits
+    if (i < numDays - 1) {
+      await new Promise((r) => setTimeout(r, 200));
     }
 
     const statsEntry = extractDailyStats(statsRaw, dateStr);
@@ -900,9 +917,11 @@ export async function buildExport(
   }
 
   // --- Body composition (range query) ---
+  totalCalls += 1;
   const bodyCompRaw = await safeCall(
     apiFn,
     `/weight-service/weight/dateRange?startDay=${start28dStr}&endDay=${todayStr}`,
+    failures,
   );
   const bodyComp = extractBodyComposition(bodyCompRaw);
 
@@ -941,16 +960,20 @@ export async function buildExport(
   // --- Training status / load focus ---
   const trainingStatusData: Dict = {};
 
+  totalCalls += 1;
   let ts = await safeCall(
     apiFn,
     '/training-status-service/trainingStatus/aggregated',
+    failures,
   );
   if (ts) {
     ts = ensureDict(ts);
   } else {
+    totalCalls += 1;
     ts = await safeCall(
       apiFn,
       '/training-status-service/trainingStatus/latest',
+      failures,
     );
     if (ts) ts = ensureDict(ts);
   }
@@ -1193,6 +1216,16 @@ export async function buildExport(
         computeTrends(weekNutrition, 'protein_g').avg ?? null,
     });
   }
+
+  // --- Sync report ---
+  exportData._sync_report = {
+    total_api_calls: totalCalls,
+    failed_calls: failures.length,
+    failed_endpoints: failures,
+    success_rate: totalCalls > 0
+      ? Math.round(((totalCalls - failures.length) / totalCalls) * 100)
+      : 100,
+  };
 
   return exportData;
 }
