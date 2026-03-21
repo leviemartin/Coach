@@ -1,6 +1,6 @@
 import fs from 'fs';
 import { GARMIN_DATA_PATH } from './constants';
-import type { GarminData, GarminFreshness, ExtendedGarminSummary } from './types';
+import type { GarminData, GarminFreshness, ExtendedGarminSummary, LoadFocusData, HrZoneSummary } from './types';
 
 export function readGarminData(): GarminFreshness {
   try {
@@ -177,5 +177,52 @@ export function extractExtendedSummary(data: GarminData): ExtendedGarminSummary 
     weightDelta,
     sleepDelta: null,
     readinessDelta: null,
+  };
+}
+
+/** Extract training load focus from Garmin data */
+export function extractLoadFocus(data: GarminData): LoadFocusData | null {
+  const lf = data.performance_stats?.training_status?.load_focus as Record<string, unknown> | undefined;
+  if (!lf) return null;
+
+  return {
+    lowAerobic: (lf.low_aerobic as number) ?? 0,
+    lowAerobicTargetMin: (lf.low_aerobic_target_min as number) ?? 0,
+    lowAerobicTargetMax: (lf.low_aerobic_target_max as number) ?? 0,
+    highAerobic: (lf.high_aerobic as number) ?? 0,
+    highAerobicTargetMin: (lf.high_aerobic_target_min as number) ?? 0,
+    highAerobicTargetMax: (lf.high_aerobic_target_max as number) ?? 0,
+    anaerobic: (lf.anaerobic as number) ?? 0,
+    anaerobicTargetMin: (lf.anaerobic_target_min as number) ?? 0,
+    anaerobicTargetMax: (lf.anaerobic_target_max as number) ?? 0,
+    description: (lf.description as string) ?? null,
+  };
+}
+
+/** Extract HR zone totals from this week's activities */
+export function extractHrZones(data: GarminData): HrZoneSummary | null {
+  const activities = data.activities?.this_week || [];
+  if (!activities.length) return null;
+
+  const totals = { z1: 0, z2: 0, z3: 0, z4: 0, z5: 0 };
+  for (const a of activities) {
+    if (a.zone_minutes) {
+      totals.z1 += a.zone_minutes.z1 || 0;
+      totals.z2 += a.zone_minutes.z2 || 0;
+      totals.z3 += a.zone_minutes.z3 || 0;
+      totals.z4 += a.zone_minutes.z4 || 0;
+      totals.z5 += a.zone_minutes.z5 || 0;
+    }
+  }
+
+  const hasData = totals.z1 + totals.z2 + totals.z3 + totals.z4 + totals.z5 > 0;
+  if (!hasData) return null;
+
+  return {
+    z1Minutes: Math.round(totals.z1),
+    z2Minutes: Math.round(totals.z2),
+    z3Minutes: Math.round(totals.z3),
+    z4Minutes: Math.round(totals.z4),
+    z5Minutes: Math.round(totals.z5),
   };
 }

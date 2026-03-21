@@ -309,3 +309,80 @@ export interface Settings {
   model: string;
   [key: string]: string;
 }
+
+// --- Dashboard Redesign Types ---
+
+export interface WeightHistoryPoint {
+  weekNumber: number;
+  avgWeightKg: number;
+}
+
+export interface PhaseTarget {
+  phaseNumber: number;
+  name: string;
+  targetWeightKg: number;
+}
+
+export interface LoadFocusData {
+  lowAerobic: number;
+  lowAerobicTargetMin: number;
+  lowAerobicTargetMax: number;
+  highAerobic: number;
+  highAerobicTargetMin: number;
+  highAerobicTargetMax: number;
+  anaerobic: number;
+  anaerobicTargetMin: number;
+  anaerobicTargetMax: number;
+  description: string | null;
+}
+
+export interface HrZoneSummary {
+  z1Minutes: number;
+  z2Minutes: number;
+  z3Minutes: number;
+  z4Minutes: number;
+  z5Minutes: number;
+}
+
+export interface DashboardPayload {
+  // Tier 1
+  recoveryScore: number | null;
+  recoveryDirective: string;
+  recoveryColor: string;
+  weight: number | null;
+  weightFromStart: number | null; // delta from W1
+  weightHistory: WeightHistoryPoint[];
+  phaseTargets: PhaseTarget[];
+  currentWeek: number;
+  avgSleep: number | null;
+  dailySleepScores: Array<{ day: string; score: number | null }>;
+  sleepAvg7d: number | null;
+  compliancePct: number | null;
+  vampireDays: number;
+  rugDays: number;
+  hydrationDays: number;
+
+  // Tier 2
+  todaySession: {
+    title: string;
+    sessionType: string;
+    exercises: string[];
+    badges: string[];
+  } | null;
+
+  // Tier 3
+  avgHrv: number | null;
+  hrvBaseline: number | null;
+  hrvDelta: number | null;
+  dailyHrv28d: SparklinePoint[];
+  loadFocus: LoadFocusData | null;
+  enduranceScore: number | null;
+  hrZones: HrZoneSummary | null;
+  acwr: number | null;
+  acwrStatus: string | null;
+  bodyBatteryHigh: number | null;
+
+  // Timeline
+  currentPhaseNumber: number;
+  morzineDaysAway: number;
+}

@@ -6,19 +6,21 @@ import {
   Snackbar, Alert, Grid,
 } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
-import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
-import PriorityHighIcon from '@mui/icons-material/PriorityHigh';
 import { useRouter } from 'next/navigation';
 import PhaseTimeline from '@/components/PhaseTimeline';
 import PhaseDetailStrip from '@/components/PhaseDetailStrip';
-import SparklineCard from '@/components/SparklineCard';
-import TodaySession from '@/components/TodaySession';
-import DashboardSection from '@/components/DashboardSection';
-import RecoverySummary from '@/components/RecoverySummary';
-import PrioritiesList from '@/components/PrioritiesList';
+import RecoveryScore from '@/components/RecoveryScore';
+import WeightJourney from '@/components/WeightJourney';
+import SleepBars from '@/components/SleepBars';
+import ComplianceRing from '@/components/ComplianceRing';
+import TodayAction from '@/components/TodayAction';
+import HrvTrend from '@/components/HrvTrend';
+import TrainingLoadFocus from '@/components/TrainingLoadFocus';
+import AcwrCard from '@/components/AcwrCard';
 import { getTrainingWeek } from '@/lib/week';
+import { typography } from '@/lib/design-tokens';
 import type { PhaseInfo } from '@/components/PhaseTimeline';
-import type { PlanItem, ExtendedGarminSummary } from '@/lib/types';
+import type { PlanItem, DashboardPayload } from '@/lib/types';
 
 interface PeriodizationResponse {
   phases: PhaseInfo[];
@@ -27,16 +29,9 @@ interface PeriodizationResponse {
   targets: { raceWeight: string; stretchWeight: string; protein: string; calories: string };
 }
 
-function getProteinForWeight(weight: number | null): string {
-  if (!weight) return '180g';
-  if (weight >= 95) return '180g';
-  if (weight >= 92) return '190g';
-  return '200g';
-}
-
 export default function DashboardHome() {
   const router = useRouter();
-  const [summary, setSummary] = useState<ExtendedGarminSummary | null>(null);
+  const [dashboard, setDashboard] = useState<DashboardPayload | null>(null);
   const [periodization, setPeriodization] = useState<PeriodizationResponse | null>(null);
   const [planItems, setPlanItems] = useState<PlanItem[] | null>(null);
   const [selectedPhase, setSelectedPhase] = useState(1);
@@ -48,10 +43,10 @@ export default function DashboardHome() {
   const isSunday = new Date().getDay() === 0;
 
   const refreshSummary = useCallback(() => {
-    fetch('/api/garmin')
+    fetch('/api/dashboard')
       .then((r) => r.json())
-      .then((data) => setSummary(data.summary))
-      .catch((err: Error) => setError(err.message || 'Failed to load Garmin data'));
+      .then((data) => setDashboard(data))
+      .catch((err: Error) => setError(err.message || 'Failed to load dashboard data'));
   }, []);
 
   const loadPlan = useCallback(async () => {
@@ -150,125 +145,93 @@ export default function DashboardHome() {
         </Alert>
       )}
 
-      {/* Phase Timeline */}
-      {periodization && (
-        <PhaseTimeline
-          phases={periodization.phases}
-          currentPhaseNumber={periodization.currentPhase.number}
-          selectedPhase={selectedPhase}
-          onPhaseSelect={setSelectedPhase}
-        />
-      )}
-      {selectedPhaseData && (
-        <PhaseDetailStrip
-          phase={selectedPhaseData}
-          currentWeight={summary?.weight ?? null}
-          isCurrentPhase={selectedPhase === periodization?.currentPhase.number}
-        />
-      )}
-
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Program: 89kg race weight · {getProteinForWeight(summary?.weight ?? null)}/day · 2,350 kcal
-      </Typography>
-
-      {/* Today's Session — one-liner */}
-      <TodaySession items={planItems} />
-
-      {/* Sparkline Metric Cards — 3 per row */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-          <SparklineCard
-            label="Weight"
-            value={summary?.weight ?? null}
-            unit="kg"
-            sparklineData={summary?.dailyWeight.map(d => d.value)}
-            delta={summary?.weightDelta}
-            invertDelta
-            target="Target: 89kg"
+      {/* THE GLANCE */}
+      <Typography sx={{ ...typography.categoryLabel, mb: 1 }}>THE GLANCE</Typography>
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <RecoveryScore
+            score={dashboard?.recoveryScore ?? null}
+            directive={dashboard?.recoveryDirective ?? 'Loading...'}
+            color={dashboard?.recoveryColor ?? 'grey'}
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-          <SparklineCard
-            label="Avg Sleep"
-            value={summary?.avgSleep ?? null}
-            sparklineData={summary?.dailySleep.map(d => d.value)}
-            greenThreshold={75}
-            yellowThreshold={60}
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <WeightJourney
+            currentWeight={dashboard?.weight ?? null}
+            weightFromStart={dashboard?.weightFromStart ?? null}
+            weightHistory={dashboard?.weightHistory ?? []}
+            phaseTargets={dashboard?.phaseTargets ?? []}
+            currentWeek={dashboard?.currentWeek ?? getTrainingWeek()}
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-          <SparklineCard
-            label="Avg Readiness"
-            value={summary?.avgReadiness ?? null}
-            sparklineData={summary?.dailyReadiness.map(d => d.value)}
-            greenThreshold={50}
-            yellowThreshold={30}
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <SleepBars
+            avgSleep={dashboard?.avgSleep ?? null}
+            dailyScores={dashboard?.dailySleepScores ?? []}
+            sleepDelta={null}
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-          <SparklineCard
-            label="HRV"
-            value={summary?.avgHrv ?? null}
-            unit=" ms"
-            sparklineData={summary?.dailyHrv.map(d => d.value)}
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-          <SparklineCard
-            label="Body Battery"
-            value={summary?.bodyBatteryHigh ?? null}
-            sparklineData={summary?.dailyBodyBattery.map(d => d.value)}
-            greenThreshold={70}
-            yellowThreshold={50}
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-          <SparklineCard
-            label="Activities"
-            value={summary?.activityCount ?? null}
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <ComplianceRing
+            compliancePct={dashboard?.compliancePct ?? null}
+            vampireDays={dashboard?.vampireDays ?? 0}
+            rugDays={dashboard?.rugDays ?? 0}
+            hydrationDays={dashboard?.hydrationDays ?? 0}
           />
         </Grid>
       </Grid>
 
-      {/* Body & Recovery */}
-      <DashboardSection
-        title="Body & Recovery"
-        icon={<MonitorHeartIcon />}
-        summary={
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            {summary?.acwr != null && (
-              <Chip
-                label={`ACWR ${summary.acwr}`}
-                size="small"
-                color={summary.acwr >= 0.8 && summary.acwr <= 1.3 ? 'success' : summary.acwr <= 1.5 ? 'warning' : 'error'}
-              />
-            )}
-            {summary?.avgHrv != null && (
-              <Chip label={`HRV ${summary.avgHrv}`} size="small" />
-            )}
-          </Box>
-        }
-      >
-        <RecoverySummary
-          avgHrv={summary?.avgHrv ?? null}
-          bodyBatteryHigh={summary?.bodyBatteryHigh ?? null}
-          avgStress={summary?.avgStress ?? null}
-          acwr={summary?.acwr ?? null}
-          acwrStatus={summary?.acwrStatus ?? null}
-          avgAerobicTE={summary?.avgAerobicTE ?? null}
-          avgAnaerobicTE={summary?.avgAnaerobicTE ?? null}
-          avgRhr={summary?.avgRhr ?? null}
-        />
-      </DashboardSection>
+      {/* TODAY'S SESSION */}
+      <Box sx={{ mb: 3 }}>
+        <TodayAction items={planItems} />
+      </Box>
 
-      {/* Coaching Priorities */}
-      <DashboardSection
-        title="Coaching Priorities"
-        icon={<PriorityHighIcon />}
-        summary={<Chip label="#1 Sleep · #2 Pull-ups" size="small" />}
-      >
-        <PrioritiesList />
-      </DashboardSection>
+      {/* BODY & PERFORMANCE */}
+      <Typography sx={{ ...typography.categoryLabel, mb: 1 }}>BODY &amp; PERFORMANCE</Typography>
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        <Grid size={{ xs: 12, md: 4 }}>
+          <HrvTrend
+            avgHrv={dashboard?.avgHrv ?? null}
+            hrvBaseline={dashboard?.hrvBaseline ?? null}
+            hrvDelta={dashboard?.hrvDelta ?? null}
+            dailyHrv28d={dashboard?.dailyHrv28d ?? []}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, md: 4 }}>
+          <TrainingLoadFocus
+            loadFocus={dashboard?.loadFocus ?? null}
+            hrZones={dashboard?.hrZones ?? null}
+            enduranceScore={dashboard?.enduranceScore ?? null}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, md: 4 }}>
+          <AcwrCard
+            acwr={dashboard?.acwr ?? null}
+            acwrStatus={dashboard?.acwrStatus ?? null}
+            bodyBatteryHigh={dashboard?.bodyBatteryHigh ?? null}
+          />
+        </Grid>
+      </Grid>
+
+      {/* PROGRAM TIMELINE */}
+      <Typography sx={{ ...typography.categoryLabel, mb: 1 }}>PROGRAM TIMELINE</Typography>
+      <Box sx={{ mb: 3 }}>
+        {periodization && (
+          <PhaseTimeline
+            phases={periodization.phases}
+            currentPhaseNumber={periodization.currentPhase.number}
+            selectedPhase={selectedPhase}
+            onPhaseSelect={setSelectedPhase}
+          />
+        )}
+        {selectedPhaseData && (
+          <PhaseDetailStrip
+            phase={selectedPhaseData}
+            currentWeight={dashboard?.weight ?? null}
+            isCurrentPhase={selectedPhase === periodization?.currentPhase.number}
+          />
+        )}
+      </Box>
 
       <Snackbar open={syncResult !== null} autoHideDuration={4000} onClose={() => setSyncResult(null)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
