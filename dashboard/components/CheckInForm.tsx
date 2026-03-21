@@ -48,6 +48,15 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
   const [syncElapsed, setSyncElapsed] = useState(0);
   const syncTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const [authRequired, setAuthRequired] = useState(false);
+  const [garminEmail, setGarminEmail] = useState('');
+  const [garminPassword, setGarminPassword] = useState('');
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const [mfaCode, setMfaCode] = useState('');
+  const [mfaSessionId, setMfaSessionId] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+
   const [formData, setFormData] = useState<CheckInFormData>({
     hevyCsv: '',
     bakerCystPain: 0,
@@ -129,7 +138,10 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
       if (data.success) {
         setSyncSuccess(true);
         await refreshGarminStatus();
-      } else {
+      } else if (res.status === 401) {
+        setAuthRequired(true);
+        setSyncError(null);
+      } else if (!data.success) {
         setSyncError(data.error || 'Sync failed');
       }
     } catch (err) {
@@ -142,6 +154,63 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
         syncTimerRef.current = null;
       }
       setSyncing(false);
+    }
+  };
+
+  const handleGarminLogin = async () => {
+    setAuthLoading(true);
+    setAuthError(null);
+    try {
+      const res = await fetch('/api/garmin/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: garminEmail, password: garminPassword }),
+      });
+      const data = await res.json();
+      if (data.status === 'mfa_required') {
+        setMfaRequired(true);
+        setMfaSessionId(data.sessionId);
+      } else if (data.status === 'authenticated') {
+        setAuthRequired(false);
+        setMfaRequired(false);
+        setGarminEmail('');
+        setGarminPassword('');
+        handleSync();
+      } else {
+        setAuthError(data.error || 'Login failed');
+      }
+    } catch {
+      setAuthError('Network error');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleMfaSubmit = async () => {
+    setAuthLoading(true);
+    setAuthError(null);
+    try {
+      const res = await fetch('/api/garmin/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: mfaSessionId, mfaCode }),
+      });
+      const data = await res.json();
+      if (data.status === 'authenticated') {
+        setAuthRequired(false);
+        setMfaRequired(false);
+        setMfaCode('');
+        setMfaSessionId('');
+        setGarminEmail('');
+        setGarminPassword('');
+        handleSync();
+      } else {
+        setAuthError(data.error || 'MFA verification failed');
+      }
+    } catch {
+      setAuthError('Network error');
+    } finally {
+      setAuthLoading(false);
     }
   };
 
@@ -204,6 +273,74 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
                       {syncError}
                     </Alert>
                   )}
+                  {authRequired && (
+                    <Box sx={{ mt: 2, mb: 2 }}>
+                      {!mfaRequired ? (
+                        <Box>
+                          <Typography variant="body2" sx={{ mb: 2 }}>
+                            Garmin authentication required. Enter your Garmin Connect credentials to continue.
+                          </Typography>
+                          <TextField
+                            label="Garmin Email"
+                            type="email"
+                            fullWidth
+                            size="small"
+                            value={garminEmail}
+                            onChange={(e) => setGarminEmail(e.target.value)}
+                            sx={{ mb: 1.5 }}
+                            disabled={authLoading}
+                          />
+                          <TextField
+                            label="Password"
+                            type="password"
+                            fullWidth
+                            size="small"
+                            value={garminPassword}
+                            onChange={(e) => setGarminPassword(e.target.value)}
+                            sx={{ mb: 1.5 }}
+                            disabled={authLoading}
+                          />
+                          <Button
+                            variant="contained"
+                            onClick={handleGarminLogin}
+                            disabled={authLoading || !garminEmail || !garminPassword}
+                            startIcon={authLoading ? <CircularProgress size={18} color="inherit" /> : null}
+                          >
+                            {authLoading ? 'Logging in...' : 'Log in to Garmin'}
+                          </Button>
+                        </Box>
+                      ) : (
+                        <Box>
+                          <Typography variant="body2" sx={{ mb: 2 }}>
+                            Check your email for a verification code from Garmin.
+                          </Typography>
+                          <TextField
+                            label="MFA Code"
+                            fullWidth
+                            size="small"
+                            value={mfaCode}
+                            onChange={(e) => setMfaCode(e.target.value)}
+                            sx={{ mb: 1.5 }}
+                            disabled={authLoading}
+                            autoFocus
+                          />
+                          <Button
+                            variant="contained"
+                            onClick={handleMfaSubmit}
+                            disabled={authLoading || !mfaCode}
+                            startIcon={authLoading ? <CircularProgress size={18} color="inherit" /> : null}
+                          >
+                            {authLoading ? 'Verifying...' : 'Verify'}
+                          </Button>
+                        </Box>
+                      )}
+                      {authError && (
+                        <Alert severity="error" sx={{ mt: 1.5 }} onClose={() => setAuthError(null)}>
+                          {authError}
+                        </Alert>
+                      )}
+                    </Box>
+                  )}
                   {garminStatus.summary && (
                     <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
                       {garminStatus.summary.weight && (
@@ -252,6 +389,74 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
                     <Alert severity="error" sx={{ mt: 2 }} onClose={() => setSyncError(null)}>
                       {syncError}
                     </Alert>
+                  )}
+                  {authRequired && (
+                    <Box sx={{ mt: 2, mb: 2 }}>
+                      {!mfaRequired ? (
+                        <Box>
+                          <Typography variant="body2" sx={{ mb: 2 }}>
+                            Garmin authentication required. Enter your Garmin Connect credentials to continue.
+                          </Typography>
+                          <TextField
+                            label="Garmin Email"
+                            type="email"
+                            fullWidth
+                            size="small"
+                            value={garminEmail}
+                            onChange={(e) => setGarminEmail(e.target.value)}
+                            sx={{ mb: 1.5 }}
+                            disabled={authLoading}
+                          />
+                          <TextField
+                            label="Password"
+                            type="password"
+                            fullWidth
+                            size="small"
+                            value={garminPassword}
+                            onChange={(e) => setGarminPassword(e.target.value)}
+                            sx={{ mb: 1.5 }}
+                            disabled={authLoading}
+                          />
+                          <Button
+                            variant="contained"
+                            onClick={handleGarminLogin}
+                            disabled={authLoading || !garminEmail || !garminPassword}
+                            startIcon={authLoading ? <CircularProgress size={18} color="inherit" /> : null}
+                          >
+                            {authLoading ? 'Logging in...' : 'Log in to Garmin'}
+                          </Button>
+                        </Box>
+                      ) : (
+                        <Box>
+                          <Typography variant="body2" sx={{ mb: 2 }}>
+                            Check your email for a verification code from Garmin.
+                          </Typography>
+                          <TextField
+                            label="MFA Code"
+                            fullWidth
+                            size="small"
+                            value={mfaCode}
+                            onChange={(e) => setMfaCode(e.target.value)}
+                            sx={{ mb: 1.5 }}
+                            disabled={authLoading}
+                            autoFocus
+                          />
+                          <Button
+                            variant="contained"
+                            onClick={handleMfaSubmit}
+                            disabled={authLoading || !mfaCode}
+                            startIcon={authLoading ? <CircularProgress size={18} color="inherit" /> : null}
+                          >
+                            {authLoading ? 'Verifying...' : 'Verify'}
+                          </Button>
+                        </Box>
+                      )}
+                      {authError && (
+                        <Alert severity="error" sx={{ mt: 1.5 }} onClose={() => setAuthError(null)}>
+                          {authError}
+                        </Alert>
+                      )}
+                    </Box>
                   )}
                 </>
               )}
