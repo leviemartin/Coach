@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Box, IconButton, Typography } from '@mui/material';
+import { Box, Chip, IconButton, Typography } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import DailyLog from '@/components/DailyLog';
 import WeekDots from '@/components/WeekDots';
+import type { UncompletedSession } from '@/components/SessionPicker';
 
 const MS_PER_DAY = 86_400_000;
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -60,6 +61,7 @@ interface LogData {
 }
 
 interface PlannedSession {
+  id?: number;
   session_type: string;
   focus: string;
   workout_plan?: string;
@@ -77,6 +79,12 @@ interface WeekLog {
   is_sick_day: number;
 }
 
+interface TrendPoint {
+  week_number: number;
+  compliance_pct: number;
+  days_logged: number;
+}
+
 const DEFAULT_LOG: LogData = {
   workout_completed: 0,
   core_work_done: 0,
@@ -92,7 +100,10 @@ export default function DailyLogPage() {
   const [currentDate, setCurrentDate] = useState(getTodayStr);
   const [log, setLog] = useState<LogData>(DEFAULT_LOG);
   const [plannedSession, setPlannedSession] = useState<PlannedSession | null>(null);
+  const [uncompletedSessions, setUncompletedSessions] = useState<UncompletedSession[]>([]);
+  const [streak, setStreak] = useState<{ current: number; best: number }>({ current: 0, best: 0 });
   const [weekLogs, setWeekLogs] = useState<WeekLog[]>([]);
+  const [complianceTrend, setComplianceTrend] = useState<TrendPoint[]>([]);
   const [loading, setLoading] = useState(true);
 
   const weekNumber = getWeekNumber(currentDate);
@@ -108,6 +119,8 @@ export default function DailyLogPage() {
         const data = await res.json();
         setLog(data.log || DEFAULT_LOG);
         setPlannedSession(data.planned_session || null);
+        setUncompletedSessions(data.uncompleted_sessions || []);
+        setStreak(data.streak || { current: 0, best: 0 });
       }
     } catch {
       // keep existing state
@@ -128,6 +141,18 @@ export default function DailyLogPage() {
     }
   }, [weekNumber]);
 
+  const fetchComplianceTrend = useCallback(async () => {
+    try {
+      const res = await fetch('/api/log/compliance-trend?weeks=4');
+      if (res.ok) {
+        const data = await res.json();
+        setComplianceTrend(data.trend || []);
+      }
+    } catch {
+      // keep existing state
+    }
+  }, []);
+
   useEffect(() => {
     fetchDayLog(currentDate);
   }, [currentDate, fetchDayLog]);
@@ -135,6 +160,11 @@ export default function DailyLogPage() {
   useEffect(() => {
     fetchWeekLogs();
   }, [fetchWeekLogs]);
+
+  // Fetch compliance trend once on mount
+  useEffect(() => {
+    fetchComplianceTrend();
+  }, [fetchComplianceTrend]);
 
   const handleSave = async (data: Record<string, unknown>) => {
     const res = await fetch('/api/log', {
@@ -197,6 +227,17 @@ export default function DailyLogPage() {
 
   const dateObj = parseLocalDate(currentDate);
   const dayName = DAY_NAMES[dateObj.getDay()];
+  const isSaturday = dateObj.getDay() === 6;
+
+  // Determine the workout label chip text
+  let sessionLabel: string | null = null;
+  if (isSaturday) {
+    sessionLabel = 'Family Day';
+  } else if (plannedSession) {
+    sessionLabel = plannedSession.focus;
+  } else {
+    sessionLabel = 'Rest Day';
+  }
 
   return (
     <Box sx={{ maxWidth: 600, mx: 'auto' }}>
@@ -222,6 +263,14 @@ export default function DailyLogPage() {
             {' \u00B7 '}
             Week {weekNumber}
           </Typography>
+          {/* Workout label chip */}
+          <Chip
+            label={sessionLabel}
+            size="small"
+            color={isSaturday ? 'secondary' : plannedSession ? 'primary' : 'default'}
+            variant="outlined"
+            sx={{ mt: 0.5 }}
+          />
         </Box>
         <IconButton
           onClick={() => navigateDay(1)}
@@ -242,6 +291,11 @@ export default function DailyLogPage() {
           date={currentDate}
           log={log}
           plannedSession={plannedSession}
+          uncompletedSessions={uncompletedSessions}
+          weekLogs={weekLogs}
+          streak={streak}
+          complianceTrend={complianceTrend}
+          currentWeek={weekNumber}
           onSave={handleSave}
         />
       </Box>

@@ -8,23 +8,18 @@ import {
   Checkbox,
   FormControlLabel,
   Switch,
-  TextField,
   Typography,
-  Chip,
 } from '@mui/material';
-
-// Inline bedtime conversion (cannot import lib/daily-log.ts — it uses 'path')
-function toBedtimeStorage(time: string): string {
-  const [h, m] = time.split(':').map(Number);
-  if (h < 6) return `${h + 24}:${m.toString().padStart(2, '0')}`;
-  return time;
-}
-
-function fromBedtimeStorage(stored: string): string {
-  const [h, m] = stored.split(':').map(Number);
-  if (h >= 24) return `${(h - 24).toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-  return stored;
-}
+import BedtimeCard from './BedtimeCard';
+import NotesCard from './NotesCard';
+import SessionPicker from './SessionPicker';
+import DailyChecklist from './DailyChecklist';
+import DayProgress from './DayProgress';
+import WeekComplianceBar from './WeekComplianceBar';
+import ComplianceSparkline from './ComplianceSparkline';
+import { computeDayCompliance, computeWeekCompliancePct, isBedtimeCompliant } from '@/lib/compliance';
+import type { UncompletedSession } from './SessionPicker';
+import type { WeekTallies } from './DailyChecklist';
 
 interface LogData {
   workout_completed: number;
@@ -38,23 +33,58 @@ interface LogData {
 }
 
 interface PlannedSession {
+  id?: number;
   session_type: string;
   focus: string;
   workout_plan?: string;
 }
 
-interface DailyLogProps {
+interface WeekLog {
+  date: string;
+  day: string;
+  workout_completed: number;
+  core_work_done: number;
+  rug_protocol_done: number;
+  vampire_bedtime: string | null;
+  hydration_tracked: number;
+  kitchen_cutoff_hit: number;
+  is_sick_day: number;
+}
+
+interface TrendPoint {
+  week_number: number;
+  compliance_pct: number;
+  days_logged: number;
+}
+
+export interface DailyLogProps {
   date: string;
   log: LogData;
   plannedSession: PlannedSession | null;
+  uncompletedSessions: UncompletedSession[];
+  weekLogs: WeekLog[];
+  streak: { current: number; best: number };
+  complianceTrend: TrendPoint[];
+  currentWeek: number;
   onSave: (data: Record<string, unknown>) => Promise<void>;
 }
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'failed';
 
-export default function DailyLog({ date, log, plannedSession, onSave }: DailyLogProps) {
+export default function DailyLog({
+  date,
+  log,
+  plannedSession,
+  uncompletedSessions,
+  weekLogs,
+  streak,
+  complianceTrend,
+  currentWeek,
+  onSave,
+}: DailyLogProps) {
   const [formData, setFormData] = useState<LogData>(log);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  const [selectedPlanItemId, setSelectedPlanItemId] = useState<number | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fadeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -62,19 +92,19 @@ export default function DailyLog({ date, log, plannedSession, onSave }: DailyLog
   useEffect(() => {
     setFormData(log);
     setSaveStatus('idle');
+    setSelectedPlanItemId(null);
   }, [date, log]);
 
   const triggerSave = useCallback(
-    (data: LogData) => {
+    (data: LogData, planItemId?: number | null) => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       if (fadeRef.current) clearTimeout(fadeRef.current);
 
       debounceRef.current = setTimeout(async () => {
         setSaveStatus('saving');
-        // Convert bedtime for storage
         const payload: Record<string, unknown> = { ...data };
-        if (data.vampire_bedtime) {
-          payload.vampire_bedtime = toBedtimeStorage(data.vampire_bedtime);
+        if (planItemId != null) {
+          payload.workout_plan_item_id = planItemId;
         }
 
         try {
@@ -101,28 +131,68 @@ export default function DailyLog({ date, log, plannedSession, onSave }: DailyLog
   const update = (patch: Partial<LogData>) => {
     const next = { ...formData, ...patch };
     setFormData(next);
-    triggerSave(next);
+    triggerSave(next, selectedPlanItemId);
   };
 
   const isSick = !!formData.is_sick_day;
 
-  // Determine day type for planned session area
+  // Determine day type
   const dateObj = new Date(date + 'T12:00:00');
   const dayIndex = dateObj.getDay(); // 0=Sun, 6=Sat
   const isSaturday = dayIndex === 6;
 
-  // Bedtime display value — convert from storage format
-  const bedtimeDisplay = formData.vampire_bedtime
-    ? fromBedtimeStorage(formData.vampire_bedtime)
-    : '';
+  // ── Compute week tallies from weekLogs ──────────────────────────────────
+  const weekTallies: WeekTallies = {
+    core: weekLogs.filter((l) => l.core_work_done).length,
+    rug: weekLogs.filter((l) => l.rug_protocol_done).length,
+    kitchen: weekLogs.filter((l) => l.kitchen_cutoff_hit).length,
+    hydration: weekLogs.filter((l) => l.hydration_tracked).length,
+  };
 
-  // Detect after-midnight for caption
-  const bedtimeHour = bedtimeDisplay ? parseInt(bedtimeDisplay.split(':')[0], 10) : null;
-  const isAfterMidnight = bedtimeHour !== null && bedtimeHour >= 0 && bedtimeHour < 6;
+  // ── Sessions completed/planned ──────────────────────────────────────────
+  const sessionsCompleted = weekLogs.filter((l) => l.workout_completed === 1).length;
+  const sessionsPlanned = uncompletedSessions.length + sessionsCompleted;
+
+  // ── Day compliance (progress ring) ──────────────────────────────────────
+  const hasPlannedSession = !!plannedSession || selectedPlanItemId != null;
+  const dayCompliance = computeDayCompliance(formData, hasPlannedSession);
+
+  // ── Week compliance for bar ─────────────────────────────────────────────
+  const bedtimeCompliantCount = weekLogs.filter(
+    (l) => l.vampire_bedtime && isBedtimeCompliant(l.vampire_bedtime),
+  ).length;
+
+  const weekMetrics = [
+    { label: 'Sessions', current: sessionsCompleted, target: sessionsPlanned || 1 },
+    { label: 'Core', current: weekTallies.core, target: 3 },
+    { label: 'Rug', current: weekTallies.rug, target: 7 },
+    { label: 'Kitchen', current: weekTallies.kitchen, target: 7 },
+    { label: 'Hydration', current: weekTallies.hydration, target: 7 },
+    { label: 'Bedtime', current: bedtimeCompliantCount, target: 7 },
+  ];
+
+  // Overall week compliance %
+  const weekCompliancePct = computeWeekCompliancePct(
+    weekLogs,
+    weekLogs.map(() => false), // simplified: we don't know per-day session status from weekLogs alone
+  );
+
+  // ── SessionPicker callbacks ─────────────────────────────────────────────
+  const handleSessionUpdate = (completed: number, planItemId: number | null) => {
+    setSelectedPlanItemId(planItemId);
+    const next = { ...formData, workout_completed: completed };
+    setFormData(next);
+    triggerSave(next, planItemId);
+  };
+
+  // ── Checklist callback ──────────────────────────────────────────────────
+  const handleChecklistUpdate = (field: string, value: number) => {
+    update({ [field]: value });
+  };
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      {/* Header with save status */}
+      {/* 1. Save status indicator (top right) */}
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', minHeight: 24 }}>
         {saveStatus === 'saving' && (
           <Typography variant="caption" color="text.secondary">
@@ -141,7 +211,16 @@ export default function DailyLog({ date, log, plannedSession, onSave }: DailyLog
         )}
       </Box>
 
-      {/* Sick Day Toggle */}
+      {/* 2. DayProgress (if not Saturday) */}
+      {!isSaturday && (
+        <DayProgress
+          checked={dayCompliance.checked}
+          total={dayCompliance.total}
+          streak={streak}
+        />
+      )}
+
+      {/* 3. Sick day toggle */}
       <Card variant="outlined">
         <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
           <FormControlLabel
@@ -161,97 +240,30 @@ export default function DailyLog({ date, log, plannedSession, onSave }: DailyLog
         </CardContent>
       </Card>
 
-      {/* Today's Session */}
+      {/* 4. SessionPicker (if not sick) */}
       {!isSick && (
-        <Card variant="outlined">
-          <CardContent>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              {"Today's Session"}
-            </Typography>
-            {plannedSession ? (
-              <Box>
-                <Box sx={{ display: 'flex', gap: 1, mb: 1, flexWrap: 'wrap' }}>
-                  <Chip label={plannedSession.session_type} size="small" color="primary" />
-                  <Chip label={plannedSession.focus} size="small" variant="outlined" />
-                </Box>
-                {plannedSession.workout_plan && (
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                    {plannedSession.workout_plan}
-                  </Typography>
-                )}
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={!!formData.workout_completed}
-                      onChange={(e) => update({ workout_completed: e.target.checked ? 1 : 0 })}
-                    />
-                  }
-                  label="Session completed"
-                />
-              </Box>
-            ) : (
-              <Chip
-                label={isSaturday ? 'Family Day' : 'Rest Day'}
-                size="small"
-                color={isSaturday ? 'secondary' : 'default'}
-                variant="outlined"
-              />
-            )}
-          </CardContent>
-        </Card>
+        <SessionPicker
+          date={date}
+          plannedSession={plannedSession}
+          uncompletedSessions={uncompletedSessions}
+          workoutCompleted={formData.workout_completed}
+          sessionsCompleted={sessionsCompleted}
+          sessionsPlanned={sessionsPlanned}
+          onUpdate={handleSessionUpdate}
+        />
       )}
 
-      {/* Daily Checklist */}
-      {!isSick && (
-        <Card variant="outlined">
-          <CardContent>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              Daily Checklist
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={!!formData.core_work_done}
-                    onChange={(e) => update({ core_work_done: e.target.checked ? 1 : 0 })}
-                  />
-                }
-                label="Core work done"
-              />
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={!!formData.rug_protocol_done}
-                    onChange={(e) => update({ rug_protocol_done: e.target.checked ? 1 : 0 })}
-                  />
-                }
-                label="Rug Protocol (GOWOD)"
-              />
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={!!formData.kitchen_cutoff_hit}
-                    onChange={(e) => update({ kitchen_cutoff_hit: e.target.checked ? 1 : 0 })}
-                  />
-                }
-                label="Kitchen Cutoff (20:00)"
-              />
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={!!formData.hydration_tracked}
-                    onChange={(e) => update({ hydration_tracked: e.target.checked ? 1 : 0 })}
-                  />
-                }
-                label="Hydration tracked"
-              />
-            </Box>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Hydration (visible when sick) */}
-      {isSick && (
+      {/* 5. DailyChecklist (if not sick) / Hydration standalone if sick */}
+      {!isSick ? (
+        <DailyChecklist
+          coreWorkDone={formData.core_work_done}
+          rugProtocolDone={formData.rug_protocol_done}
+          kitchenCutoffHit={formData.kitchen_cutoff_hit}
+          hydrationTracked={formData.hydration_tracked}
+          weekTallies={weekTallies}
+          onUpdate={handleChecklistUpdate}
+        />
+      ) : (
         <Card variant="outlined">
           <CardContent>
             <FormControlLabel
@@ -267,60 +279,23 @@ export default function DailyLog({ date, log, plannedSession, onSave }: DailyLog
         </Card>
       )}
 
-      {/* Bedtime */}
-      <Card variant="outlined">
-        <CardContent>
-          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-            Bedtime (Vampire Protocol)
-          </Typography>
-          <TextField
-            type="time"
-            value={bedtimeDisplay}
-            onChange={(e) => {
-              const raw = e.target.value;
-              if (!raw) {
-                update({ vampire_bedtime: null });
-                return;
-              }
-              // Store in 24h+ format internally
-              const [h, m] = raw.split(':').map(Number);
-              if (h < 6) {
-                update({ vampire_bedtime: `${h + 24}:${m.toString().padStart(2, '0')}` });
-              } else {
-                update({ vampire_bedtime: raw });
-              }
-            }}
-            size="small"
-            sx={{ width: { xs: '100%', sm: 200 } }}
-            slotProps={{
-              inputLabel: { shrink: true },
-            }}
-          />
-          {isAfterMidnight && bedtimeDisplay && (
-            <Typography variant="caption" color="warning.main" sx={{ mt: 0.5, display: 'block' }}>
-              After midnight — logged as next-day bedtime
-            </Typography>
-          )}
-        </CardContent>
-      </Card>
+      {/* 6. BedtimeCard (always visible) */}
+      <BedtimeCard
+        bedtime={formData.vampire_bedtime}
+        onUpdate={(val) => update({ vampire_bedtime: val })}
+      />
 
-      {/* Notes */}
-      <Card variant="outlined">
-        <CardContent>
-          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-            Notes
-          </Typography>
-          <TextField
-            multiline
-            rows={3}
-            fullWidth
-            placeholder="Any notes (injuries, sleep disruptions, etc.)"
-            value={formData.notes || ''}
-            onChange={(e) => update({ notes: e.target.value || null })}
-            size="small"
-          />
-        </CardContent>
-      </Card>
+      {/* 7. NotesCard (always visible) */}
+      <NotesCard
+        notes={formData.notes}
+        onUpdate={(val) => update({ notes: val })}
+      />
+
+      {/* 8. WeekComplianceBar */}
+      <WeekComplianceBar metrics={weekMetrics} overallPct={weekCompliancePct} />
+
+      {/* 9. ComplianceSparkline */}
+      <ComplianceSparkline trend={complianceTrend} currentWeek={currentWeek} />
     </Box>
   );
 }

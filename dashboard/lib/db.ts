@@ -563,6 +563,30 @@ export function getDailyLogsByWeek(weekNumber: number): DailyLog[] {
   return db.prepare('SELECT * FROM daily_logs WHERE week_number = ? ORDER BY date').all(weekNumber) as DailyLog[];
 }
 
+export function getAllDailyLogs(): DailyLog[] {
+  const db = getDb();
+  return db.prepare('SELECT * FROM daily_logs ORDER BY date').all() as DailyLog[];
+}
+
+export interface UncompletedSession {
+  id: number;
+  day: string;
+  session_type: string;
+  focus: string;
+  workout_plan: string | null;
+}
+
+export function getUncompletedSessionsForWeek(weekNumber: number): UncompletedSession[] {
+  const db = getDb();
+  return db.prepare(`
+    SELECT p.id, p.day, p.session_type, p.focus, p.workout_plan
+    FROM plan_items p
+    LEFT JOIN daily_logs d ON d.workout_plan_item_id = p.id AND d.workout_completed = 1
+    WHERE p.week_number = ? AND d.id IS NULL
+    ORDER BY p.id
+  `).all(weekNumber) as UncompletedSession[];
+}
+
 export function upsertDailyLog(log: Omit<DailyLog, 'id' | 'created_at' | 'updated_at'>): DailyLog {
   const db = getDb();
   const now = new Date().toISOString();

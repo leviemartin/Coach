@@ -1,12 +1,18 @@
 'use client';
 
 import React from 'react';
-import { Card, CardContent, Typography, Grid, Box, FormControl, InputLabel, Select, MenuItem, Button } from '@mui/material';
+import { Card, CardContent, Typography, Grid, Box, FormControl, InputLabel, Select, MenuItem, Button, ToggleButtonGroup, ToggleButton } from '@mui/material';
 import { cardContentSx } from '@/lib/theme';
 import { LineChart, BarChart, ScatterChart } from '@mui/x-charts';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
 import type { WeeklyMetrics, CeilingEntry, DexaScan } from '@/lib/types';
+
+interface ComplianceTrendPoint {
+  week_number: number;
+  compliance_pct: number;
+  days_logged: number;
+}
 
 interface TrendChartsProps {
   metrics: WeeklyMetrics[];
@@ -15,6 +21,7 @@ interface TrendChartsProps {
   exercises: string[];
   selectedExercise: string;
   onExerciseChange: (exercise: string) => void;
+  complianceTrend: ComplianceTrendPoint[];
 }
 
 const CHART_COLORS = {
@@ -43,6 +50,15 @@ function EmptyState({ message }: { message: string }) {
   );
 }
 
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+// Week number → approximate month name (epoch = Mon Dec 29, 2025)
+function weekToMonthName(weekNumber: number): string {
+  const epochMs = new Date('2025-12-29').getTime();
+  const weekStartMs = epochMs + (weekNumber - 1) * 7 * 24 * 60 * 60 * 1000;
+  return MONTH_NAMES[new Date(weekStartMs).getMonth()];
+}
+
 export default function TrendCharts({
   metrics,
   ceilings,
@@ -50,11 +66,13 @@ export default function TrendCharts({
   exercises,
   selectedExercise,
   onExerciseChange,
+  complianceTrend,
 }: TrendChartsProps) {
   const theme = useTheme();
   const isXs = useMediaQuery(theme.breakpoints.down('sm'));
   const isSm = useMediaQuery(theme.breakpoints.between('sm', 'md'));
   const chartHeight = isXs ? 200 : isSm ? 250 : 300;
+  const [complianceView, setComplianceView] = React.useState<'weekly' | 'monthly'>('weekly');
 
   const weeks = metrics.map((m) => `W${m.weekNumber}`);
 
@@ -320,6 +338,77 @@ export default function TrendCharts({
                 ]}
                 height={chartHeight}
               />
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* ── Weekly Compliance ── */}
+      <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>Weekly Compliance</Typography>
+      <Grid container spacing={3}>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent sx={cardContentSx}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                <Typography variant="h6">Check-In Compliance</Typography>
+                <ToggleButtonGroup
+                  value={complianceView}
+                  exclusive
+                  size="small"
+                  onChange={(_e, val) => { if (val) setComplianceView(val); }}
+                >
+                  <ToggleButton value="weekly">Weekly</ToggleButton>
+                  <ToggleButton value="monthly">Monthly</ToggleButton>
+                </ToggleButtonGroup>
+              </Box>
+              {complianceTrend.length > 0 ? (() => {
+                if (complianceView === 'weekly') {
+                  return (
+                    <LineChart
+                      xAxis={[{ data: complianceTrend.map((p) => `W${p.week_number}`), scaleType: 'band' }]}
+                      yAxis={[{ min: 0, max: 100 }]}
+                      series={[
+                        {
+                          data: complianceTrend.map((p) => p.compliance_pct),
+                          label: 'Compliance %',
+                          color: CHART_COLORS.teal,
+                        },
+                      ]}
+                      height={chartHeight}
+                    />
+                  );
+                }
+                // Monthly view: group by month name, average compliance_pct
+                const byMonth: Record<string, number[]> = {};
+                const monthOrder: string[] = [];
+                complianceTrend.forEach((p) => {
+                  const m = weekToMonthName(p.week_number);
+                  if (!byMonth[m]) { byMonth[m] = []; monthOrder.push(m); }
+                  byMonth[m].push(p.compliance_pct);
+                });
+                // Deduplicate monthOrder while preserving order
+                const uniqueMonths = Array.from(new Set(monthOrder));
+                const monthlyAvg = uniqueMonths.map((m) => {
+                  const vals = byMonth[m];
+                  return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+                });
+                return (
+                  <LineChart
+                    xAxis={[{ data: uniqueMonths, scaleType: 'band' }]}
+                    yAxis={[{ min: 0, max: 100 }]}
+                    series={[
+                      {
+                        data: monthlyAvg,
+                        label: 'Avg Compliance %',
+                        color: CHART_COLORS.teal,
+                      },
+                    ]}
+                    height={chartHeight}
+                  />
+                );
+              })() : (
+                <EmptyState message="Complete check-ins to track compliance over time." />
+              )}
             </CardContent>
           </Card>
         </Grid>

@@ -1,6 +1,14 @@
 import { getTrainingWeek } from './week';
 import { getDailyLogsByWeek, getPlanItems } from './db';
 import type { DailyLog } from './db';
+import {
+  computeDayCompliance,
+  computeWeekCompliancePct,
+  getBedtimeComplianceLevel,
+  isBedtimeCompliant,
+  getComplianceColor,
+} from './compliance';
+import type { DayComplianceInput, ComplianceResult, BedtimeLevel } from './compliance';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const DAY_ABBREVS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -53,12 +61,6 @@ export function fromBedtimeStorage(stored: string): string {
     return `${(h - 24).toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
   }
   return stored;
-}
-
-/** Is this bedtime compliant with the 23:00 Vampire Protocol target? */
-export function isBedtimeCompliant(storedTime: string): boolean {
-  const [h] = storedTime.split(':').map(Number);
-  return h < 23;
 }
 
 export interface WeekSummary {
@@ -128,6 +130,116 @@ export function computeWeekSummary(weekNumber: number): WeekSummary {
     sick_days: sickDays,
     notes,
   };
+}
+
+// ── Re-export client-safe compliance functions ────────────────────────────
+// Pure functions live in compliance.ts (no server deps) so client components
+// can import them directly. Re-exported here for backward compatibility.
+export {
+  computeDayCompliance,
+  computeWeekCompliancePct,
+  getBedtimeComplianceLevel,
+  isBedtimeCompliant,
+  getComplianceColor,
+};
+export type {
+  DayComplianceInput,
+  ComplianceResult,
+  BedtimeLevel,
+};
+
+// ── Streak Computation ─────────────────────────────────────────────────────
+
+export type StreakLogEntry = DayComplianceInput & { date: string };
+
+/**
+ * Compute the current and best consecutive compliance streaks across all logs.
+ *
+ * Rules:
+ * - Walk every calendar date from first log date to currentDate (inclusive)
+ * - Skip Saturdays (getDay() === 6) — family day, never breaks a streak
+ * - A missing log counts as non-compliant (breaks the streak)
+ * - A day is compliant if computeDayCompliance(log, hasSession).pct >= 80
+ * - datesWithSessions is the set of dates that have a planned training session
+ */
+export function computeStreak(
+  allLogs: StreakLogEntry[],
+  currentDate: string,
+  datesWithSessions: string[],
+): { current: number; best: number } {
+  if (allLogs.length === 0) return { current: 0, best: 0 };
+
+  const logMap = new Map<string, StreakLogEntry>();
+  for (const log of allLogs) {
+    logMap.set(log.date, log);
+  }
+
+  const sessionSet = new Set(datesWithSessions);
+
+  // Determine iteration range
+  const firstDate = allLogs[0].date;
+  const start = new Date(firstDate + 'T12:00:00');
+  const end = new Date(currentDate + 'T12:00:00');
+
+  let current = 0;
+  let best = 0;
+  let streak = 0;
+
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const dayOfWeek = d.getDay(); // 0=Sun, 6=Sat
+    if (dayOfWeek === 6) continue; // skip Saturdays
+
+    const dateStr = d.toISOString().slice(0, 10);
+    const log = logMap.get(dateStr);
+
+    if (!log) {
+      // Missing log — streak broken
+      streak = 0;
+      continue;
+    }
+
+    const hasSession = sessionSet.has(dateStr);
+    const result = computeDayCompliance(log, hasSession);
+
+    if (result.pct >= 80) {
+      streak += 1;
+      if (streak > best) best = streak;
+    } else {
+      streak = 0;
+    }
+  }
+
+  current = streak;
+  return { current, best };
+}
+
+/** Compute compliance % for each of the last N weeks. */
+export function getComplianceTrend(
+  currentWeek: number,
+  weeks: number,
+): Array<{ week_number: number; compliance_pct: number; days_logged: number }> {
+  const result: Array<{ week_number: number; compliance_pct: number; days_logged: number }> = [];
+
+  for (let w = currentWeek - weeks + 1; w <= currentWeek; w++) {
+    if (w < 1) continue;
+    const logs = getDailyLogsByWeek(w);
+    if (logs.length === 0) {
+      result.push({ week_number: w, compliance_pct: 0, days_logged: 0 });
+      continue;
+    }
+    const planItems = getPlanItems(w);
+    const hasPlanned = logs.map(l => {
+      const dn = getDayName(l.date);
+      const da = getDayAbbrev(l.date);
+      return planItems.some((item: { day: string }) =>
+        item.day === dn || item.day.startsWith(da)
+      );
+    });
+    const pct = computeWeekCompliancePct(logs, hasPlanned);
+    result.push({ week_number: w, compliance_pct: pct, days_logged: logs.length });
+  }
+
+  return result;
 }
 
 /** Format the week summary as a markdown block for agent context injection */
