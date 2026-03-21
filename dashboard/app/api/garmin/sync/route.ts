@@ -28,6 +28,23 @@ export async function POST() {
 
     let currentOAuth2 = tokens.oauth2;
 
+    // Validate tokens with a lightweight API call before running the full export.
+    // This call is NOT wrapped in safeCall, so auth errors surface immediately.
+    try {
+      const probe = await connectApi(
+        '/userprofile-service/socialProfile',
+        tokens.oauth1,
+        currentOAuth2,
+        GARMIN_TOKEN_DIR,
+      );
+      currentOAuth2 = probe.oauth2;
+    } catch {
+      return NextResponse.json(
+        { success: false, error: 'auth_required' },
+        { status: 401 },
+      );
+    }
+
     const apiFn = async (apiPath: string) => {
       const result = await connectApi(
         apiPath,
