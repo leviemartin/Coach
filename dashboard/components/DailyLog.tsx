@@ -6,25 +6,13 @@ import {
   Card,
   CardContent,
   Checkbox,
+  Chip,
   FormControlLabel,
   Switch,
-  TextField,
   Typography,
-  Chip,
 } from '@mui/material';
-
-// Inline bedtime conversion (cannot import lib/daily-log.ts — it uses 'path')
-function toBedtimeStorage(time: string): string {
-  const [h, m] = time.split(':').map(Number);
-  if (h < 6) return `${h + 24}:${m.toString().padStart(2, '0')}`;
-  return time;
-}
-
-function fromBedtimeStorage(stored: string): string {
-  const [h, m] = stored.split(':').map(Number);
-  if (h >= 24) return `${(h - 24).toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-  return stored;
-}
+import BedtimeCard from './BedtimeCard';
+import NotesCard from './NotesCard';
 
 interface LogData {
   workout_completed: number;
@@ -71,11 +59,8 @@ export default function DailyLog({ date, log, plannedSession, onSave }: DailyLog
 
       debounceRef.current = setTimeout(async () => {
         setSaveStatus('saving');
-        // Convert bedtime for storage
+        // BedtimeCard already returns values in 24h+ storage format — no conversion needed
         const payload: Record<string, unknown> = { ...data };
-        if (data.vampire_bedtime) {
-          payload.vampire_bedtime = toBedtimeStorage(data.vampire_bedtime);
-        }
 
         try {
           await onSave(payload);
@@ -110,15 +95,6 @@ export default function DailyLog({ date, log, plannedSession, onSave }: DailyLog
   const dateObj = new Date(date + 'T12:00:00');
   const dayIndex = dateObj.getDay(); // 0=Sun, 6=Sat
   const isSaturday = dayIndex === 6;
-
-  // Bedtime display value — convert from storage format
-  const bedtimeDisplay = formData.vampire_bedtime
-    ? fromBedtimeStorage(formData.vampire_bedtime)
-    : '';
-
-  // Detect after-midnight for caption
-  const bedtimeHour = bedtimeDisplay ? parseInt(bedtimeDisplay.split(':')[0], 10) : null;
-  const isAfterMidnight = bedtimeHour !== null && bedtimeHour >= 0 && bedtimeHour < 6;
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -268,59 +244,16 @@ export default function DailyLog({ date, log, plannedSession, onSave }: DailyLog
       )}
 
       {/* Bedtime */}
-      <Card variant="outlined">
-        <CardContent>
-          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-            Bedtime (Vampire Protocol)
-          </Typography>
-          <TextField
-            type="time"
-            value={bedtimeDisplay}
-            onChange={(e) => {
-              const raw = e.target.value;
-              if (!raw) {
-                update({ vampire_bedtime: null });
-                return;
-              }
-              // Store in 24h+ format internally
-              const [h, m] = raw.split(':').map(Number);
-              if (h < 6) {
-                update({ vampire_bedtime: `${h + 24}:${m.toString().padStart(2, '0')}` });
-              } else {
-                update({ vampire_bedtime: raw });
-              }
-            }}
-            size="small"
-            sx={{ width: { xs: '100%', sm: 200 } }}
-            slotProps={{
-              inputLabel: { shrink: true },
-            }}
-          />
-          {isAfterMidnight && bedtimeDisplay && (
-            <Typography variant="caption" color="warning.main" sx={{ mt: 0.5, display: 'block' }}>
-              After midnight — logged as next-day bedtime
-            </Typography>
-          )}
-        </CardContent>
-      </Card>
+      <BedtimeCard
+        bedtime={formData.vampire_bedtime}
+        onUpdate={(val) => update({ vampire_bedtime: val })}
+      />
 
       {/* Notes */}
-      <Card variant="outlined">
-        <CardContent>
-          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-            Notes
-          </Typography>
-          <TextField
-            multiline
-            rows={3}
-            fullWidth
-            placeholder="Any notes (injuries, sleep disruptions, etc.)"
-            value={formData.notes || ''}
-            onChange={(e) => update({ notes: e.target.value || null })}
-            size="small"
-          />
-        </CardContent>
-      </Card>
+      <NotesCard
+        notes={formData.notes}
+        onUpdate={(val) => update({ notes: val })}
+      />
     </Box>
   );
 }
