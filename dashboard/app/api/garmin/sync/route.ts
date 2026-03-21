@@ -1,67 +1,69 @@
 import { NextResponse } from 'next/server';
-import { execFile } from 'child_process';
-import { promisify } from 'util';
-import { GARMIN_CONNECTOR_DIR, GARMIN_CONNECTOR_SCRIPT, GARMIN_DATA_PATH, GARMIN_TOKEN_DIR } from '@/lib/constants';
+import { loadTokens, saveTokens } from '@/lib/garmin-tokens';
+import { connectApi } from '@/lib/garmin-api';
+import { buildExport } from '@/lib/garmin-extract';
+import { GARMIN_DATA_PATH, GARMIN_TOKEN_DIR } from '@/lib/constants';
+import fs from 'fs';
+import path from 'path';
 
-const execFileAsync = promisify(execFile);
-
-// Module-level mutex — valid for single-process Node (next dev / next start).
-// Not effective in serverless deployments; client-side disabled state is the primary guard.
 let syncing = false;
 
 export async function POST() {
   if (syncing) {
     return NextResponse.json(
       { success: false, error: 'Sync already in progress' },
-      { status: 409 }
+      { status: 409 },
     );
   }
 
   syncing = true;
   try {
-    const { stdout, stderr } = await execFileAsync(
-      'python3',
-      [GARMIN_CONNECTOR_SCRIPT, '--output', GARMIN_DATA_PATH, '--token-dir', GARMIN_TOKEN_DIR],
-      { cwd: GARMIN_CONNECTOR_DIR, timeout: 120_000, maxBuffer: 5 * 1024 * 1024 }
-    );
+    const tokens = loadTokens(GARMIN_TOKEN_DIR);
+    if (!tokens) {
+      return NextResponse.json(
+        { success: false, error: 'auth_required' },
+        { status: 401 },
+      );
+    }
+
+    let currentOAuth2 = tokens.oauth2;
+
+    const apiFn = async (apiPath: string) => {
+      const result = await connectApi(
+        apiPath,
+        tokens.oauth1,
+        currentOAuth2,
+        GARMIN_TOKEN_DIR,
+      );
+      currentOAuth2 = result.oauth2;
+      return result.data;
+    };
+
+    const exportData = await buildExport(apiFn);
+
+    const dir = path.dirname(GARMIN_DATA_PATH);
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(GARMIN_DATA_PATH, JSON.stringify(exportData, null, 2));
+
+    saveTokens(GARMIN_TOKEN_DIR, tokens.oauth1, currentOAuth2);
 
     return NextResponse.json({
       success: true,
       message: 'Garmin data synced successfully',
-      output: [stderr, stdout].filter(Boolean).join('\n').trim(),
     });
   } catch (err: unknown) {
-    const error = err as {
-      stderr?: string;
-      stdout?: string;
-      message?: string;
-      killed?: boolean;
-      signal?: string;
-    };
+    const msg = err instanceof Error ? err.message : 'Unknown error';
 
-    if (error.killed) {
+    if (msg.includes('401') || msg.includes('Authentication')) {
       return NextResponse.json(
-        { success: false, error: 'Sync timed out after 120 seconds. The Garmin API may be slow — try again.' },
-        { status: 504 }
-      );
-    }
-
-    const output = [error.stderr, error.stdout].filter(Boolean).join('\n').trim()
-      || error.message || 'Unknown error';
-
-    if (output.includes('Authentication')) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Authentication failed. Re-run garmin_connector.py manually to re-authenticate.',
-        },
-        { status: 401 }
+        { success: false, error: 'auth_required' },
+        { status: 401 },
       );
     }
 
     return NextResponse.json(
-      { success: false, error: 'Garmin sync failed. Check the connector script for details.' },
-      { status: 500 }
+      { success: false, error: `Garmin sync failed: ${msg}` },
+      { status: 500 },
     );
   } finally {
     syncing = false;
