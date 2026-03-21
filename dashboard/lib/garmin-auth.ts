@@ -179,6 +179,29 @@ function createOAuth1(consumer: {
 }
 
 // ---------------------------------------------------------------------------
+// Retry helper for rate-limited requests
+// ---------------------------------------------------------------------------
+
+async function fetchWithRetry(
+  fn: () => Promise<Response>,
+  maxRetries: number = 3,
+): Promise<Response> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const resp = await fn();
+    if (resp.status === 429 && attempt < maxRetries) {
+      const retryAfter = resp.headers.get('retry-after');
+      const waitMs = retryAfter
+        ? parseInt(retryAfter, 10) * 1000
+        : Math.min(2000 * Math.pow(2, attempt), 15000);
+      await new Promise((r) => setTimeout(r, waitMs));
+      continue;
+    }
+    return resp;
+  }
+  throw new Error('Unreachable');
+}
+
+// ---------------------------------------------------------------------------
 // Internal: get OAuth1 token from ticket
 // ---------------------------------------------------------------------------
 
@@ -199,13 +222,15 @@ async function getOAuth1Token(
   const requestData = { url, method: 'GET' };
   const authHeader = oauth.toHeader(oauth.authorize(requestData));
 
-  const resp = await cookieFetch(url, cookieJar, {
-    method: 'GET',
-    headers: {
-      ...authHeader,
-      'User-Agent': USER_AGENT,
-    },
-  });
+  const resp = await fetchWithRetry(() =>
+    cookieFetch(url, cookieJar, {
+      method: 'GET',
+      headers: {
+        ...authHeader,
+        'User-Agent': USER_AGENT,
+      },
+    }),
+  );
 
   if (!resp.ok) throw new Error(`OAuth1 token request failed: ${resp.status}`);
 
@@ -250,15 +275,17 @@ export async function exchangeOAuth1ForOAuth2(
   };
   const authHeader = oauth.toHeader(oauth.authorize(requestData, token));
 
-  const resp = await fetch(url, {
-    method: 'POST',
-    headers: {
-      ...authHeader,
-      'User-Agent': USER_AGENT,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body,
-  });
+  const resp = await fetchWithRetry(() =>
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        ...authHeader,
+        'User-Agent': USER_AGENT,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body,
+    }),
+  );
 
   if (!resp.ok) throw new Error(`OAuth2 exchange failed: ${resp.status}`);
 
