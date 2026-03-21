@@ -13,6 +13,7 @@ export default function TrendsPage() {
   const [dexaScans, setDexaScans] = useState<DexaScan[]>([]);
   const [exercises, setExercises] = useState<string[]>([]);
   const [selectedExercise, setSelectedExercise] = useState('');
+  const [complianceTrend, setComplianceTrend] = useState<Array<{ week_number: number; compliance_pct: number; days_logged: number }>>([]);
   const [loading, setLoading] = useState(true);
   const [rebuilding, setRebuilding] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,12 +21,20 @@ export default function TrendsPage() {
   const fetchTrends = async (exercise?: string) => {
     try {
       const url = exercise ? `/api/trends?exercise=${exercise}` : '/api/trends';
-      const res = await fetch(url);
+      const [res, complianceRes] = await Promise.all([
+        fetch(url),
+        exercise ? Promise.resolve(null) : fetch('/api/log/compliance-trend?weeks=52'),
+      ]);
       const data = await res.json();
       setMetrics(data.metrics || []);
       setCeilings(data.ceilings || []);
       if (!exercise) {
         setDexaScans(data.dexaScans || []);
+      }
+
+      if (!exercise && complianceRes) {
+        const complianceData = await complianceRes.json();
+        setComplianceTrend(complianceData.trend || []);
       }
 
       // Extract unique exercises from ceilings
@@ -108,6 +117,7 @@ export default function TrendsPage() {
           exercises={exercises}
           selectedExercise={selectedExercise}
           onExerciseChange={handleExerciseChange}
+          complianceTrend={complianceTrend}
         />
       ) : null}
     </Box>
