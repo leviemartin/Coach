@@ -240,6 +240,71 @@ export function getComplianceColor(
   return 'error';
 }
 
+// ── Streak Computation ─────────────────────────────────────────────────────
+
+export type StreakLogEntry = DayComplianceInput & { date: string };
+
+/**
+ * Compute the current and best consecutive compliance streaks across all logs.
+ *
+ * Rules:
+ * - Walk every calendar date from first log date to currentDate (inclusive)
+ * - Skip Saturdays (getDay() === 6) — family day, never breaks a streak
+ * - A missing log counts as non-compliant (breaks the streak)
+ * - A day is compliant if computeDayCompliance(log, hasSession).pct >= 80
+ * - datesWithSessions is the set of dates that have a planned training session
+ */
+export function computeStreak(
+  allLogs: StreakLogEntry[],
+  currentDate: string,
+  datesWithSessions: string[],
+): { current: number; best: number } {
+  if (allLogs.length === 0) return { current: 0, best: 0 };
+
+  const logMap = new Map<string, StreakLogEntry>();
+  for (const log of allLogs) {
+    logMap.set(log.date, log);
+  }
+
+  const sessionSet = new Set(datesWithSessions);
+
+  // Determine iteration range
+  const firstDate = allLogs[0].date;
+  const start = new Date(firstDate + 'T12:00:00');
+  const end = new Date(currentDate + 'T12:00:00');
+
+  let current = 0;
+  let best = 0;
+  let streak = 0;
+
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const dayOfWeek = d.getDay(); // 0=Sun, 6=Sat
+    if (dayOfWeek === 6) continue; // skip Saturdays
+
+    const dateStr = d.toISOString().slice(0, 10);
+    const log = logMap.get(dateStr);
+
+    if (!log) {
+      // Missing log — streak broken
+      streak = 0;
+      continue;
+    }
+
+    const hasSession = sessionSet.has(dateStr);
+    const result = computeDayCompliance(log, hasSession);
+
+    if (result.pct >= 80) {
+      streak += 1;
+      if (streak > best) best = streak;
+    } else {
+      streak = 0;
+    }
+  }
+
+  current = streak;
+  return { current, best };
+}
+
 /** Format the week summary as a markdown block for agent context injection */
 export function formatWeekSummaryForAgents(summary: WeekSummary): string {
   let md = `## Daily Log Summary (Week ${summary.week_number})\n`;

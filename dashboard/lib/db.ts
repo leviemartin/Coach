@@ -563,6 +563,11 @@ export function getDailyLogsByWeek(weekNumber: number): DailyLog[] {
   return db.prepare('SELECT * FROM daily_logs WHERE week_number = ? ORDER BY date').all(weekNumber) as DailyLog[];
 }
 
+export function getAllDailyLogs(): DailyLog[] {
+  const db = getDb();
+  return db.prepare('SELECT * FROM daily_logs ORDER BY date').all() as DailyLog[];
+}
+
 export function upsertDailyLog(log: Omit<DailyLog, 'id' | 'created_at' | 'updated_at'>): DailyLog {
   const db = getDb();
   const now = new Date().toISOString();

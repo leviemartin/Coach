@@ -4,8 +4,9 @@ import {
   computeWeekCompliancePct,
   getBedtimeComplianceLevel,
   getComplianceColor,
+  computeStreak,
 } from '@/lib/daily-log';
-import type { DayComplianceInput, ComplianceResult } from '@/lib/daily-log';
+import type { DayComplianceInput, ComplianceResult, StreakLogEntry } from '@/lib/daily-log';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -238,5 +239,102 @@ describe('getComplianceColor', () => {
 
   it('returns success when both are zero', () => {
     expect(getComplianceColor(0, 0)).toBe('success');
+  });
+});
+
+// ── computeStreak ──────────────────────────────────────────────────────────
+
+function makeStreakLog(date: string, overrides: Partial<DayComplianceInput> = {}): StreakLogEntry {
+  return {
+    date,
+    workout_completed: 0,
+    core_work_done: 1,
+    rug_protocol_done: 1,
+    vampire_bedtime: '22:00',
+    hydration_tracked: 1,
+    kitchen_cutoff_hit: 1,
+    is_sick_day: 0,
+    ...overrides,
+  };
+}
+
+// Fully compliant rest-day log (pct = 5/5 = 100%)
+function compliantLog(date: string): StreakLogEntry {
+  return makeStreakLog(date);
+}
+
+// Non-compliant rest-day log (pct = 0/5 = 0%)
+function nonCompliantLog(date: string): StreakLogEntry {
+  return makeStreakLog(date, {
+    core_work_done: 0,
+    rug_protocol_done: 0,
+    vampire_bedtime: null,
+    hydration_tracked: 0,
+    kitchen_cutoff_hit: 0,
+  });
+}
+
+describe('computeStreak', () => {
+  it('returns { current: 0, best: 0 } for empty logs', () => {
+    expect(computeStreak([], '2026-03-18', [])).toEqual({ current: 0, best: 0 });
+  });
+
+  it('returns current=3 for 3 consecutive compliant days', () => {
+    // 2026-03-17 Tue, 2026-03-18 Wed, 2026-03-19 Thu — all weekdays
+    const logs = [
+      compliantLog('2026-03-17'),
+      compliantLog('2026-03-18'),
+      compliantLog('2026-03-19'),
+    ];
+    const result = computeStreak(logs, '2026-03-19', []);
+    expect(result.current).toBe(3);
+    expect(result.best).toBe(3);
+  });
+
+  it('skips Saturday and continues streak across it (2026-03-21 is a Saturday)', () => {
+    // Fri 20th compliant, Sat 21st skipped, Sun 22nd compliant
+    const logs = [
+      compliantLog('2026-03-20'), // Friday
+      compliantLog('2026-03-22'), // Sunday
+    ];
+    // currentDate = Sunday 22nd
+    const result = computeStreak(logs, '2026-03-22', []);
+    expect(result.current).toBe(2);
+    expect(result.best).toBe(2);
+  });
+
+  it('maintains streak on a sick day when hydration + bedtime are both hit', () => {
+    // Sick day with hydration + bedtime → 2/2 = 100% → compliant
+    const logs = [
+      compliantLog('2026-03-17'),
+      makeStreakLog('2026-03-18', {
+        is_sick_day: 1,
+        hydration_tracked: 1,
+        vampire_bedtime: '22:00',
+        // other fields irrelevant on sick day
+        core_work_done: 0,
+        rug_protocol_done: 0,
+        kitchen_cutoff_hit: 0,
+      }),
+      compliantLog('2026-03-19'),
+    ];
+    const result = computeStreak(logs, '2026-03-19', []);
+    expect(result.current).toBe(3);
+    expect(result.best).toBe(3);
+  });
+
+  it('tracks best streak separately from current streak', () => {
+    // 3 compliant days, 1 non-compliant break, 1 compliant day
+    // Mon 16, Tue 17, Wed 18 = 3 streak | Thu 19 break | Fri 20 = 1 streak
+    const logs = [
+      compliantLog('2026-03-16'),
+      compliantLog('2026-03-17'),
+      compliantLog('2026-03-18'),
+      nonCompliantLog('2026-03-19'),
+      compliantLog('2026-03-20'),
+    ];
+    const result = computeStreak(logs, '2026-03-20', []);
+    expect(result.current).toBe(1);
+    expect(result.best).toBe(3);
   });
 });
