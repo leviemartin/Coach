@@ -4,7 +4,7 @@ set -e
 echo "=== OCR Coach Dashboard — Starting ==="
 
 # 1. Validate required env vars
-REQUIRED_VARS="COACH_ROOT DB_PATH GARMIN_DATA_PATH GARMIN_CONNECTOR_DIR GARMIN_TOKEN_DIR GARMIN_EMAIL GARMIN_PASSWORD ANTHROPIC_API_KEY AUTH_SECRET AUTH_URL GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET ALLOWED_EMAIL"
+REQUIRED_VARS="COACH_ROOT DB_PATH GARMIN_DATA_PATH GARMIN_TOKEN_DIR ANTHROPIC_API_KEY AUTH_SECRET AUTH_URL GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET ALLOWED_EMAIL"
 for var in $REQUIRED_VARS; do
   eval val=\$$var
   if [ -z "$val" ]; then
@@ -38,9 +38,8 @@ fi
 printenv | grep -E '^(COACH_ROOT|DB_PATH|GARMIN_|NODE_ENV|PATH|PORT|ANTHROPIC_API_KEY)=' > /app/scripts/.env
 chmod 600 /app/scripts/.env
 
-# 5. Set up cron jobs dynamically
-echo "0 */6 * * * . /app/scripts/.env; /app/scripts/garmin-sync.sh >> /var/log/garmin-sync.log 2>&1" > /etc/crontabs/root
-echo "0 3 * * * . /app/scripts/.env; /app/scripts/backup.sh >> /var/log/backup.log 2>&1" >> /etc/crontabs/root
+# 5. Set up cron jobs (backup only — Garmin sync is now handled via the dashboard UI)
+echo "0 3 * * * . /app/scripts/.env; /app/scripts/backup.sh >> /var/log/backup.log 2>&1" > /etc/crontabs/root
 
 # 6. Start cron daemon
 echo "Starting cron daemon..."

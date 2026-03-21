@@ -1,15 +1,11 @@
 # Stage 1: Dependencies
 FROM node:20-alpine AS deps
-RUN apk add --no-cache python3 py3-pip make g++ linux-headers
+RUN apk add --no-cache make g++ linux-headers
 WORKDIR /app
 
 # Node dependencies
 COPY dashboard/package.json dashboard/package-lock.json ./
 RUN npm ci
-
-# Python dependencies for Garmin connector
-COPY garmin-coach/garmin_connector.py /app/garmin-coach/
-RUN python3 -m pip install --break-system-packages garminconnect
 
 # Stage 2: Build
 FROM node:20-alpine AS builder
@@ -20,7 +16,7 @@ RUN npm run build
 
 # Stage 3: Runtime
 FROM node:20-alpine AS runner
-RUN apk add --no-cache python3 dcron sqlite
+RUN apk add --no-cache dcron sqlite
 
 WORKDIR /app
 
@@ -28,10 +24,6 @@ WORKDIR /app
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
-
-# Copy Python connector + site-packages
-COPY --from=deps /app/garmin-coach /app/garmin-coach/
-COPY --from=deps /usr/lib/python3.12/site-packages/ /usr/lib/python3.12/site-packages/
 
 # Copy scripts
 COPY dashboard/scripts/ /app/scripts/
