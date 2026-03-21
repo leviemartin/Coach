@@ -30,6 +30,7 @@ export async function POST() {
 
     // Validate tokens with a lightweight API call before running the full export.
     // This call is NOT wrapped in safeCall, so auth errors surface immediately.
+    let displayName: string;
     try {
       const probe = await connectApi(
         '/userprofile-service/socialProfile',
@@ -38,6 +39,7 @@ export async function POST() {
         GARMIN_TOKEN_DIR,
       );
       currentOAuth2 = probe.oauth2;
+      displayName = probe.data?.displayName ?? probe.data?.userName ?? '';
     } catch {
       return NextResponse.json(
         { success: false, error: 'auth_required' },
@@ -56,7 +58,7 @@ export async function POST() {
       return result.data;
     };
 
-    const exportData = await buildExport(apiFn);
+    const exportData = await buildExport(apiFn, displayName);
 
     const dir = path.dirname(GARMIN_DATA_PATH);
     fs.mkdirSync(dir, { recursive: true });

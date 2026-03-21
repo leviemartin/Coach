@@ -781,6 +781,7 @@ export function extractCardioDetails(activity: Dict, hrZones: Dict[]): Dict {
  */
 export async function buildExport(
   apiFn: ApiFn,
+  displayName: string,
   numDays = 28,
 ): Promise<Dict> {
   const today = new Date();
@@ -869,8 +870,8 @@ export async function buildExport(
     totalCalls += 7;
     const [statsRaw, sleepRaw, hrvRaw, readinessRaw, hydrationRaw, foodLogsRaw, mealsRaw] =
       await Promise.all([
-        safeCall(apiFn, `/usersummary-service/stats/${dateStr}`, failures),
-        safeCall(apiFn, `/wellness-service/wellness/dailySleepData/${dateStr}`, failures),
+        safeCall(apiFn, `/usersummary-service/usersummary/daily/${displayName}?calendarDate=${dateStr}`, failures),
+        safeCall(apiFn, `/wellness-service/wellness/dailySleepData/${displayName}?date=${dateStr}&nonSleepBufferMinutes=60`, failures),
         safeCall(apiFn, `/hrv-service/hrv/${dateStr}`, failures),
         safeCall(apiFn, `/metrics-service/metrics/trainingreadiness/${dateStr}`, failures),
         safeCall(apiFn, `/usersummary-service/usersummary/hydration/daily/${dateStr}`, failures),
@@ -920,7 +921,7 @@ export async function buildExport(
   totalCalls += 1;
   const bodyCompRaw = await safeCall(
     apiFn,
-    `/weight-service/weight/dateRange?startDay=${start28dStr}&endDay=${todayStr}`,
+    `/weight-service/weight/dateRange?startDate=${start28dStr}&endDate=${todayStr}`,
     failures,
   );
   const bodyComp = extractBodyComposition(bodyCompRaw);
