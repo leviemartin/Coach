@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getDailyLog, upsertDailyLog, getPlanItems } from '@/lib/db';
-import { getWeekForDate, getDayName, getDayAbbrev, findPlanItemForDate } from '@/lib/daily-log';
+import { getDailyLog, upsertDailyLog, getPlanItems, getAllDailyLogs, getUncompletedSessionsForWeek } from '@/lib/db';
+import { getWeekForDate, getDayName, getDayAbbrev, findPlanItemForDate, computeStreak } from '@/lib/daily-log';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -19,6 +19,22 @@ export async function GET(request: Request) {
     item.day === dayName || item.day.startsWith(dayAbbrev)
   ) || null;
 
+  const uncompletedSessions = getUncompletedSessionsForWeek(weekNumber);
+
+  const allLogs = getAllDailyLogs();
+  const datesWithSessions = allLogs
+    .filter(l => {
+      const dn = getDayName(l.date);
+      const da = getDayAbbrev(l.date);
+      const items = getPlanItems(l.week_number);
+      return items.some((item: { day: string }) =>
+        item.day === dn || item.day.startsWith(da)
+      );
+    })
+    .map(l => l.date);
+
+  const streak = computeStreak(allLogs, date, datesWithSessions);
+
   return NextResponse.json({
     log: log || {
       date,
@@ -33,6 +49,8 @@ export async function GET(request: Request) {
       notes: '',
     },
     planned_session: plannedSession,
+    uncompleted_sessions: uncompletedSessions,
+    streak,
   });
 }
 
@@ -44,13 +62,15 @@ export async function PUT(request: Request) {
   }
 
   const weekNumber = getWeekForDate(body.date);
-  const planItem = findPlanItemForDate(body.date);
+  const planItemId = body.workout_plan_item_id != null
+    ? body.workout_plan_item_id
+    : (findPlanItemForDate(body.date)?.id || null);
 
   const saved = upsertDailyLog({
     date: body.date,
     week_number: weekNumber,
     workout_completed: body.workout_completed ? 1 : 0,
-    workout_plan_item_id: planItem?.id || null,
+    workout_plan_item_id: planItemId,
     core_work_done: body.core_work_done ? 1 : 0,
     rug_protocol_done: body.rug_protocol_done ? 1 : 0,
     vampire_bedtime: body.vampire_bedtime || null,
