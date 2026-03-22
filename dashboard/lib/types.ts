@@ -386,3 +386,69 @@ export interface DashboardPayload {
   currentPhaseNumber: number;
   morzineDaysAway: number;
 }
+
+// --- Workout Tracker Types ---
+
+export type ExerciseType = 'strength' | 'carry' | 'timed' | 'cardio_intervals' | 'cardio_steady' | 'ruck';
+
+export interface ParsedExercise {
+  name: string;
+  canonicalName: string;
+  type: ExerciseType;
+  order: number;
+  supersetGroup: number | null; // null = standalone, number = grouped
+  sets: number;
+  reps: number | null;          // null for timed exercises
+  weightKg: number | null;      // null for bodyweight
+  durationSeconds: number | null; // for timed holds, cardio
+  restSeconds: number | null;
+  rounds: number | null;        // for cardio intervals
+  targetIntensity: string | null; // '>300W', 'HR 120-135'
+  coachCue: string | null;
+}
+
+export interface SessionSetState {
+  id?: number;                    // DB id, undefined before persistence
+  exerciseName: string;
+  exerciseOrder: number;
+  supersetGroup: number | null;
+  setNumber: number;
+  prescribedWeightKg: number | null;
+  prescribedReps: number | null;
+  actualWeightKg: number | null;
+  actualReps: number | null;
+  completed: boolean;
+  isModified: boolean;
+}
+
+export interface SessionCardioState {
+  id?: number;                    // DB id, undefined before persistence
+  exerciseName: string;
+  cardioType: 'intervals' | 'steady_state';
+  prescribedRounds: number | null;
+  completedRounds: number;
+  prescribedDurationMin: number | null;
+  targetIntensity: string | null;
+  completed: boolean;
+}
+
+export interface SessionState {
+  id: number | null;           // null until persisted
+  date: string;
+  weekNumber: number;
+  sessionType: string;
+  sessionTitle: string;
+  exercises: ParsedExercise[];
+  sets: SessionSetState[];
+  cardio: SessionCardioState[];
+  startedAt: string | null;
+  completedAt: string | null;
+  notes: string;
+}
+
+export interface RegistryExercise {
+  canonical: string;
+  aliases: string[];
+  type: ExerciseType;
+  tracks_weight: boolean;
+}
