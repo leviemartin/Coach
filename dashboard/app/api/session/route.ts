@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getPlanItems, getPlanItemById } from '@/lib/db';
 import { getTrainingWeek } from '@/lib/week';
 import { parseWorkoutPlan } from '@/lib/workout-parser';
-import { createSession, getActiveSession, getSessionSets, getSessionCardio, updateSet, updateCardioRound } from '@/lib/session-db';
+import { createSession, getActiveSession, getSessionSets, getSessionCardio, updateSet, updateCardioRound, deleteSession } from '@/lib/session-db';
 import type { PlanItem } from '@/lib/types';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -83,7 +83,33 @@ export async function GET(request: Request) {
   if (active && targetItem) {
     const sets = getSessionSets(active.id);
     const cardio = getSessionCardio(active.id);
-    return buildSessionResponse(targetItem, active.id, sets, cardio, true);
+
+    // Validate: re-parse exercises and check if DB data aligns.
+    // If the session was created with wrong type (e.g., cardio_steady for a strength
+    // workout), the DB will have wrong entries. Detect and recreate.
+    const sessionType = deriveSessionType(targetItem.sessionType);
+    const exercises = targetItem.workoutPlan
+      ? parseWorkoutPlan(targetItem.workoutPlan, sessionType)
+      : [];
+    const expectedStrength = exercises.filter(
+      (e) => e.type !== 'cardio_intervals' && e.type !== 'cardio_steady',
+    ).length;
+    const expectedCardio = exercises.filter(
+      (e) => e.type === 'cardio_intervals' || e.type === 'cardio_steady',
+    ).length;
+
+    const dbMatchesExpected =
+      (expectedStrength === 0 || sets.length > 0) &&
+      (expectedCardio === 0 || cardio.length > 0) &&
+      // Also catch: if we expect many strength exercises but DB only has cardio
+      !(expectedStrength > 2 && sets.length === 0);
+
+    if (dbMatchesExpected) {
+      return buildSessionResponse(targetItem, active.id, sets, cardio, true);
+    }
+
+    // Stale/mismatched session — delete and recreate below
+    deleteSession(active.id);
   }
 
   // --- No plan item found ---

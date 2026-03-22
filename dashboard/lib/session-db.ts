@@ -186,6 +186,13 @@ export function completeSession(sessionId: number, notes: string): {
   return { compliancePct, weightChanges };
 }
 
+export function deleteSession(sessionId: number): void {
+  const db = getDb();
+  db.prepare('DELETE FROM session_sets WHERE session_log_id = ?').run(sessionId);
+  db.prepare('DELETE FROM session_cardio WHERE session_log_id = ?').run(sessionId);
+  db.prepare('DELETE FROM session_logs WHERE id = ?').run(sessionId);
+}
+
 export function getActiveSession(date: string, sessionTitle?: string): { id: number; sessionTitle: string } | null {
   const db = getDb();
   let row: { id: number; session_title: string } | undefined;
