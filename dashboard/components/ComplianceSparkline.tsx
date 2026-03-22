@@ -2,6 +2,7 @@
 
 import { Box, Typography } from '@mui/material';
 import { SparkLineChart } from '@mui/x-charts/SparkLineChart';
+import { semanticColors } from '@/lib/design-tokens';
 import { useRouter } from 'next/navigation';
 
 interface TrendPoint {
@@ -47,6 +48,7 @@ export default function ComplianceSparkline({ trend, currentWeek }: ComplianceSp
           height={40}
           curve="natural"
           area
+          color={semanticColors.cardioSteady}
         />
 
         {/* Week labels */}

@@ -7,6 +7,7 @@ import {
   InputLabel, Alert, Chip, CircularProgress, LinearProgress,
 } from '@mui/material';
 import { cardContentSx } from '@/lib/theme';
+import { typography } from '@/lib/design-tokens';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
 import type { CheckInFormData } from '@/lib/types';
@@ -501,7 +502,7 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
 
                 {/* Pain & Injury */}
                 <Box>
-                  <Typography variant="subtitle2" fontWeight={600} color="text.secondary" sx={{ mb: 2 }}>
+                  <Typography sx={{ ...typography.categoryLabel, mb: 2 }}>
                     Pain &amp; Injury
                   </Typography>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -530,7 +531,7 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
 
                 {/* How Do You Feel? */}
                 <Box sx={{ borderTop: '2px solid', borderColor: 'divider', pt: 3 }}>
-                  <Typography variant="subtitle2" fontWeight={600} color="text.secondary" sx={{ mb: 1 }}>
+                  <Typography sx={{ ...typography.categoryLabel, mb: 1 }}>
                     How Do You Feel?
                   </Typography>
                   <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
@@ -563,7 +564,7 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
 
                 {/* Training Completion */}
                 <Box sx={{ borderTop: '2px solid', borderColor: 'divider', pt: 3 }}>
-                  <Typography variant="subtitle2" fontWeight={600} color="text.secondary" sx={{ mb: 2 }}>
+                  <Typography sx={{ ...typography.categoryLabel, mb: 2 }}>
                     Training Completion
                   </Typography>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -608,7 +609,7 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
 
                 {/* Protocol Compliance */}
                 <Box sx={{ borderTop: '2px solid', borderColor: 'divider', pt: 3 }}>
-                  <Typography variant="subtitle2" fontWeight={600} color="text.secondary" sx={{ mb: 2 }}>
+                  <Typography sx={{ ...typography.categoryLabel, mb: 2 }}>
                     Protocol Compliance
                   </Typography>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -646,7 +647,7 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
 
                 {/* Last Week's Plan */}
                 <Box sx={{ borderTop: '2px solid', borderColor: 'divider', pt: 3 }}>
-                  <Typography variant="subtitle2" fontWeight={600} color="text.secondary" sx={{ mb: 1 }}>
+                  <Typography sx={{ ...typography.categoryLabel, mb: 1 }}>
                     Last Week&apos;s Plan
                   </Typography>
                   <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
@@ -683,7 +684,7 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
 
                 {/* Next Week */}
                 <Box sx={{ borderTop: '2px solid', borderColor: 'divider', pt: 3 }}>
-                  <Typography variant="subtitle2" fontWeight={600} color="text.secondary" sx={{ mb: 2 }}>
+                  <Typography sx={{ ...typography.categoryLabel, mb: 2 }}>
                     Next Week
                   </Typography>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -734,7 +735,7 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
 
               <Box sx={{ mb: 3 }}>
                 {/* Data sources */}
-                <Typography variant="subtitle2" fontWeight={600} color="text.secondary" sx={{ mb: 1 }}>
+                <Typography sx={{ ...typography.categoryLabel, mb: 1 }}>
                   Data Sources
                 </Typography>
                 <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, mb: 2 }}>
@@ -750,7 +751,7 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
                 </Box>
 
                 {/* Training */}
-                <Typography variant="subtitle2" fontWeight={600} color="text.secondary" sx={{ mb: 1 }}>
+                <Typography sx={{ ...typography.categoryLabel, mb: 1 }}>
                   Training
                 </Typography>
                 <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1, mb: 2 }}>
@@ -767,7 +768,7 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
                 </Box>
 
                 {/* Protocol Compliance */}
-                <Typography variant="subtitle2" fontWeight={600} color="text.secondary" sx={{ mb: 1 }}>
+                <Typography sx={{ ...typography.categoryLabel, mb: 1 }}>
                   Protocol Compliance
                 </Typography>
                 <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1, mb: 2 }}>
@@ -784,7 +785,7 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
                 </Box>
 
                 {/* Pain */}
-                <Typography variant="subtitle2" fontWeight={600} color="text.secondary" sx={{ mb: 1 }}>
+                <Typography sx={{ ...typography.categoryLabel, mb: 1 }}>
                   Pain &amp; Injury
                 </Typography>
                 <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, mb: 2 }}>
@@ -802,7 +803,7 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
                 {/* Plan feedback preview */}
                 {formData.planFeedback && (
                   <>
-                    <Typography variant="subtitle2" fontWeight={600} color="text.secondary" sx={{ mb: 1 }}>
+                    <Typography sx={{ ...typography.categoryLabel, mb: 1 }}>
                       Plan Feedback
                     </Typography>
                     <Box sx={{ bgcolor: 'action.hover', borderRadius: 1, px: 1.5, py: 1, mb: 2 }}>

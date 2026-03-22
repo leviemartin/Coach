@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import Link from 'next/link';
 import {
   Box,
   Card,
@@ -10,6 +11,7 @@ import {
   Switch,
   Typography,
 } from '@mui/material';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import BedtimeCard from './BedtimeCard';
 import NotesCard from './NotesCard';
 import SessionPicker from './SessionPicker';
@@ -18,6 +20,7 @@ import DayProgress from './DayProgress';
 import WeekComplianceBar from './WeekComplianceBar';
 import ComplianceSparkline from './ComplianceSparkline';
 import { computeDayCompliance, computeWeekCompliancePct, isBedtimeCompliant } from '@/lib/compliance';
+import { semanticColors } from '@/lib/design-tokens';
 import type { UncompletedSession } from './SessionPicker';
 import type { WeekTallies } from './DailyChecklist';
 
@@ -251,6 +254,38 @@ export default function DailyLog({
           sessionsPlanned={sessionsPlanned}
           onUpdate={handleSessionUpdate}
         />
+      )}
+
+      {/* 4b. Start Session / Session completed link */}
+      {!isSick && (plannedSession || selectedPlanItemId != null || formData.workout_completed) && (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {formData.workout_completed ? (
+            <>
+              <CheckCircleIcon sx={{ color: semanticColors.recovery.good, fontSize: 18 }} />
+              <Typography variant="body2" sx={{ color: semanticColors.recovery.good, fontWeight: 600 }}>
+                Session completed
+              </Typography>
+            </>
+          ) : (
+            <Link href="/session" style={{ textDecoration: 'none' }}>
+              <Typography
+                variant="body2"
+                fontWeight={600}
+                sx={{
+                  color: semanticColors.body,
+                  border: `1px solid ${semanticColors.body}`,
+                  borderRadius: 1,
+                  px: 1.5,
+                  py: 0.5,
+                  display: 'inline-block',
+                  '&:hover': { opacity: 0.8 },
+                }}
+              >
+                Start Session →
+              </Typography>
+            </Link>
+          )}
+        </Box>
       )}
 
       {/* 5. DailyChecklist (if not sick) / Hydration standalone if sick */}

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, Typography, LinearProgress, Box } from '@mui/material';
 import type { Race } from '@/lib/types';
+import { semanticColors, typography } from '@/lib/design-tokens';
 
 const TRAINING_START = new Date('2025-12-29');
 
@@ -43,7 +44,7 @@ export default function RaceCountdown() {
   return (
     <Card variant="outlined" sx={{ bgcolor: 'background.paper' }}>
       <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-        <Typography variant="caption" color="text.secondary" fontWeight={600}>
+        <Typography sx={typography.categoryLabel}>
           RACE COUNTDOWN
         </Typography>
 
@@ -61,7 +62,7 @@ export default function RaceCountdown() {
               <Typography variant="body2" fontWeight={500}>
                 {race.name}
               </Typography>
-              <Typography variant="h5" fontWeight={700} color="primary">
+              <Typography sx={{ ...typography.metricValue, color: 'primary.main' }}>
                 {weeks}w {remainDays}d
               </Typography>
             </Box>
@@ -73,7 +74,7 @@ export default function RaceCountdown() {
             <LinearProgress
               variant="determinate"
               value={overallProgress}
-              sx={{}}
+              sx={{ '& .MuiLinearProgress-bar': { backgroundColor: semanticColors.body } }}
             />
             <Typography variant="caption" color="text.secondary">
               {Math.round(overallProgress)}% of journey

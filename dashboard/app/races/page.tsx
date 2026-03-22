@@ -12,6 +12,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import PageBreadcrumb from '@/components/PageBreadcrumb';
 import type { Race, RaceStatus } from '@/lib/types';
+import { semanticColors, typography } from '@/lib/design-tokens';
 
 const STATUS_COLORS: Record<RaceStatus, 'success' | 'warning' | 'default' | 'info'> = {
   registered: 'success',
@@ -21,10 +22,10 @@ const STATUS_COLORS: Record<RaceStatus, 'success' | 'warning' | 'default' | 'inf
 };
 
 const STATUS_BORDER: Record<RaceStatus, string> = {
-  registered: '#4caf50',
-  planned: '#ff9800',
+  registered: semanticColors.recovery.good,
+  planned: semanticColors.recovery.caution,
   tentative: '#9e9e9e',
-  completed: '#2196f3',
+  completed: semanticColors.body,
 };
 
 const EMPTY_FORM = {
@@ -105,10 +106,8 @@ function RaceCard({ race, confirmDelete, onEdit, onDelete, onConfirmDelete }: Ra
         {/* Countdown */}
         <Box>
           <Typography
-            variant="h3"
-            fontWeight={800}
             color={isPast ? 'text.disabled' : 'text.primary'}
-            sx={{ lineHeight: 1, letterSpacing: '-0.5px' }}
+            sx={{ ...typography.primaryMetric, lineHeight: 1, letterSpacing: '-0.5px' }}
           >
             {formatCountdown(days)}
           </Typography>
@@ -134,17 +133,17 @@ function RaceCard({ race, confirmDelete, onEdit, onDelete, onConfirmDelete }: Ra
         {/* Meta */}
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 0.5 }}>
           {race.date && (
-            <Typography variant="body2" color="text.secondary">
+            <Typography sx={{ ...typography.categoryLabel }}>
               {race.date}
             </Typography>
           )}
           {race.location && (
-            <Typography variant="body2" color="text.secondary">
+            <Typography sx={{ ...typography.categoryLabel }}>
               · {race.location}
             </Typography>
           )}
           {race.type && (
-            <Typography variant="body2" color="text.secondary">
+            <Typography sx={{ ...typography.categoryLabel }}>
               · {race.type}
             </Typography>
           )}

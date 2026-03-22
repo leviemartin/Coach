@@ -1,7 +1,7 @@
 'use client';
 
 import { Box, Chip, Typography } from '@mui/material';
-import { getComplianceColor } from '@/lib/compliance';
+import { semanticColors } from '@/lib/design-tokens';
 
 interface MetricTally {
   label: string;
@@ -16,7 +16,11 @@ interface WeekComplianceBarProps {
 
 export default function WeekComplianceBar({ metrics, overallPct }: WeekComplianceBarProps) {
   const pctColor =
-    overallPct >= 80 ? 'success.main' : overallPct >= 50 ? 'warning.main' : 'error.main';
+    overallPct >= 80
+      ? semanticColors.recovery.good
+      : overallPct >= 50
+        ? semanticColors.recovery.caution
+        : semanticColors.recovery.problem;
 
   return (
     <Box
@@ -39,8 +43,21 @@ export default function WeekComplianceBar({ metrics, overallPct }: WeekComplianc
             key={m.label}
             label={`${m.label} ${m.current}/${m.target}`}
             size="small"
-            color={getComplianceColor(m.current, m.target)}
             variant="outlined"
+            sx={{
+              borderColor:
+                m.current >= m.target
+                  ? semanticColors.recovery.good
+                  : m.current >= m.target / 2
+                    ? semanticColors.recovery.caution
+                    : semanticColors.recovery.problem,
+              color:
+                m.current >= m.target
+                  ? semanticColors.recovery.good
+                  : m.current >= m.target / 2
+                    ? semanticColors.recovery.caution
+                    : semanticColors.recovery.problem,
+            }}
           />
         ))}
       </Box>

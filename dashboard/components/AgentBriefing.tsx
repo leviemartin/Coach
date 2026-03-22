@@ -8,13 +8,14 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import MarkdownRenderer from './MarkdownRenderer';
 import { cardContentSx } from '@/lib/theme';
+import { semanticColors, typography } from '@/lib/design-tokens';
 
 const AGENT_COLORS: Record<string, string> = {
   strength: '#C62828',
   endurance: '#2E7D32',
-  ocr: '#E65100',
-  nutrition: '#6A1B9A',
-  recovery: '#00838F',
+  ocr: semanticColors.cardioIntervals,
+  nutrition: semanticColors.protocols,
+  recovery: semanticColors.cardioSteady,
   mobility: '#4E342E',
   mental: '#283593',
 };
@@ -48,7 +49,7 @@ export default function AgentBriefing({
       {/* Specialist progress */}
       <Card sx={{ mb: 3 }}>
         <CardContent sx={cardContentSx}>
-          <Typography variant="h6" gutterBottom>
+          <Typography sx={{ ...typography.categoryLabel, mb: 1 }}>
             Specialist Analyses ({completedCount}/{totalCount})
           </Typography>
           <LinearProgress
