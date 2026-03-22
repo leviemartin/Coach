@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Box, IconButton } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import Sidebar, { DRAWER_WIDTH } from './Sidebar';
+import MobileBottomNav from './MobileBottomNav';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -41,10 +42,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           overflowX: 'hidden',
           p: { xs: 2, sm: 2, md: 2.5 },
           pt: { xs: 7, sm: 7, md: 2.5 },
+          pb: { xs: '72px', md: 2.5 },
         }}
       >
         {children}
       </Box>
+
+      <MobileBottomNav />
     </Box>
   );
 }

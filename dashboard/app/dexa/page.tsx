@@ -11,6 +11,7 @@ import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import PageBreadcrumb from '@/components/PageBreadcrumb';
 import PageSkeleton from '@/components/PageSkeleton';
 import type { DexaScan, DexaData } from '@/lib/types';
+import { semanticColors } from '@/lib/design-tokens';
 
 const EMPTY_FORM = {
   scanNumber: '' as string,
@@ -42,10 +43,10 @@ function BodyCompBar({ scan }: { scan: DexaScan }) {
     <Box sx={{ mt: 1.5 }}>
       <Box sx={{ display: 'flex', height: 18, borderRadius: 1, overflow: 'hidden', width: '100%' }}>
         <Tooltip title={`Fat: ${scan.fatMassKg.toFixed(1)} kg (${fatPct.toFixed(1)}%)`}>
-          <Box sx={{ width: `${fatPct}%`, bgcolor: '#f44336', cursor: 'default' }} />
+          <Box sx={{ width: `${fatPct}%`, bgcolor: semanticColors.recovery.problem, cursor: 'default' }} />
         </Tooltip>
         <Tooltip title={`Lean: ${scan.totalLeanMassKg.toFixed(1)} kg (${leanPct.toFixed(1)}%)`}>
-          <Box sx={{ width: `${leanPct}%`, bgcolor: '#2196f3', cursor: 'default' }} />
+          <Box sx={{ width: `${leanPct}%`, bgcolor: semanticColors.body, cursor: 'default' }} />
         </Tooltip>
         <Tooltip title={`Bone: ${scan.boneMassKg.toFixed(1)} kg (${bonePct.toFixed(1)}%)`}>
           <Box sx={{ width: `${bonePct}%`, bgcolor: '#9e9e9e', cursor: 'default' }} />
@@ -53,8 +54,8 @@ function BodyCompBar({ scan }: { scan: DexaScan }) {
       </Box>
       <Box sx={{ display: 'flex', gap: 2, mt: 0.75 }}>
         {[
-          { label: 'Fat', color: '#f44336' },
-          { label: 'Lean', color: '#2196f3' },
+          { label: 'Fat', color: semanticColors.recovery.problem },
+          { label: 'Lean', color: semanticColors.body },
           { label: 'Bone', color: '#9e9e9e' },
         ].map(({ label, color }) => (
           <Box key={label} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -88,7 +89,7 @@ function DeltaItem({
 }) {
   const improved = lowerIsBetter ? delta < 0 : delta > 0;
   const neutral = Math.abs(delta) < 0.05;
-  const color = neutral ? 'text.secondary' : improved ? 'success.main' : 'error.main';
+  const color = neutral ? 'text.secondary' : improved ? semanticColors.recovery.good : semanticColors.recovery.problem;
   const sign = delta > 0 ? '+' : '';
   const Icon = delta > 0 ? ArrowUpwardIcon : ArrowDownwardIcon;
 
