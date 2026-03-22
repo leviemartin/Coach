@@ -1,0 +1,167 @@
+{
+  "version": 1,
+  "exercises": [
+    {
+      "canonical": "Pull-Up",
+      "aliases": ["Pull-ups", "Pullup", "Pull Up", "Assisted Pull-Up"],
+      "type": "strength",
+      "tracks_weight": true
+    },
+    {
+      "canonical": "Dead Hang",
+      "aliases": ["Deadhang", "Dead-Hang"],
+      "type": "strength",
+      "tracks_weight": false
+    },
+    {
+      "canonical": "DB Row",
+      "aliases": ["Dumbbell Row", "DB Rows", "Dumbbell Rows"],
+      "type": "strength",
+      "tracks_weight": true
+    },
+    {
+      "canonical": "Lat Pulldown",
+      "aliases": ["Cable Lat Pull Down", "Lat Pull Down", "Lat Pull-Down"],
+      "type": "strength",
+      "tracks_weight": true
+    },
+    {
+      "canonical": "Leg Press",
+      "aliases": ["Leg press", "Incline Leg Press"],
+      "type": "strength",
+      "tracks_weight": true
+    },
+    {
+      "canonical": "Goblet Squat",
+      "aliases": ["Goblet Squats", "DB Goblet Squat"],
+      "type": "strength",
+      "tracks_weight": true
+    },
+    {
+      "canonical": "Face Pull",
+      "aliases": ["Face Pulls", "Cable Face Pull"],
+      "type": "strength",
+      "tracks_weight": true
+    },
+    {
+      "canonical": "Farmer Carry",
+      "aliases": ["Farmer Walk", "Farmer's Carry", "Farmer Carries"],
+      "type": "carry",
+      "tracks_weight": true
+    },
+    {
+      "canonical": "Med Ball Slam",
+      "aliases": ["Medicine Ball Slam", "Med Ball Slams", "Ball Slam"],
+      "type": "strength",
+      "tracks_weight": true
+    },
+    {
+      "canonical": "Push-Up",
+      "aliases": ["Push-ups", "Pushup", "Push Up", "Explosive Push-Up"],
+      "type": "strength",
+      "tracks_weight": false
+    },
+    {
+      "canonical": "Plank",
+      "aliases": ["Front Plank", "RKC Plank"],
+      "type": "timed",
+      "tracks_weight": false
+    },
+    {
+      "canonical": "Pallof Press",
+      "aliases": ["Pallof", "Cable Pallof Press"],
+      "type": "strength",
+      "tracks_weight": true
+    },
+    {
+      "canonical": "Rower Sprint",
+      "aliases": ["Rower Sprints", "Rowing Sprint", "Rowing Intervals"],
+      "type": "cardio_intervals",
+      "tracks_weight": false
+    },
+    {
+      "canonical": "Zone 2 Rower",
+      "aliases": ["Rower Zone 2", "Easy Row", "Recovery Row"],
+      "type": "cardio_steady",
+      "tracks_weight": false
+    },
+    {
+      "canonical": "StairMaster Intervals",
+      "aliases": ["StairMaster", "Stair Intervals", "StairMaster Z4"],
+      "type": "cardio_intervals",
+      "tracks_weight": false
+    },
+    {
+      "canonical": "Sunday Ruck",
+      "aliases": ["Ruck", "Weighted Walk", "Vest Walk"],
+      "type": "ruck",
+      "tracks_weight": false
+    },
+    {
+      "canonical": "Hamstring Curl",
+      "aliases": ["Hamstring Curls", "Lying Hamstring Curl", "Seated Hamstring Curl", "Leg Curl"],
+      "type": "strength",
+      "tracks_weight": true
+    },
+    {
+      "canonical": "Cable Row",
+      "aliases": ["Cable Rows", "Seated Cable Row", "Low Cable Row"],
+      "type": "strength",
+      "tracks_weight": true
+    },
+    {
+      "canonical": "DB Flat Bench",
+      "aliases": ["Dumbbell Flat Bench", "DB Bench Press", "Dumbbell Bench Press", "Flat DB Press"],
+      "type": "strength",
+      "tracks_weight": true
+    },
+    {
+      "canonical": "DB Seated Press",
+      "aliases": ["Dumbbell Shoulder Press", "DB Shoulder Press", "Seated DB Press", "Dumbbell Seated Press"],
+      "type": "strength",
+      "tracks_weight": true
+    },
+    {
+      "canonical": "Step Up",
+      "aliases": ["Step-Up", "Step Ups", "DB Step Up", "Dumbbell Step Up", "Box Step Up"],
+      "type": "strength",
+      "tracks_weight": true
+    },
+    {
+      "canonical": "Cable Woodchop",
+      "aliases": ["Wood Chop", "Cable Wood Chop", "Woodchop", "Cable Chop"],
+      "type": "strength",
+      "tracks_weight": true
+    },
+    {
+      "canonical": "Lateral Raise",
+      "aliases": ["Lateral Raises", "DB Lateral Raise", "Dumbbell Lateral Raise", "Side Raise"],
+      "type": "strength",
+      "tracks_weight": true
+    },
+    {
+      "canonical": "Calf Press",
+      "aliases": ["Calf Raises", "Machine Calf Press", "Seated Calf Press", "Standing Calf Raise"],
+      "type": "strength",
+      "tracks_weight": true
+    },
+    {
+      "canonical": "Chest Press Machine",
+      "aliases": ["Machine Chest Press", "Seated Chest Press", "Hammer Chest Press"],
+      "type": "strength",
+      "tracks_weight": true
+    },
+    {
+      "canonical": "Seated Row Machine",
+      "aliases": ["Machine Seated Row", "Machine Row", "Hammer Row"],
+      "type": "strength",
+      "tracks_weight": true
+    },
+    {
+      "canonical": "Band Pull Apart",
+      "aliases": ["Band Pull-Apart", "Band Pull Aparts", "Resistance Band Pull Apart"],
+      "type": "strength",
+      "tracks_weight": false
+    }
+  ]
+}
