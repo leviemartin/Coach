@@ -1,7 +1,7 @@
 'use client';
 
 import { Box, Card, CardContent, Checkbox, Chip, FormControlLabel, Typography } from '@mui/material';
-import { getComplianceColor } from '@/lib/compliance';
+import { semanticColors } from '@/lib/design-tokens';
 
 export interface WeekTallies {
   core: number;
@@ -75,7 +75,12 @@ export default function DailyChecklist({
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
           {items.map((item) => {
             const tally = weekTallies[item.tallyKey];
-            const color = getComplianceColor(tally, item.target);
+            const chipColor =
+              tally >= item.target
+                ? semanticColors.recovery.good
+                : tally >= item.target / 2
+                  ? semanticColors.recovery.caution
+                  : semanticColors.recovery.problem;
             return (
               <Box
                 key={item.field}
@@ -95,9 +100,13 @@ export default function DailyChecklist({
                 <Chip
                   label={`${tally}/${item.target}`}
                   size="small"
-                  color={color}
                   variant="outlined"
-                  sx={{ minWidth: 48, fontWeight: 600 }}
+                  sx={{
+                    minWidth: 48,
+                    fontWeight: 600,
+                    borderColor: chipColor,
+                    color: chipColor,
+                  }}
                 />
               </Box>
             );

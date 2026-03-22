@@ -1,6 +1,7 @@
 'use client';
 
 import { Box, Typography } from '@mui/material';
+import { semanticColors } from '@/lib/design-tokens';
 
 interface DayProgressProps {
   checked: number;
@@ -16,7 +17,7 @@ export default function DayProgress({ checked, total, streak }: DayProgressProps
   const pct = total > 0 ? checked / total : 0;
   const offset = circumference * (1 - pct);
   const isComplete = pct >= 1;
-  const arcColor = isComplete ? '#22c55e' : '#3b82f6';
+  const arcColor = isComplete ? semanticColors.recovery.good : semanticColors.body;
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -80,7 +81,7 @@ export default function DayProgress({ checked, total, streak }: DayProgressProps
           <Typography
             variant="body2"
             fontWeight={700}
-            sx={{ color: '#f97316', lineHeight: 1.3 }}
+            sx={{ color: semanticColors.cardioIntervals, lineHeight: 1.3 }}
           >
             {streak.current} day streak
           </Typography>

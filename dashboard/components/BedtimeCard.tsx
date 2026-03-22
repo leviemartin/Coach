@@ -11,6 +11,7 @@ import {
   Typography,
 } from '@mui/material';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
+import { semanticColors } from '@/lib/design-tokens';
 
 // Inline conversion — cannot import from lib/daily-log.ts (uses server-only 'path' module)
 function toBedtimeStorage(time: string): string {
@@ -39,10 +40,10 @@ function getComplianceLevel(stored: string): ComplianceLevel {
   return 'way-late';
 }
 
-const COMPLIANCE_CHIP: Record<ComplianceLevel, { label: string; color: 'success' | 'warning' | 'error' }> = {
-  'on-time': { label: 'On time', color: 'success' },
-  'late':    { label: 'Late',    color: 'warning' },
-  'way-late':{ label: 'Way late',color: 'error'   },
+const COMPLIANCE_CHIP: Record<ComplianceLevel, { label: string; semanticColor: string }> = {
+  'on-time':  { label: 'On time',  semanticColor: semanticColors.recovery.good },
+  'late':     { label: 'Late',     semanticColor: semanticColors.recovery.caution },
+  'way-late': { label: 'Way late', semanticColor: semanticColors.recovery.problem },
 };
 
 export default function BedtimeCard({ bedtime, onUpdate }: BedtimeCardProps) {
@@ -103,7 +104,12 @@ export default function BedtimeCard({ bedtime, onUpdate }: BedtimeCardProps) {
               Logged at {displayTime}
             </Typography>
             {chip && (
-              <Chip label={chip.label} color={chip.color} size="small" />
+              <Chip
+                label={chip.label}
+                size="small"
+                variant="outlined"
+                sx={{ borderColor: chip.semanticColor, color: chip.semanticColor }}
+              />
             )}
             <Button size="small" variant="outlined" onClick={() => setEditing(true)}>
               Edit
