@@ -75,12 +75,23 @@ export async function GET(request: Request) {
     ) ?? null;
   }
 
+  // --- Force reset if requested ---
+  const forceReset = searchParams.get('reset') === 'true';
+
   // --- Check for an active (in-progress) session matching this workout ---
   const sessionTitle = targetItem
     ? (targetItem.focus || targetItem.sessionType)
     : '';
   const active = getActiveSession(today, sessionTitle);
-  if (active && targetItem) {
+
+  // Also check for ANY uncompleted session for today (catch stale mismatches)
+  if (forceReset) {
+    const anyActive = getActiveSession(today);
+    if (anyActive) deleteSession(anyActive.id);
+    if (active && active.id !== anyActive?.id) deleteSession(active.id);
+  }
+
+  if (active && !forceReset && targetItem) {
     const sets = getSessionSets(active.id);
     const cardio = getSessionCardio(active.id);
 

@@ -18,28 +18,80 @@ export function parseWorkoutPlan(
   let order = 0;
   let inWarmup = false;
   let inCardioSection = false;
+  let cardioSectionName = '';
+  let cardioSectionLines: string[] = [];
   let currentRest: number | null = null;
+
+  // Helper: flush collected cardio section lines into a single exercise
+  function flushCardioSection() {
+    if (cardioSectionLines.length === 0) return;
+    const description = cardioSectionLines.join('\n');
+    const durationMatch = description.match(/(\d+)\s*min/i);
+    const totalDuration = durationMatch ? parseInt(durationMatch[1]) * 60 : null;
+    const roundCount = cardioSectionLines.filter(l => /z[3-5]|zone\s*[3-5]|interval/i.test(l)).length;
+
+    const resolved = resolveExercise(cardioSectionName);
+    exercises.push({
+      name: cardioSectionName,
+      canonicalName: resolved.canonical,
+      type: roundCount > 1 ? 'cardio_intervals' : 'cardio_steady',
+      order: order++,
+      supersetGroup: null,
+      sets: 1,
+      reps: null,
+      weightKg: null,
+      durationSeconds: totalDuration,
+      restSeconds: null,
+      rounds: roundCount > 1 ? roundCount : null,
+      targetIntensity: null,
+      coachCue: description,
+    });
+    cardioSectionLines = [];
+    cardioSectionName = '';
+  }
 
   for (const line of lines) {
     // Section headers: Warm-up:, Cool-down:, Finisher:
     if (/^(warm-up|cool-down|finisher?)\s*:/i.test(line)) {
+      flushCardioSection();
       inWarmup = true;
       inCardioSection = false;
       continue;
     }
 
-    // Cardio/Anaerobic/Treadmill section header within a strength session
-    if (/^(cardio|anaerobic|treadmill\s*protocol)\s*:/i.test(line)) {
-      inWarmup = false;
-      inCardioSection = true;
+    // Generic section header: any line ending with ":" that's NOT a label (A1:)
+    // Catches: "Cardio:", "StairMaster Pyramid:", "Anaerobic:", "Treadmill Protocol:", etc.
+    if (/^[^-\[].+:$/i.test(line) && !/^[A-Z]{1,3}\d+:/i.test(line)) {
+      flushCardioSection();
+      const headerName = line.replace(/:$/, '').trim();
+      // Determine if this is a cardio section or a label section (like "Core Circuit:")
+      const isCardioHeader = /stair|cardio|rower|treadmill|anaerobic|aerobic|pyramid|zone/i.test(headerName);
+      if (isCardioHeader) {
+        inCardioSection = true;
+        cardioSectionName = headerName;
+        inWarmup = false;
+      }
+      // Non-cardio headers (like "Core Circuit:") are just labels — continue parsing
       continue;
     }
 
-    // Labeled exercises (A1:, B2:, W1:, CD1:, etc.) — multi-letter prefix supported
+    // Labeled exercises (A1:, B2:, W1:, CD1:, etc.) exit cardio/warmup mode
     if (/^[A-Z]{1,3}\d+:/i.test(line)) {
+      flushCardioSection();
       inWarmup = false;
       inCardioSection = false;
     }
+
+    // Collect cardio section lines
+    if (inCardioSection) {
+      if (line.startsWith('-')) {
+        cardioSectionLines.push(line.replace(/^-\s*/, ''));
+      } else if (!line.startsWith('[')) {
+        cardioSectionLines.push(line);
+      }
+      continue;
+    }
+
     if (inWarmup && line.startsWith('-')) continue;
 
     // Rest annotations: [3 rounds, 90s rest]
@@ -73,26 +125,16 @@ export function parseWorkoutPlan(
       continue;
     }
 
-    // Inline cardio section: non-labeled lines after "Cardio:" header
-    if (inCardioSection && !line.startsWith('[')) {
-      const cardioLine = line.replace(/^-\s*/, '');
-      if (!cardioLine) continue;
-      const cardioExercises = parseCardioText(cardioLine, 'cardio_intervals');
-      for (const ce of cardioExercises) {
-        ce.order = order++;
-        exercises.push(ce);
-      }
-      inCardioSection = false;
-      continue;
-    }
-
-    // Unlabeled dash-prefixed lines (not in warm-up)
+    // Unlabeled dash-prefixed lines (not in warm-up or cardio section)
     if (line.startsWith('-') && !inWarmup) {
       const exerciseText = line.replace(/^-\s*/, '');
       const parsed = parseExerciseText(exerciseText, order++, null, null);
       if (parsed) exercises.push(parsed);
     }
   }
+
+  // Flush any remaining cardio section
+  flushCardioSection();
 
   return exercises;
 }
