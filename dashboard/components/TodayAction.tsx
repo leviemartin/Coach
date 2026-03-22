@@ -114,7 +114,14 @@ export default function TodayAction({ items }: TodayActionProps) {
       )}
 
       <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
-        <Button variant="contained" onClick={() => router.push('/plan')}>
+        {!todayItem.completed && (
+          <Button variant="contained" onClick={() => router.push(
+            todayItem.id != null ? `/session?planItemId=${todayItem.id}` : '/session'
+          )}>
+            Start Session &rarr;
+          </Button>
+        )}
+        <Button variant={todayItem.completed ? 'contained' : 'outlined'} onClick={() => router.push('/plan')}>
           View Full Plan
         </Button>
       </Box>

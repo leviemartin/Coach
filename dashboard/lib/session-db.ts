@@ -186,13 +186,23 @@ export function completeSession(sessionId: number, notes: string): {
   return { compliancePct, weightChanges };
 }
 
-export function getActiveSession(date: string): { id: number; sessionTitle: string } | null {
+export function getActiveSession(date: string, sessionTitle?: string): { id: number; sessionTitle: string } | null {
   const db = getDb();
-  const row = db.prepare(`
-    SELECT id, session_title FROM session_logs
-    WHERE date = ? AND completed_at IS NULL
-    ORDER BY started_at DESC LIMIT 1
-  `).get(date) as { id: number; session_title: string } | undefined;
+  let row: { id: number; session_title: string } | undefined;
+
+  if (sessionTitle) {
+    row = db.prepare(`
+      SELECT id, session_title FROM session_logs
+      WHERE date = ? AND session_title = ? AND completed_at IS NULL
+      ORDER BY started_at DESC LIMIT 1
+    `).get(date, sessionTitle) as typeof row;
+  } else {
+    row = db.prepare(`
+      SELECT id, session_title FROM session_logs
+      WHERE date = ? AND completed_at IS NULL
+      ORDER BY started_at DESC LIMIT 1
+    `).get(date) as typeof row;
+  }
 
   return row ? { id: row.id, sessionTitle: row.session_title } : null;
 }

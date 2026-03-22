@@ -54,5 +54,5 @@ The parser includes fuzzy matching and will attempt to parse non-standard format
 
 ## Status
 
-- [ ] Athlete reviewed and approved
-- [ ] Head Coach updated schedule template
+- [x] Athlete reviewed and approved (2026-03-22)
+- [x] Head Coach updated schedule template (00_head_coach.md + 02_endurance_energy.md)

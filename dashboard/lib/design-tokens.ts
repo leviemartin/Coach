@@ -48,7 +48,7 @@ export const typography = {
     fontSize: '0.6875rem',  // 11px
     fontWeight: 600,
     textTransform: 'uppercase' as const,
-    letterSpacing: '0.5px',
+    letterSpacing: '1px',
     color: '#94a3b8',
   },
 } as const;

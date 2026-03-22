@@ -168,7 +168,7 @@ export default function DashboardHome() {
           <SleepBars
             avgSleep={dashboard?.avgSleep ?? null}
             dailyScores={dashboard?.dailySleepScores ?? []}
-            sleepDelta={null}
+            sleepDelta={dashboard?.sleepDelta ?? null}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>

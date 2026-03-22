@@ -58,16 +58,19 @@ Non-negotiable format — athlete exports to Google Sheets.
 ## Workout Cell Content Format
 
 Standard gym notation with letter-number labels:
-- `A1:` / `B1:`/`B2:` / `C1:` — same letter = superset, different letter = sequential
-- Warm-up/cool-down use section headers with dash-prefix exercises
+- Every exercise MUST start with a label: `A1:`, `B1:`, `C1:`, etc.
+- Same letter = superset, different letter = sequential
+- Warm-up/cool-down use `W1:`, `W2:` / `CD1:`, `CD2:` labels (tracked separately by parser)
+- Timed exercises use `s` suffix: `B1: Dead Hang 3×30s` (not "30 seconds")
 - Round/rest info in square brackets: `[3 rounds, 90s rest]`
+- Cardio uses colon-separated specs: `Rower Sprints: 8 rounds, 20s work / 1:40 rest, >300W target`
 - One exercise per line. No free-form section headers.
 
 ### Workout Content Quality Rules
 - **Session Duration:** 50-60 minutes max including warm-up. Cut accessory volume first if over. Never cut core stability or pull-ups.
 - **No Duplicates:** Each exercise appears once. Combine volume in one block if it serves multiple goals.
 - **Superset Equipment:** Supersets must be executable with ONE machine max. Pair machine + portable/bodyweight. Never pair two machines. For two-machine combos, use sequential blocks with full rest.
-- **Weight Notation:** Every loaded exercise shows weight. No exceptions. Reference `state/current_ceilings.json`. Assign conservative weights for untracked equipment.
+- **Weight Notation:** Every loaded exercise shows weight using `@Xkg` notation, e.g. `A1: Lat Pulldown 3×10 @50kg`. No exceptions. Reference `state/current_ceilings.json`. Assign conservative weights for untracked equipment.
 - **Description Clarity:** One exercise per line, one instruction per exercise. Never use "or" between exercises. Conditionals go on a separate IF line.
 - **Circuit Equipment:** In circuits (3+ exercises), only the first exercise can use a stationary machine. All others must be portable or bodyweight. Cable machines are never allowed mid-circuit.
 - **Pull-Up Bar Zone:** Pull-up bar is in the free weight area, not the cable zone. Never superset pull-up bar exercises with cable machines. Pair pull-ups with other bar exercises, portable equipment, or bodyweight.

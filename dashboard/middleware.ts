@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { auth } from './auth';
 
 export async function middleware(request: NextRequest) {
+  // Skip auth when Google OAuth credentials aren't configured (local dev)
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.AUTH_SECRET) {
+    return NextResponse.next();
+  }
+
+  // Dynamic import to avoid crash when auth env vars are missing
+  const { auth } = await import('./auth');
   const session = await auth();
 
   if (!session) {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Box, Typography, CircularProgress, Alert, Container } from '@mui/material';
 import type { SessionSetState, SessionCardioState, ParsedExercise } from '@/lib/types';
 import SessionProgress from './SessionProgress';
@@ -21,6 +22,7 @@ interface SessionData {
   sets: SessionSetState[];
   cardio: SessionCardioState[];
   coachCues: string | null;
+  workoutDescription: string | null;
   resumed: boolean;
 }
 
@@ -107,6 +109,7 @@ function blockCompletion(
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function SessionPage() {
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [session, setSession] = useState<SessionData | null>(null);
@@ -118,8 +121,13 @@ export default function SessionPage() {
   useEffect(() => {
     async function loadSession() {
       try {
-        const res = await fetch('/api/session');
+        const planItemId = searchParams.get('planItemId');
+        const url = planItemId
+          ? `/api/session?planItemId=${planItemId}`
+          : '/api/session';
+        const res = await fetch(url);
         if (!res.ok) {
+          // 404 = no workout planned for today
           if (res.status === 404) {
             setSession(null);
             setLoading(false);
@@ -128,6 +136,12 @@ export default function SessionPage() {
           throw new Error(`Failed to load session: ${res.statusText}`);
         }
         const data: SessionData = await res.json();
+        // Guard against responses missing required fields
+        if (!data.sessionId || !data.exercises?.length) {
+          setSession(null);
+          setLoading(false);
+          return;
+        }
         setSession(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load session');
@@ -288,6 +302,7 @@ export default function SessionPage() {
             exerciseName={ex.name}
             cardio={cardioState}
             coachCue={ex.coachCue}
+            workoutDescription={session.workoutDescription}
             onUpdateCardio={handleUpdateCardio}
           />
         );

@@ -32,6 +32,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import React from 'react';
 import { ThemeModeContext } from './ThemeRegistry';
 import RaceCountdown from './RaceCountdown';
+import { typography, semanticColors } from '@/lib/design-tokens';
 
 const DRAWER_WIDTH = 220;
 
@@ -64,12 +65,10 @@ const NAV_SECTIONS = [
 ];
 
 const sectionLabelSx = {
+  ...typography.categoryLabel,
   px: 2,
   pt: 1.5,
   pb: 0.5,
-  fontWeight: 600,
-  letterSpacing: 0.5,
-  textTransform: 'uppercase' as const,
 };
 
 /** Shared drawer content used by both permanent and temporary variants. */
@@ -116,10 +115,11 @@ function DrawerContent({ onItemClick }: { onItemClick?: () => void }) {
                     sx={{
                       borderRadius: 1,
                       '&.Mui-selected': {
-                        bgcolor: 'action.selected',
-                        color: 'secondary.main',
-                        '& .MuiListItemIcon-root': { color: 'secondary.main' },
-                        '&:hover': { bgcolor: 'action.hover' },
+                        bgcolor: `${semanticColors.body}14`,
+                        color: semanticColors.body,
+                        borderLeft: `3px solid ${semanticColors.body}`,
+                        '& .MuiListItemIcon-root': { color: semanticColors.body },
+                        '&:hover': { bgcolor: `${semanticColors.body}1F` },
                       },
                     }}
                   >

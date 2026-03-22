@@ -26,7 +26,7 @@ export default function ComplianceRing({
     <HeroCard label="Protocols" accentColor={cardAccents.protocols}>
       <Box sx={{ textAlign: 'center', py: 0.5 }}>
         <svg width="70" height="70" viewBox="0 0 70 70" style={{ margin: '0 auto', display: 'block' }}>
-          <circle cx="35" cy="35" r={radius} fill="none" stroke="#e2e8f0" strokeWidth="6" />
+          <circle cx="35" cy="35" r={radius} fill="none" stroke="currentColor" strokeWidth="6" opacity="0.15" />
           <circle
             cx="35" cy="35" r={radius}
             fill="none"
@@ -37,7 +37,7 @@ export default function ComplianceRing({
             strokeLinecap="round"
             transform="rotate(-90 35 35)"
           />
-          <text x="35" y="38" textAnchor="middle" fontSize="16" fontWeight="800" fill="#0f172a">
+          <text x="35" y="38" textAnchor="middle" fontSize="16" fontWeight="800" fill="currentColor">
             {pct}%
           </text>
         </svg>

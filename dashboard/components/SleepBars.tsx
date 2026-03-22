@@ -46,7 +46,7 @@ export default function SleepBars({ avgSleep, dailyScores, sleepDelta }: SleepBa
           const x = gap + i * (barWidth + gap);
           const h = d.score != null ? (d.score / maxScore) * barH : 5;
           const y = barH - h + 10;
-          const color = d.score != null ? getSleepBarColor(d.score) : '#e2e8f0';
+          const color = d.score != null ? getSleepBarColor(d.score) : 'currentColor';
           const opacity = d.score != null ? 0.8 : 0.3;
 
           return (

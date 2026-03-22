@@ -131,8 +131,9 @@ export function extractExtendedSummary(data: GarminData): ExtendedGarminSummary 
     : null;
 
   const trainingStatus = perf?.training_status;
-  const acwr = trainingStatus?.acute_training_load?.acwr_percent
-    ? Math.round(trainingStatus.acute_training_load.acwr_percent * 100) / 100
+  // acwr_percent from Garmin is already a percentage (e.g. 25 = 25% = 0.25 ratio)
+  const acwr = trainingStatus?.acute_training_load?.acwr_percent != null
+    ? Math.round(trainingStatus.acute_training_load.acwr_percent) / 100
     : null;
   const acwrStatus = trainingStatus?.acute_training_load?.acwr_status || null;
 

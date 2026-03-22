@@ -26,7 +26,7 @@ function LoadBar({ label, value, min, max }: { label: string; value: number; min
           {Math.round(value)} {isShort ? '(shortage)' : ''}
         </Typography>
       </Box>
-      <Box sx={{ height: 6, bgcolor: '#e2e8f0', borderRadius: 1 }}>
+      <Box sx={{ height: 6, bgcolor: 'action.disabledBackground', borderRadius: 1 }}>
         <Box sx={{ height: 6, bgcolor: color, borderRadius: 1, width: `${pct}%` }} />
       </Box>
     </Box>

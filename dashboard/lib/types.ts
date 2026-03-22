@@ -357,6 +357,7 @@ export interface DashboardPayload {
   avgSleep: number | null;
   dailySleepScores: Array<{ day: string; score: number | null }>;
   sleepAvg7d: number | null;
+  sleepDelta: number | null;
   compliancePct: number | null;
   vampireDays: number;
   rugDays: number;

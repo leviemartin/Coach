@@ -133,10 +133,10 @@ export default function TrainingPlanTable({ items }: TrainingPlanTableProps) {
                   />
 
                   {/* Start Session link — shown for all non-rest days */}
-                  {!isSimpleDay && (
+                  {!isSimpleDay && item.id != null && (
                     <Typography
                       component="a"
-                      href="/session"
+                      href={`/session?planItemId=${item.id}`}
                       sx={{
                         ml: 'auto',
                         fontSize: '0.75rem',

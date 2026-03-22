@@ -414,6 +414,12 @@ export function getPlanItems(weekNumber: number): PlanItem[] {
   return rows.map(mapPlanRow);
 }
 
+export function getPlanItemById(id: number): PlanItem | null {
+  const db = getDb();
+  const row = db.prepare('SELECT * FROM plan_items WHERE id = ?').get(id);
+  return row ? mapPlanRow(row) : null;
+}
+
 function mapPlanRow(row: unknown): PlanItem {
   const r = row as Record<string, unknown>;
   let subTasks: SubTask[] = [];
