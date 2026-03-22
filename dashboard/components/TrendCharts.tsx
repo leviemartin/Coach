@@ -41,6 +41,17 @@ function nn(val: number | null | undefined): number {
   return val ?? 0;
 }
 
+/** Longest run of consecutive `true` values */
+function longestStreak(values: boolean[]): number {
+  let max = 0;
+  let cur = 0;
+  for (const v of values) {
+    cur = v ? cur + 1 : 0;
+    if (cur > max) max = cur;
+  }
+  return max;
+}
+
 function EmptyState({ message }: { message: string }) {
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 250 }}>
@@ -374,16 +385,6 @@ export default function TrendCharts({
               />
               {/* Compliance streaks */}
               {(() => {
-                // Calculate longest consecutive streak (weeks where value > 0)
-                function longestStreak(values: boolean[]): number {
-                  let max = 0;
-                  let cur = 0;
-                  for (const v of values) {
-                    cur = v ? cur + 1 : 0;
-                    if (cur > max) max = cur;
-                  }
-                  return max;
-                }
                 const vampireStreak = longestStreak(metrics.map((m) => nn(m.vampireCompliancePct) > 0));
                 const rugStreak = longestStreak(metrics.map((m) => nn(m.rugProtocolDays) > 0));
                 const hydrationStreak = longestStreak(metrics.map((m) => m.hydrationTracked === true));
