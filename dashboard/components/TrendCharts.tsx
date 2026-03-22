@@ -7,6 +7,7 @@ import { LineChart, BarChart, ScatterChart } from '@mui/x-charts';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
 import type { WeeklyMetrics, CeilingEntry, DexaScan } from '@/lib/types';
+import { semanticColors } from '@/lib/design-tokens';
 
 interface ComplianceTrendPoint {
   week_number: number;
@@ -25,14 +26,14 @@ interface TrendChartsProps {
 }
 
 const CHART_COLORS = {
-  blue: '#3b82f6',
-  green: '#22c55e',
-  purple: '#8b5cf6',
-  orange: '#f97316',
-  red: '#ef4444',
-  teal: '#14b8a6',
+  blue: semanticColors.body,
+  green: semanticColors.recovery.good,
+  purple: '#8b5cf6', // protocols
+  orange: semanticColors.cardioIntervals,
+  red: semanticColors.recovery.problem,
+  teal: semanticColors.cardioSteady,
   pink: '#ec4899',
-  amber: '#f59e0b',
+  amber: semanticColors.recovery.caution,
 };
 
 // MUI X-Charts needs numbers, not null. Replace null with 0.
@@ -95,20 +96,64 @@ export default function TrendCharts({
           <Card sx={{ height: '100%' }}>
             <CardContent sx={cardContentSx}>
               <Typography variant="h6" gutterBottom>Weight Progression</Typography>
-              <LineChart
-                xAxis={[{ data: weeks, scaleType: 'band' }]}
-                series={[
-                  {
-                    data: metrics.map((m) => nn(m.weightKg)),
-                    label: 'Weight (kg)',
-                    color: CHART_COLORS.blue,
-                  },
-                ]}
-                height={chartHeight}
-              />
-              <Typography variant="caption" color="success.main" sx={{ display: 'block', textAlign: 'right' }}>
-                Target: 89kg
-              </Typography>
+              <Box sx={{ position: 'relative' }}>
+                <LineChart
+                  xAxis={[{ data: weeks, scaleType: 'band' }]}
+                  yAxis={[{ min: 85, max: Math.max(105, ...metrics.map((m) => nn(m.weightKg))) }]}
+                  series={[
+                    {
+                      data: metrics.map((m) => nn(m.weightKg)),
+                      label: 'Weight (kg)',
+                      color: CHART_COLORS.blue,
+                    },
+                  ]}
+                  height={chartHeight}
+                />
+                {/* 89kg reference line overlay — positioned over the chart area */}
+                {(() => {
+                  // Compute approximate Y offset for 89kg within yAxis [85, ~105]
+                  const yMin = 85;
+                  const yMax = Math.max(105, ...metrics.map((m) => nn(m.weightKg)));
+                  const chartPaddingTop = 10; // px approximate MUI X-Charts top margin
+                  const chartPaddingBottom = 30; // px approximate for x-axis labels
+                  const innerHeight = chartHeight - chartPaddingTop - chartPaddingBottom;
+                  const pct = 1 - (89 - yMin) / (yMax - yMin);
+                  const topPx = chartPaddingTop + pct * innerHeight;
+                  return (
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        top: `${topPx}px`,
+                        left: 0,
+                        right: 0,
+                        pointerEvents: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        px: 1,
+                      }}
+                    >
+                      <Box sx={{ flex: 1, borderTop: `2px dashed ${CHART_COLORS.green}`, opacity: 0.8 }} />
+                      <Typography
+                        variant="caption"
+                        sx={{ ml: 0.5, color: CHART_COLORS.green, fontWeight: 700, whiteSpace: 'nowrap' }}
+                      >
+                        89kg target
+                      </Typography>
+                    </Box>
+                  );
+                })()}
+              </Box>
+              {/* Start weight annotation */}
+              {metrics.length > 0 && metrics[0].weightKg != null && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
+                  <Typography variant="caption" color="text.secondary">
+                    Start: <strong>{metrics[0].weightKg}kg</strong> (W{metrics[0].weekNumber})
+                  </Typography>
+                  <Typography variant="caption" color="success.main">
+                    Target: 89kg {metrics[metrics.length - 1].weightKg != null ? `· Now: ${metrics[metrics.length - 1].weightKg}kg` : ''}
+                  </Typography>
+                </Box>
+              )}
             </CardContent>
           </Card>
         </Grid>
@@ -211,6 +256,23 @@ export default function TrendCharts({
                 ]}
                 height={chartHeight}
               />
+              {/* Bedtime consistency section */}
+              <Box sx={{ mt: 2, pt: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
+                <Typography variant="subtitle2" gutterBottom sx={{ color: 'text.secondary' }}>
+                  Bedtime Consistency (vs. 23:00 target)
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: semanticColors.recovery.good, flexShrink: 0 }} />
+                  <Typography variant="caption" color="text.secondary">Before 23:00</Typography>
+                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: semanticColors.recovery.caution, flexShrink: 0, ml: 1 }} />
+                  <Typography variant="caption" color="text.secondary">23:00–01:00</Typography>
+                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: semanticColors.recovery.problem, flexShrink: 0, ml: 1 }} />
+                  <Typography variant="caption" color="text.secondary">After 01:00</Typography>
+                </Box>
+                <Typography variant="caption" color="text.disabled" sx={{ fontStyle: 'italic' }}>
+                  Bedtime consistency data will appear after Garmin sync integration.
+                </Typography>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
@@ -310,6 +372,58 @@ export default function TrendCharts({
                 ]}
                 height={chartHeight}
               />
+              {/* Compliance streaks */}
+              {(() => {
+                // Calculate longest consecutive streak (weeks where value > 0)
+                function longestStreak(values: boolean[]): number {
+                  let max = 0;
+                  let cur = 0;
+                  for (const v of values) {
+                    cur = v ? cur + 1 : 0;
+                    if (cur > max) max = cur;
+                  }
+                  return max;
+                }
+                const vampireStreak = longestStreak(metrics.map((m) => nn(m.vampireCompliancePct) > 0));
+                const rugStreak = longestStreak(metrics.map((m) => nn(m.rugProtocolDays) > 0));
+                const hydrationStreak = longestStreak(metrics.map((m) => m.hydrationTracked === true));
+
+                const streaks = [
+                  { label: 'Vampire', streak: vampireStreak, color: CHART_COLORS.blue },
+                  { label: 'Rug', streak: rugStreak, color: CHART_COLORS.purple },
+                  { label: 'Hydration', streak: hydrationStreak, color: CHART_COLORS.teal },
+                ];
+
+                return (
+                  <Box sx={{ mt: 1.5, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ width: '100%', mb: 0.5 }}>
+                      Longest streak (consecutive weeks with &gt;0 compliance):
+                    </Typography>
+                    {streaks.map(({ label, streak, color }) => (
+                      <Box
+                        key={label}
+                        sx={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 0.5,
+                          px: 1.5,
+                          py: 0.5,
+                          borderRadius: '999px',
+                          bgcolor: `${color}22`,
+                          border: `1px solid ${color}66`,
+                        }}
+                      >
+                        <Typography variant="caption" sx={{ fontWeight: 700, color }}>
+                          {streak}w
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {label}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                );
+              })()}
             </CardContent>
           </Card>
         </Grid>
