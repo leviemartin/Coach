@@ -13,9 +13,9 @@ interface CardioSteadyProps {
 export default function CardioSteady({ exerciseName, cardio, coachCue, onUpdateCardio }: CardioSteadyProps) {
   const handleToggle = () => {
     if (cardio.completed) {
-      onUpdateCardio(cardio.cardioId, 0, false);
+      onUpdateCardio(cardio.id!, 0, false);
     } else {
-      onUpdateCardio(cardio.cardioId, 1, true);
+      onUpdateCardio(cardio.id!, 1, true);
     }
   };
 

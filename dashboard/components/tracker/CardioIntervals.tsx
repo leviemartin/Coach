@@ -11,14 +11,14 @@ interface CardioIntervalsProps {
 }
 
 export default function CardioIntervals({ exerciseName, cardio, coachCue, onUpdateCardio }: CardioIntervalsProps) {
-  const totalRounds = cardio.totalRounds ?? 0;
+  const totalRounds = cardio.prescribedRounds ?? 0;
   const completed = cardio.completedRounds;
 
   const handleRoundToggle = (roundIndex: number) => {
     const isCurrentlyDone = roundIndex < completed;
     const newCompleted = isCurrentlyDone ? roundIndex : roundIndex + 1;
     const allDone = newCompleted >= totalRounds;
-    onUpdateCardio(cardio.cardioId, newCompleted, allDone);
+    onUpdateCardio(cardio.id!, newCompleted, allDone);
   };
 
   return (

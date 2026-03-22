@@ -73,14 +73,14 @@ function blockCompletion(
   if (block.kind === 'single') {
     const ex = block.exercise;
     if (ex.type === 'cardio_intervals' || ex.type === 'cardio_steady') {
-      const c = cardio.find((c) => c.exerciseName === ex.name);
+      const c = cardio.find((c) => c.exerciseName === ex.canonicalName);
       return {
         setsCompleted: c?.completedRounds ?? 0,
-        setsTotal: c?.totalRounds ?? 1,
+        setsTotal: c?.prescribedRounds ?? 1,
         completed: c?.completed ?? false,
       };
     }
-    const exSets = sets.filter((s) => s.exerciseName === ex.name);
+    const exSets = sets.filter((s) => s.exerciseName === ex.canonicalName);
     const done = exSets.filter((s) => s.completed).length;
     return {
       setsCompleted: done,
@@ -93,7 +93,7 @@ function blockCompletion(
   let totalSets = 0;
   let doneSets = 0;
   for (const ex of block.exercises) {
-    const exSets = sets.filter((s) => s.exerciseName === ex.name);
+    const exSets = sets.filter((s) => s.exerciseName === ex.canonicalName);
     doneSets += exSets.filter((s) => s.completed).length;
     totalSets += exSets.length;
   }
@@ -157,7 +157,7 @@ export default function SessionPage() {
         return {
           ...prev,
           sets: prev.sets.map((s) =>
-            s.setId === setId ? { ...s, actualWeightKg, actualReps, completed } : s,
+            s.id === setId ? { ...s, actualWeightKg, actualReps, completed } : s,
           ),
         };
       });
@@ -186,7 +186,7 @@ export default function SessionPage() {
         return {
           ...prev,
           cardio: prev.cardio.map((c) =>
-            c.cardioId === cardioId ? { ...c, completedRounds, completed } : c,
+            c.id === cardioId ? { ...c, completedRounds, completed } : c,
           ),
         };
       });
@@ -266,7 +266,7 @@ export default function SessionPage() {
       const ex = block.exercise;
 
       if (ex.type === 'cardio_intervals') {
-        const cardioState = session.cardio.find((c) => c.exerciseName === ex.name);
+        const cardioState = session.cardio.find((c) => c.exerciseName === ex.canonicalName);
         if (!cardioState) return null;
         return (
           <CardioIntervals
@@ -280,7 +280,7 @@ export default function SessionPage() {
       }
 
       if (ex.type === 'cardio_steady') {
-        const cardioState = session.cardio.find((c) => c.exerciseName === ex.name);
+        const cardioState = session.cardio.find((c) => c.exerciseName === ex.canonicalName);
         if (!cardioState) return null;
         return (
           <CardioSteady
@@ -294,7 +294,7 @@ export default function SessionPage() {
       }
 
       // Strength / bodyweight
-      const exSets = session.sets.filter((s) => s.exerciseName === ex.name);
+      const exSets = session.sets.filter((s) => s.exerciseName === ex.canonicalName);
       return (
         <StrengthExercise
           key={ex.name}
@@ -309,7 +309,7 @@ export default function SessionPage() {
     const restSeconds = block.exercises[0]?.restSeconds ?? null;
     const supersetExercises = block.exercises.map((ex) => ({
       name: ex.name,
-      sets: session.sets.filter((s) => s.exerciseName === ex.name),
+      sets: session.sets.filter((s) => s.exerciseName === ex.canonicalName),
     }));
 
     return (

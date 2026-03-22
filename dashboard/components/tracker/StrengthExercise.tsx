@@ -19,7 +19,7 @@ export default function StrengthExercise({ exerciseName, sets, onUpdateSet }: St
         <Stack spacing={1}>
           {sets.map((set) => (
             <Box
-              key={set.setId}
+              key={set.id}
               sx={{
                 display: 'flex',
                 alignItems: 'center',
@@ -34,18 +34,18 @@ export default function StrengthExercise({ exerciseName, sets, onUpdateSet }: St
                 Set {set.setNumber}
               </Typography>
               <Typography variant="body2" sx={{ flex: 1 }}>
-                {set.targetWeightKg != null ? `${set.targetWeightKg}kg` : '—'}
+                {set.prescribedWeightKg != null ? `${set.prescribedWeightKg}kg` : '—'}
                 {' × '}
-                {set.targetReps != null ? set.targetReps : '—'}
+                {set.prescribedReps != null ? set.prescribedReps : '—'}
               </Typography>
               <Button
                 size="small"
                 variant={set.completed ? 'contained' : 'outlined'}
                 onClick={() =>
                   onUpdateSet(
-                    set.setId,
-                    set.actualWeightKg ?? set.targetWeightKg,
-                    set.actualReps ?? set.targetReps,
+                    set.id!,
+                    set.actualWeightKg ?? set.prescribedWeightKg,
+                    set.actualReps ?? set.prescribedReps,
                     !set.completed,
                   )
                 }
