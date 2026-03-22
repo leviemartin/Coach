@@ -13,6 +13,7 @@ import PageBreadcrumb from '@/components/PageBreadcrumb';
 import PageSkeleton from '@/components/PageSkeleton';
 import type { ExtendedGarminSummary } from '@/lib/types';
 import type { Race } from '@/lib/types';
+import { semanticColors, typography, heroCardSx, metricCardSx } from '@/lib/design-tokens';
 
 interface PhaseInfo {
   number: number;
@@ -47,23 +48,22 @@ interface StatCardProps {
   label: string;
   value: string;
   sub?: string;
-  accent?: boolean;
+  variant?: 'hero' | 'metric';
+  accentColor?: string;
 }
 
-function StatCard({ label, value, sub, accent }: StatCardProps) {
+function StatCard({ label, value, sub, variant = 'metric', accentColor }: StatCardProps) {
+  const cardSx = variant === 'hero'
+    ? heroCardSx(accentColor ?? semanticColors.body)
+    : metricCardSx;
+
   return (
-    <Card
-      sx={{
-        height: '100%',
-        borderLeft: accent ? '4px solid' : undefined,
-        borderLeftColor: accent ? 'primary.main' : undefined,
-      }}
-    >
+    <Card sx={{ height: '100%', ...cardSx }}>
       <CardContent sx={{ py: 2, px: 2.5 }}>
-        <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 600 }}>
+        <Typography sx={{ ...typography.categoryLabel, display: 'block' }}>
           {label}
         </Typography>
-        <Typography variant="h5" fontWeight={700} sx={{ mt: 0.5, lineHeight: 1.2 }}>
+        <Typography sx={{ ...typography.primaryMetric, mt: 0.5, lineHeight: 1.2 }}>
           {value}
         </Typography>
         {sub && (
@@ -161,7 +161,8 @@ export default function ProfilePage() {
             label="Current Phase"
             value={currentPhase ? `Phase ${currentPhase.number}` : '—'}
             sub={currentPhase?.name}
-            accent
+            variant="hero"
+            accentColor={semanticColors.body}
           />
         </Grid>
         <Grid size={{ xs: 6, sm: 3 }}>
@@ -169,6 +170,8 @@ export default function ProfilePage() {
             label="Current Weight"
             value={currentWeight ? `${currentWeight.toFixed(1)} kg` : '—'}
             sub="Latest Garmin reading"
+            variant="hero"
+            accentColor={semanticColors.body}
           />
         </Grid>
         <Grid size={{ xs: 6, sm: 3 }}>
@@ -176,6 +179,7 @@ export default function ProfilePage() {
             label="Race Weight Target"
             value="89 kg"
             sub="Stretch: 87 kg"
+            variant="metric"
           />
         </Grid>
         <Grid size={{ xs: 6, sm: 3 }}>
@@ -183,6 +187,8 @@ export default function ProfilePage() {
             label="Next Race"
             value={raceCountdown !== null ? `${raceCountdown}d` : '—'}
             sub={nextRace ? nextRace.name : 'No upcoming races'}
+            variant="hero"
+            accentColor={semanticColors.recovery.good}
           />
         </Grid>
       </Grid>
