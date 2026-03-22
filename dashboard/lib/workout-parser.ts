@@ -7,7 +7,11 @@ export function parseWorkoutPlan(
 ): ParsedExercise[] {
   if (!text || !text.trim()) return [];
 
-  if (sessionType === 'cardio_intervals' || sessionType === 'cardio_steady') {
+  // Only use the simple cardio parser for PURE cardio sessions (no labeled exercises).
+  // Mixed sessions (strength + cardio finisher) MUST use the label parser even if
+  // the coach tagged the session as cardio_steady/cardio_intervals.
+  const hasLabels = /^[A-Z]{1,3}\d+:/im.test(text);
+  if (!hasLabels && (sessionType === 'cardio_intervals' || sessionType === 'cardio_steady')) {
     return parseCardioText(text, sessionType as 'cardio_intervals' | 'cardio_steady');
   }
 
