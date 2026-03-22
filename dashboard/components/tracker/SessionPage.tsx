@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Box, Typography, CircularProgress, Alert, Container } from '@mui/material';
+import { Box, Typography, CircularProgress, Alert, Container, IconButton, Tooltip } from '@mui/material';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import type { SessionSetState, SessionCardioState, ParsedExercise } from '@/lib/types';
 import SessionProgress from './SessionProgress';
 import ExerciseList from './ExerciseList';
@@ -402,15 +403,32 @@ export default function SessionPage() {
   return (
     <Container maxWidth="sm" sx={{ pt: 2, pb: 8 }}>
       {/* Session header */}
-      <Box sx={{ mb: 2 }}>
-        <Typography variant="h6" fontWeight={800} lineHeight={1.2}>
-          {session.sessionTitle}
-        </Typography>
-        {session.resumed && (
-          <Typography variant="caption" color="text.secondary">
-            Resuming previous session
+      <Box sx={{ mb: 2, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <Box>
+          <Typography variant="h6" fontWeight={800} lineHeight={1.2}>
+            {session.sessionTitle}
           </Typography>
-        )}
+          {session.resumed && (
+            <Typography variant="caption" color="text.secondary">
+              Resuming previous session
+            </Typography>
+          )}
+        </Box>
+        <Tooltip title="Reset session — clears progress and reloads from plan">
+          <IconButton
+            size="small"
+            onClick={() => {
+              const planItemId = searchParams.get('planItemId');
+              const params = new URLSearchParams();
+              if (planItemId) params.set('planItemId', planItemId);
+              params.set('reset', 'true');
+              window.location.href = `/session?${params.toString()}`;
+            }}
+            sx={{ mt: 0.5, color: 'text.secondary', '&:hover': { color: 'error.main' } }}
+          >
+            <RestartAltIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
       </Box>
 
       {/* Progress bar */}
