@@ -6,6 +6,7 @@ import {
   Chip, Collapse, IconButton,
 } from '@mui/material';
 import { cardContentSx } from '@/lib/theme';
+import { semanticColors, typography } from '@/lib/design-tokens';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
@@ -18,29 +19,44 @@ interface TrainingPlanTableProps {
 }
 
 /**
- * Map session type strings to MUI color palette keys.
+ * Map session type strings to semantic color hex values.
+ * Returns background and text colors for use with sx prop.
  */
-function getSessionColor(sessionType: string): {
-  color: 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
-} {
+function getSessionChipSx(sessionType: string): { bgcolor: string; color: string } | null {
   const lower = sessionType.toLowerCase();
 
-  if (lower.includes('recovery flush') || lower === 'recovery')
-    return { color: 'info' };
-  if (lower.includes('spa') || lower.includes('sauna'))
-    return { color: 'secondary' };
-  if (lower.includes('assessment'))
-    return { color: 'warning' };
-  if (lower.includes('lower body') || lower.includes('upper body'))
-    return { color: 'primary' };
-  if (lower.includes('family'))
-    return { color: 'success' };
-  if (lower.includes('ruck') || lower.includes('long aerobic') || lower.includes('aerobic'))
-    return { color: 'success' };
   if (lower.includes('rest'))
-    return { color: 'default' };
+    return null; // default chip styling
 
-  return { color: 'primary' };
+  if (lower.includes('lower body') || lower.includes('upper body') || lower.includes('strength'))
+    return {
+      bgcolor: `${semanticColors.body}22`,
+      color: semanticColors.body,
+    };
+
+  if (lower.includes('recovery') || lower.includes('mobility') || lower.includes('spa') || lower.includes('sauna'))
+    return {
+      bgcolor: `${semanticColors.cardioSteady}22`,
+      color: semanticColors.cardioSteady,
+    };
+
+  if (lower.includes('cardio') || lower.includes('interval') || lower.includes('assessment'))
+    return {
+      bgcolor: `${semanticColors.cardioIntervals}22`,
+      color: semanticColors.cardioIntervals,
+    };
+
+  if (lower.includes('family') || lower.includes('ruck') || lower.includes('aerobic'))
+    return {
+      bgcolor: `${semanticColors.recovery.good}22`,
+      color: semanticColors.recovery.good,
+    };
+
+  // Default: body color for any other training session
+  return {
+    bgcolor: `${semanticColors.body}22`,
+    color: semanticColors.body,
+  };
 }
 
 /**
@@ -71,14 +87,14 @@ export default function TrainingPlanTable({ items }: TrainingPlanTableProps) {
       {/* Header */}
       <Card sx={{ mb: 2 }}>
         <CardContent sx={cardContentSx}>
-          <Typography variant="h6">Training Plan</Typography>
+          <Typography sx={typography.sectionTitle}>Training Plan</Typography>
         </CardContent>
       </Card>
 
       {/* Day cards */}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         {items.map((item) => {
-          const sessionStyle = getSessionColor(item.sessionType);
+          const chipSx = getSessionChipSx(item.sessionType);
           const isExpanded = expandedCards.has(item.id ?? item.dayOrder);
           const hasCoachCues = item.coachCues && item.coachCues.trim().length > 0;
           const hasStartingWeight = item.startingWeight && item.startingWeight !== 'N/A' && item.startingWeight.trim() !== '';
@@ -99,17 +115,41 @@ export default function TrainingPlanTable({ items }: TrainingPlanTableProps) {
               <CardContent sx={cardContentSx}>
                 {/* Row 1: Day + Session Type + Starting Weight + Expand */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                  <Typography sx={{ ...typography.categoryLabel }}>
                     {item.day}
                   </Typography>
 
                   <Chip
                     label={item.sessionType}
                     size="small"
-                    color={sessionStyle.color}
                     variant="filled"
-                    sx={{ fontWeight: 600, fontSize: '0.75rem' }}
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: '0.75rem',
+                      ...(chipSx
+                        ? { bgcolor: chipSx.bgcolor, color: chipSx.color }
+                        : {}),
+                    }}
                   />
+
+                  {/* Start Session link — shown for all non-rest days */}
+                  {!isSimpleDay && (
+                    <Typography
+                      component="a"
+                      href="/session"
+                      sx={{
+                        ml: 'auto',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        color: semanticColors.body,
+                        textDecoration: 'none',
+                        whiteSpace: 'nowrap',
+                        '&:hover': { textDecoration: 'underline' },
+                      }}
+                    >
+                      Start Session →
+                    </Typography>
+                  )}
 
                   {hasStartingWeight && (
                     <Chip
@@ -117,7 +157,7 @@ export default function TrainingPlanTable({ items }: TrainingPlanTableProps) {
                       label={item.startingWeight}
                       size="small"
                       variant="outlined"
-                      sx={{ ml: 'auto', fontSize: '0.7rem', height: 24 }}
+                      sx={{ ml: isSimpleDay ? 'auto' : 0, fontSize: '0.7rem', height: 24 }}
                     />
                   )}
 
@@ -129,7 +169,7 @@ export default function TrainingPlanTable({ items }: TrainingPlanTableProps) {
                       aria-expanded={isExpanded}
                       onClick={() => toggleExpanded(item.id ?? item.dayOrder)}
                       sx={{
-                        ml: hasStartingWeight ? 0 : 'auto',
+                        ml: 0,
                         '&:focus-visible': {
                           outline: '2px solid',
                           outlineColor: 'primary.main',
