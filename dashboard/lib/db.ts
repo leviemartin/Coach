@@ -6,7 +6,7 @@ import { normalizeWorkoutText } from './parse-schedule';
 import { DB_PATH } from './constants';
 
 // Schema version — bump this when adding tables or columns to force re-init on cached connections
-const SCHEMA_VERSION = 4; // v4: added daily_logs table
+const SCHEMA_VERSION = 5; // v5: added session_logs, session_sets, session_cardio tables
 
 // Use globalThis to persist across hot reloads in dev
 const globalForDb = globalThis as unknown as { _coachDb?: Database.Database; _coachDbSchema?: number };
@@ -141,6 +141,48 @@ function initTables(db: Database.Database) {
     );
     CREATE INDEX IF NOT EXISTS idx_daily_logs_week ON daily_logs(week_number);
     CREATE INDEX IF NOT EXISTS idx_daily_logs_date ON daily_logs(date);
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS session_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      date TEXT NOT NULL,
+      week_number INTEGER NOT NULL,
+      session_type TEXT NOT NULL,
+      session_title TEXT NOT NULL,
+      started_at TEXT NOT NULL,
+      completed_at TEXT,
+      notes TEXT,
+      compliance_pct INTEGER,
+      UNIQUE(date, session_title)
+    );
+
+    CREATE TABLE IF NOT EXISTS session_sets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      session_log_id INTEGER NOT NULL REFERENCES session_logs(id),
+      exercise_name TEXT NOT NULL,
+      exercise_order INTEGER NOT NULL,
+      superset_group INTEGER,
+      set_number INTEGER NOT NULL,
+      prescribed_weight_kg REAL,
+      prescribed_reps INTEGER,
+      actual_weight_kg REAL,
+      actual_reps INTEGER,
+      completed INTEGER DEFAULT 0,
+      is_modified INTEGER DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS session_cardio (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      session_log_id INTEGER NOT NULL REFERENCES session_logs(id),
+      exercise_name TEXT NOT NULL,
+      cardio_type TEXT NOT NULL,
+      prescribed_rounds INTEGER,
+      completed_rounds INTEGER DEFAULT 0,
+      prescribed_duration_min REAL,
+      target_intensity TEXT,
+      completed INTEGER DEFAULT 0
+    );
   `);
 
   // Migration: add sub_tasks column if it doesn't exist

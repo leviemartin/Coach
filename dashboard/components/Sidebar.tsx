@@ -24,6 +24,7 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import PersonIcon from '@mui/icons-material/Person';
 import ScienceIcon from '@mui/icons-material/Science';
 import EditNoteIcon from '@mui/icons-material/EditNote';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
@@ -42,6 +43,7 @@ const NAV_SECTIONS = [
       { label: 'Check-In', path: '/checkin', icon: <CheckCircleOutlineIcon /> },
       { label: 'Daily Log', path: '/log', icon: <EditNoteIcon /> },
       { label: 'Training Plan', path: '/plan', icon: <FitnessCenterIcon /> },
+      { label: 'Session', path: '/session', icon: <PlayArrowIcon /> },
     ],
   },
   {

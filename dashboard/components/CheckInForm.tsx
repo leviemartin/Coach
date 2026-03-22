@@ -82,6 +82,19 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
   const [prefilledFromLogs, setPrefilledFromLogs] = useState(false);
   const syncAbortRef = useRef<AbortController | null>(null);
 
+  // Session tracker data for the Hevy step
+  interface TrackedSession {
+    date: string;
+    sessionTitle: string;
+    sessionType: string;
+    compliancePct: number | null;
+    sets: Array<unknown>;
+    cardio: Array<unknown>;
+  }
+  const [trackedSessions, setTrackedSessions] = useState<TrackedSession[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [sessionsFetched, setSessionsFetched] = useState(false);
+
   const refreshGarminStatus = useCallback(() => {
     setGarminLoading(true);
     return fetch('/api/garmin')
@@ -113,6 +126,20 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
       })
       .catch(() => {}); // Silent fail — form works without pre-fill
   }, []);
+
+  useEffect(() => {
+    if (activeStep === 1 && !sessionsFetched) {
+      setSessionsLoading(true);
+      fetch(`/api/session/week`)
+        .then((r) => r.json())
+        .then((data) => {
+          setTrackedSessions(data.sessions ?? []);
+          setSessionsFetched(true);
+        })
+        .catch(() => setSessionsFetched(true))
+        .finally(() => setSessionsLoading(false));
+    }
+  }, [activeStep, sessionsFetched]);
 
   useEffect(() => {
     return () => {
@@ -465,23 +492,81 @@ export default function CheckInForm({ onSubmit, loading = false }: CheckInFormPr
           </Card>
         );
 
-      case 1: // Hevy
+      case 1: // Hevy / Session Tracker
         return (
           <Card>
             <CardContent sx={cardContentSx}>
-              <Typography variant="h6" gutterBottom>Hevy Training Log</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Export your Hevy data as CSV and paste below. Optional — skip if no gym data this week.
-              </Typography>
-              <TextField
-                multiline
-                rows={12}
-                fullWidth
-                placeholder="Paste Hevy CSV here..."
-                value={formData.hevyCsv}
-                onChange={(e) => update('hevyCsv', e.target.value)}
-                sx={{ fontFamily: 'monospace' }}
-              />
+              <Typography variant="h6" gutterBottom>Training Log</Typography>
+
+              {sessionsLoading ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 2 }}>
+                  <CircularProgress size={20} />
+                  <Typography variant="body2" color="text.secondary">Loading tracked sessions...</Typography>
+                </Box>
+              ) : trackedSessions.length > 0 ? (
+                <>
+                  <Alert severity="success" sx={{ mb: 2 }}>
+                    {trackedSessions.length} session{trackedSessions.length !== 1 ? 's' : ''} tracked this week via the session logger.
+                  </Alert>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                    {trackedSessions.map((s, i) => (
+                      <Box
+                        key={i}
+                        sx={{
+                          bgcolor: 'action.hover',
+                          borderRadius: 1,
+                          px: 2,
+                          py: 1.5,
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          flexWrap: 'wrap',
+                          gap: 1,
+                        }}
+                      >
+                        <Box>
+                          <Typography variant="body2" fontWeight={600}>{s.sessionTitle}</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {s.date} · {s.sessionType}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                          <Chip
+                            size="small"
+                            label={`${s.sets.length + s.cardio.length} exercises`}
+                            variant="outlined"
+                          />
+                          {s.compliancePct !== null && (
+                            <Chip
+                              size="small"
+                              label={`${s.compliancePct}% compliant`}
+                              color={s.compliancePct >= 80 ? 'success' : s.compliancePct >= 50 ? 'warning' : 'error'}
+                            />
+                          )}
+                        </Box>
+                      </Box>
+                    ))}
+                  </Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 2 }}>
+                    Session data will be included in your check-in automatically.
+                  </Typography>
+                </>
+              ) : (
+                <>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    No sessions tracked via the session logger this week. Export your Hevy data as CSV and paste below, or skip if no gym data.
+                  </Typography>
+                  <TextField
+                    multiline
+                    rows={12}
+                    fullWidth
+                    placeholder="Paste Hevy CSV here..."
+                    value={formData.hevyCsv}
+                    onChange={(e) => update('hevyCsv', e.target.value)}
+                    sx={{ fontFamily: 'monospace' }}
+                  />
+                </>
+              )}
             </CardContent>
           </Card>
         );
