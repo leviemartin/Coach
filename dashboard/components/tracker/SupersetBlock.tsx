@@ -1,6 +1,7 @@
 'use client';
 
-import { Box, Card, CardContent, Chip, Divider, Typography } from '@mui/material';
+import { Box, Card, CardContent, Chip, Typography } from '@mui/material';
+import { semanticColors } from '@/lib/design-tokens';
 import type { SessionSetState } from '@/lib/types';
 import StrengthExercise from './StrengthExercise';
 
@@ -17,24 +18,53 @@ interface SupersetBlockProps {
 }
 
 export default function SupersetBlock({ groupName, exercises, restSeconds, onUpdateSet }: SupersetBlockProps) {
+  // Derive round count from first exercise's set count
+  const rounds = exercises[0]?.sets.length ?? 0;
+
   return (
-    <Card variant="outlined" sx={{ borderRadius: '12px', borderColor: '#3b82f6' }}>
+    <Card
+      variant="outlined"
+      sx={{
+        borderRadius: '12px',
+        borderLeft: `4px solid ${semanticColors.protocols}`,
+      }}
+    >
       <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-          <Typography variant="subtitle1" fontWeight={700}>
-            Superset {groupName}
-          </Typography>
-          {restSeconds != null && (
-            <Chip
-              label={`${restSeconds}s rest`}
-              size="small"
-              sx={{ fontSize: '0.7rem', height: 20, backgroundColor: 'action.selected' }}
-            />
+        {/* Header: SUPERSET badge + round/rest info */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+          <Chip
+            label="SUPERSET"
+            size="small"
+            sx={{
+              backgroundColor: `${semanticColors.protocols}18`,
+              color: semanticColors.protocols,
+              fontWeight: 700,
+              fontSize: '0.6875rem',
+              letterSpacing: '0.5px',
+              height: 22,
+            }}
+          />
+          {(rounds > 0 || restSeconds != null) && (
+            <Typography variant="caption" color="text.secondary" fontWeight={600}>
+              {rounds > 0 && `${rounds} rounds`}
+              {rounds > 0 && restSeconds != null && ' · '}
+              {restSeconds != null && `${restSeconds}s rest between rounds`}
+            </Typography>
           )}
         </Box>
+
+        {/* Exercises with "then immediately" divider */}
         {exercises.map((ex, idx) => (
           <Box key={ex.name}>
-            {idx > 0 && <Divider sx={{ my: 1.5 }} />}
+            {idx > 0 && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, my: 1.5 }}>
+                <Box sx={{ flex: 1, height: '1px', bgcolor: 'divider' }} />
+                <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.625rem' }}>
+                  then immediately
+                </Typography>
+                <Box sx={{ flex: 1, height: '1px', bgcolor: 'divider' }} />
+              </Box>
+            )}
             <StrengthExercise
               exerciseName={ex.name}
               sets={ex.sets}

@@ -1,69 +1,147 @@
 'use client';
 
-import { Box, Button, Card, CardContent, Stack, Typography } from '@mui/material';
+import { useState } from 'react';
+import { Box, Button, Card, CardContent, Stack, TextField, Typography } from '@mui/material';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import { semanticColors } from '@/lib/design-tokens';
 import type { SessionSetState } from '@/lib/types';
 
 interface StrengthExerciseProps {
   exerciseName: string;
   sets: SessionSetState[];
+  isCurrent?: boolean;
   onUpdateSet: (setId: number, actualWeightKg: number | null, actualReps: number | null, completed: boolean) => void;
 }
 
-export default function StrengthExercise({ exerciseName, sets, onUpdateSet }: StrengthExerciseProps) {
+export default function StrengthExercise({ exerciseName, sets, isCurrent = false, onUpdateSet }: StrengthExerciseProps) {
+  // Track local edits before completing
+  const [edits, setEdits] = useState<Record<number, { weight: string; reps: string }>>({});
+
+  const getEdit = (set: SessionSetState) => {
+    if (edits[set.id!]) return edits[set.id!];
+    return {
+      weight: set.actualWeightKg?.toString() ?? set.prescribedWeightKg?.toString() ?? '',
+      reps: set.actualReps?.toString() ?? set.prescribedReps?.toString() ?? '',
+    };
+  };
+
+  const updateEdit = (setId: number, field: 'weight' | 'reps', value: string) => {
+    setEdits((prev) => ({
+      ...prev,
+      [setId]: { ...getEditById(setId), [field]: value },
+    }));
+  };
+
+  const getEditById = (setId: number) => {
+    const set = sets.find((s) => s.id === setId);
+    if (!set) return { weight: '', reps: '' };
+    return getEdit(set);
+  };
+
+  const handleComplete = (set: SessionSetState) => {
+    const edit = getEdit(set);
+    const weight = edit.weight ? parseFloat(edit.weight) : null;
+    const reps = edit.reps ? parseInt(edit.reps) : null;
+    onUpdateSet(set.id!, weight, reps, !set.completed);
+  };
+
+  const isModified = (set: SessionSetState) => {
+    const edit = getEdit(set);
+    const actualW = edit.weight ? parseFloat(edit.weight) : null;
+    const actualR = edit.reps ? parseInt(edit.reps) : null;
+    return actualW !== set.prescribedWeightKg || actualR !== set.prescribedReps;
+  };
+
   return (
-    <Card variant="outlined" sx={{ borderRadius: '12px' }}>
+    <Card
+      variant="outlined"
+      sx={{
+        borderRadius: '12px',
+        ...(isCurrent && { borderColor: semanticColors.body, borderWidth: 2 }),
+      }}
+    >
       <CardContent>
         <Typography variant="subtitle1" fontWeight={700} mb={2}>
           {exerciseName}
         </Typography>
         <Stack spacing={1}>
-          {sets.map((set) => (
-            <Box
-              key={set.id}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1.5,
-                p: 1.5,
-                borderRadius: '8px',
-                backgroundColor: set.completed ? 'action.selected' : 'action.hover',
-                opacity: set.completed ? 0.7 : 1,
-              }}
-            >
-              <Typography variant="body2" color="text.secondary" sx={{ minWidth: 48 }}>
-                Set {set.setNumber}
-              </Typography>
-              <Typography variant="body2" sx={{ flex: 1 }}>
-                {set.prescribedWeightKg != null ? `${set.prescribedWeightKg}kg` : '—'}
-                {' × '}
-                {set.prescribedReps != null ? set.prescribedReps : '—'}
-              </Typography>
-              <Button
-                size="small"
-                variant={set.completed ? 'contained' : 'outlined'}
-                onClick={() =>
-                  onUpdateSet(
-                    set.id!,
-                    set.actualWeightKg ?? set.prescribedWeightKg,
-                    set.actualReps ?? set.prescribedReps,
-                    !set.completed,
-                  )
-                }
+          {sets.map((set) => {
+            const edit = getEdit(set);
+            const modified = isModified(set);
+
+            return (
+              <Box
+                key={set.id}
                 sx={{
-                  minWidth: 72,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  p: 1.5,
                   borderRadius: '8px',
-                  fontWeight: 600,
-                  fontSize: '0.75rem',
-                  ...(set.completed && {
-                    backgroundColor: '#22c55e',
-                    '&:hover': { backgroundColor: '#16a34a' },
-                  }),
+                  backgroundColor: set.completed
+                    ? `${semanticColors.recovery.good}12`
+                    : modified
+                      ? `${semanticColors.recovery.caution}12`
+                      : 'action.hover',
                 }}
               >
-                {set.completed ? 'Done' : 'Log'}
-              </Button>
-            </Box>
-          ))}
+                <Typography variant="body2" color="text.secondary" sx={{ minWidth: 44, fontWeight: 600 }}>
+                  Set {set.setNumber}
+                </Typography>
+
+                {set.completed ? (
+                  // Completed: read-only with green checkmark
+                  <>
+                    <Typography variant="body2" sx={{ flex: 1, fontWeight: 600 }}>
+                      {set.actualWeightKg != null ? `${set.actualWeightKg}kg` : '—'}
+                      {' × '}
+                      {set.actualReps ?? '—'}
+                    </Typography>
+                    <CheckCircleIcon sx={{ color: semanticColors.recovery.good, fontSize: 20 }} />
+                  </>
+                ) : (
+                  // Active: editable weight and reps
+                  <>
+                    <TextField
+                      size="small"
+                      value={edit.weight}
+                      onChange={(e) => updateEdit(set.id!, 'weight', e.target.value)}
+                      placeholder={set.prescribedWeightKg?.toString() ?? '—'}
+                      inputProps={{ inputMode: 'decimal', style: { textAlign: 'center', padding: '6px 8px' } }}
+                      sx={{ width: 64, '& .MuiOutlinedInput-root': { borderRadius: '6px' } }}
+                    />
+                    <Typography variant="body2" color="text.secondary">×</Typography>
+                    <TextField
+                      size="small"
+                      value={edit.reps}
+                      onChange={(e) => updateEdit(set.id!, 'reps', e.target.value)}
+                      placeholder={set.prescribedReps?.toString() ?? '—'}
+                      inputProps={{ inputMode: 'numeric', style: { textAlign: 'center', padding: '6px 8px' } }}
+                      sx={{ width: 52, '& .MuiOutlinedInput-root': { borderRadius: '6px' } }}
+                    />
+                    <Button
+                      size="small"
+                      variant="contained"
+                      onClick={() => handleComplete(set)}
+                      sx={{
+                        ml: 'auto',
+                        minWidth: 0,
+                        px: 1.5,
+                        borderRadius: '8px',
+                        fontWeight: 700,
+                        fontSize: '0.75rem',
+                        textTransform: 'none',
+                        backgroundColor: semanticColors.body,
+                        '&:hover': { backgroundColor: '#2563eb' },
+                      }}
+                    >
+                      Complete Set {set.setNumber} ✓
+                    </Button>
+                  </>
+                )}
+              </Box>
+            );
+          })}
         </Stack>
       </CardContent>
     </Card>

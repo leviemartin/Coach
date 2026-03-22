@@ -122,9 +122,12 @@ export default function SessionPage() {
     async function loadSession() {
       try {
         const planItemId = searchParams.get('planItemId');
-        const url = planItemId
-          ? `/api/session?planItemId=${planItemId}`
-          : '/api/session';
+        const reset = searchParams.get('reset');
+        const params = new URLSearchParams();
+        if (planItemId) params.set('planItemId', planItemId);
+        if (reset) params.set('reset', reset);
+        const qs = params.toString();
+        const url = qs ? `/api/session?${qs}` : '/api/session';
         const res = await fetch(url);
         if (!res.ok) {
           // 404 = no workout planned for today
@@ -315,6 +318,7 @@ export default function SessionPage() {
           key={ex.name}
           exerciseName={ex.name}
           sets={exSets}
+          isCurrent
           onUpdateSet={handleUpdateSet}
         />
       );

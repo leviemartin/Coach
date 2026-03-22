@@ -1,6 +1,7 @@
 'use client';
 
 import { Box, Button, Card, CardContent, Stack, Typography } from '@mui/material';
+import { semanticColors, typography } from '@/lib/design-tokens';
 import type { SessionCardioState } from '@/lib/types';
 
 interface CardioIntervalsProps {
@@ -22,16 +23,56 @@ export default function CardioIntervals({ exerciseName, cardio, coachCue, onUpda
   };
 
   return (
-    <Card variant="outlined" sx={{ borderRadius: '12px' }}>
-      <CardContent>
-        <Typography variant="subtitle1" fontWeight={700} mb={0.5}>
+    <Card
+      variant="outlined"
+      sx={{
+        borderRadius: '12px',
+        borderLeft: `4px solid ${semanticColors.cardioIntervals}`,
+      }}
+    >
+      <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
+        {/* Exercise name */}
+        <Typography sx={{ ...typography.categoryLabel, color: semanticColors.cardioIntervals }}>
           {exerciseName}
         </Typography>
+
+        {/* Protocol specs */}
+        <Box sx={{ mt: 1, mb: 2, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+          {totalRounds > 0 && (
+            <Box>
+              <Typography sx={{ fontSize: '1.5rem', fontWeight: 800, lineHeight: 1 }}>{totalRounds}</Typography>
+              <Typography variant="caption" color="text.secondary">rounds</Typography>
+            </Box>
+          )}
+          {cardio.targetIntensity && (
+            <Box sx={{
+              px: 1.5, py: 0.5, borderRadius: '8px',
+              bgcolor: `${semanticColors.cardioIntervals}14`,
+              alignSelf: 'center',
+            }}>
+              <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: semanticColors.cardioIntervals }}>
+                {cardio.targetIntensity}
+              </Typography>
+            </Box>
+          )}
+        </Box>
+
+        {/* Coach cue with interval details */}
         {coachCue && (
-          <Typography variant="caption" color="text.secondary" display="block" mb={2}>
-            {coachCue}
-          </Typography>
+          <Box sx={{
+            mb: 2, p: 1.5, borderRadius: '8px',
+            bgcolor: 'action.hover',
+            borderLeft: `3px solid ${semanticColors.cardioIntervals}`,
+          }}>
+            {coachCue.split('\n').map((line, i) => (
+              <Typography key={i} variant="body2" color="text.secondary" sx={{ mb: 0.25 }}>
+                {line}
+              </Typography>
+            ))}
+          </Box>
         )}
+
+        {/* Round grid */}
         <Stack direction="row" flexWrap="wrap" gap={1}>
           {Array.from({ length: totalRounds }, (_, i) => (
             <Button
@@ -40,26 +81,32 @@ export default function CardioIntervals({ exerciseName, cardio, coachCue, onUpda
               size="small"
               onClick={() => handleRoundToggle(i)}
               sx={{
-                minWidth: 44,
-                height: 44,
-                borderRadius: '8px',
+                minWidth: 48,
+                height: 48,
+                borderRadius: '10px',
                 fontWeight: 700,
-                ...(i < completed && {
-                  backgroundColor: '#22c55e',
-                  borderColor: '#22c55e',
-                  '&:hover': { backgroundColor: '#16a34a' },
-                }),
+                fontSize: '0.875rem',
+                ...(i < completed
+                  ? {
+                      backgroundColor: semanticColors.recovery.good,
+                      borderColor: semanticColors.recovery.good,
+                      '&:hover': { backgroundColor: '#16a34a' },
+                    }
+                  : {
+                      borderColor: semanticColors.cardioIntervals,
+                      color: semanticColors.cardioIntervals,
+                      '&:hover': { bgcolor: `${semanticColors.cardioIntervals}14` },
+                    }),
               }}
             >
               {i + 1}
             </Button>
           ))}
         </Stack>
-        <Box sx={{ mt: 1.5 }}>
-          <Typography variant="caption" color="text.secondary">
-            {completed}/{totalRounds} rounds complete
-          </Typography>
-        </Box>
+
+        <Typography variant="caption" color="text.secondary" display="block" mt={1.5}>
+          {completed}/{totalRounds} rounds complete
+        </Typography>
       </CardContent>
     </Card>
   );
