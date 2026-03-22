@@ -17,24 +17,39 @@ export function parseWorkoutPlan(
   let nextGroupId = 1;
   let order = 0;
   let inWarmup = false;
+  let inCardioSection = false;
   let currentRest: number | null = null;
 
   for (const line of lines) {
-    if (/^(warm-up|cool-down|finish)\s*:/i.test(line)) {
+    // Section headers: Warm-up:, Cool-down:, Finisher:
+    if (/^(warm-up|cool-down|finisher?)\s*:/i.test(line)) {
       inWarmup = true;
+      inCardioSection = false;
       continue;
     }
-    if (/^[A-Z]\d:/i.test(line)) {
+
+    // Cardio/Anaerobic/Treadmill section header within a strength session
+    if (/^(cardio|anaerobic|treadmill\s*protocol)\s*:/i.test(line)) {
       inWarmup = false;
+      inCardioSection = true;
+      continue;
+    }
+
+    // Labeled exercises (A1:, B2:, W1:, CD1:, etc.) — multi-letter prefix supported
+    if (/^[A-Z]{1,3}\d+:/i.test(line)) {
+      inWarmup = false;
+      inCardioSection = false;
     }
     if (inWarmup && line.startsWith('-')) continue;
 
+    // Rest annotations: [3 rounds, 90s rest]
     const restMatch = line.match(/\[.*?(\d+)s?\s*rest.*?\]/i);
     if (restMatch) {
       currentRest = parseInt(restMatch[1]);
     }
 
-    const labelMatch = line.match(/^([A-Z])(\d):\s*(.*)/i);
+    // Parse labeled exercises — supports A1:, B1:, W1:, CD1:, etc.
+    const labelMatch = line.match(/^([A-Z]{1,3})(\d+):\s*(.*)/i);
     if (labelMatch) {
       const letter = labelMatch[1].toUpperCase();
       const exerciseText = labelMatch[3];
@@ -44,7 +59,7 @@ export function parseWorkoutPlan(
         supersetGroup = supersetGroupMap.get(letter)!;
       } else {
         const hasPartner = lines.some((l) => {
-          const m = l.match(/^([A-Z])\d:/i);
+          const m = l.match(/^([A-Z]{1,3})\d+:/i);
           return m && m[1].toUpperCase() === letter && l !== line;
         });
         if (hasPartner) {
@@ -58,6 +73,20 @@ export function parseWorkoutPlan(
       continue;
     }
 
+    // Inline cardio section: non-labeled lines after "Cardio:" header
+    if (inCardioSection && !line.startsWith('[')) {
+      const cardioLine = line.replace(/^-\s*/, '');
+      if (!cardioLine) continue;
+      const cardioExercises = parseCardioText(cardioLine, 'cardio_intervals');
+      for (const ce of cardioExercises) {
+        ce.order = order++;
+        exercises.push(ce);
+      }
+      inCardioSection = false;
+      continue;
+    }
+
+    // Unlabeled dash-prefixed lines (not in warm-up)
     if (line.startsWith('-') && !inWarmup) {
       const exerciseText = line.replace(/^-\s*/, '');
       const parsed = parseExerciseText(exerciseText, order++, null, null);
