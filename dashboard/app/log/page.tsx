@@ -7,6 +7,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import DailyLog from '@/components/DailyLog';
 import WeekDots from '@/components/WeekDots';
 import type { UncompletedSession } from '@/components/SessionPicker';
+import type { DailyNote } from '@/components/TaggedNotes';
 
 const MS_PER_DAY = 86_400_000;
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -99,6 +100,8 @@ const DEFAULT_LOG: LogData = {
 export default function DailyLogPage() {
   const [currentDate, setCurrentDate] = useState(getTodayStr);
   const [log, setLog] = useState<LogData>(DEFAULT_LOG);
+  const [dailyLogId, setDailyLogId] = useState<number | null>(null);
+  const [dailyNotes, setDailyNotes] = useState<DailyNote[]>([]);
   const [plannedSession, setPlannedSession] = useState<PlannedSession | null>(null);
   const [uncompletedSessions, setUncompletedSessions] = useState<UncompletedSession[]>([]);
   const [streak, setStreak] = useState<{ current: number; best: number }>({ current: 0, best: 0 });
@@ -118,6 +121,8 @@ export default function DailyLogPage() {
       if (res.ok) {
         const data = await res.json();
         setLog(data.log || DEFAULT_LOG);
+        setDailyLogId(data.log?.id ?? null);
+        setDailyNotes(data.daily_notes || []);
         setPlannedSession(data.planned_session || null);
         setUncompletedSessions(data.uncompleted_sessions || []);
         setStreak(data.streak || { current: 0, best: 0 });
@@ -165,6 +170,10 @@ export default function DailyLogPage() {
   useEffect(() => {
     fetchComplianceTrend();
   }, [fetchComplianceTrend]);
+
+  const handleNotesChange = useCallback(() => {
+    fetchDayLog(currentDate);
+  }, [fetchDayLog, currentDate]);
 
   const handleSave = async (data: Record<string, unknown>) => {
     const res = await fetch('/api/log', {
@@ -297,6 +306,9 @@ export default function DailyLogPage() {
           complianceTrend={complianceTrend}
           currentWeek={weekNumber}
           onSave={handleSave}
+          dailyLogId={dailyLogId}
+          dailyNotes={dailyNotes}
+          onNotesChange={handleNotesChange}
         />
       </Box>
     </Box>

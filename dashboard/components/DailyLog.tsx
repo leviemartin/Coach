@@ -13,7 +13,8 @@ import {
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import BedtimeCard from './BedtimeCard';
-import NotesCard from './NotesCard';
+import TaggedNotes from './TaggedNotes';
+import type { DailyNote } from './TaggedNotes';
 import SessionPicker from './SessionPicker';
 import DailyChecklist from './DailyChecklist';
 import DayProgress from './DayProgress';
@@ -76,6 +77,9 @@ export interface DailyLogProps {
   complianceTrend: TrendPoint[];
   currentWeek: number;
   onSave: (data: Record<string, unknown>) => Promise<void>;
+  dailyLogId: number | null;
+  dailyNotes: DailyNote[];
+  onNotesChange: () => void;
 }
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'failed';
@@ -90,6 +94,9 @@ export default function DailyLog({
   complianceTrend,
   currentWeek,
   onSave,
+  dailyLogId,
+  dailyNotes,
+  onNotesChange,
 }: DailyLogProps) {
   const [formData, setFormData] = useState<LogData>(log);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
@@ -354,10 +361,11 @@ export default function DailyLog({
         onUpdate={(val) => update({ vampire_bedtime: val })}
       />
 
-      {/* 7. NotesCard (always visible) */}
-      <NotesCard
-        notes={formData.notes}
-        onUpdate={(val) => update({ notes: val })}
+      {/* 7. TaggedNotes (always visible) */}
+      <TaggedNotes
+        dailyLogId={dailyLogId}
+        notes={dailyNotes}
+        onNotesChange={onNotesChange}
       />
 
       {/* 8. WeekComplianceBar */}
