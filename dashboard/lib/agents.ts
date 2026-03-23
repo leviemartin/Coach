@@ -13,7 +13,7 @@ import type { TriageAnswer } from './triage-agent';
 
 let _client: Anthropic | null = null;
 
-function getClient(): Anthropic {
+export function getClient(): Anthropic {
   if (!_client) {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {

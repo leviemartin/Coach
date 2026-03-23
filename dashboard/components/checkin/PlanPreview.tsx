@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Box, Typography, Chip, Button, Divider, Tooltip } from '@mui/material';
+import { Box, Typography, Chip, Button, Divider } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import type { PlanItem } from '@/lib/types';
@@ -34,9 +34,10 @@ interface PlanPreviewProps {
   items: PlanItem[];
   weekNumber: number;
   onLockIn: () => void;
+  onDiscuss?: () => void;
 }
 
-export default function PlanPreview({ items, weekNumber, onLockIn }: PlanPreviewProps) {
+export default function PlanPreview({ items, weekNumber, onLockIn, onDiscuss }: PlanPreviewProps) {
   if (!items || items.length === 0) return null;
 
   const dateRange = weekDateRange(items);
@@ -107,25 +108,21 @@ export default function PlanPreview({ items, weekNumber, onLockIn }: PlanPreview
           Satisfied with this plan?
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5 }}>
-          <Tooltip title="Coming in Phase D" placement="top" arrow>
-            <span>
-              <Button
-                variant="outlined"
-                disabled
-                startIcon={<ChatBubbleOutlineIcon />}
-                sx={{
-                  borderColor: '#e2e8f0',
-                  color: '#64748b',
-                  '&.Mui-disabled': {
-                    borderColor: '#e2e8f0',
-                    color: '#94a3b8',
-                  },
-                }}
-              >
-                Discuss with Head Coach
-              </Button>
-            </span>
-          </Tooltip>
+          <Button
+            variant="outlined"
+            onClick={onDiscuss}
+            startIcon={<ChatBubbleOutlineIcon />}
+            sx={{
+              borderColor: '#6366f1',
+              color: '#6366f1',
+              '&:hover': {
+                borderColor: '#4f46e5',
+                bgcolor: 'rgba(99, 102, 241, 0.04)',
+              },
+            }}
+          >
+            Discuss with Head Coach
+          </Button>
 
           <Button
             variant="contained"

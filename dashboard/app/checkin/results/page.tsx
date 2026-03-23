@@ -5,6 +5,7 @@ import { Typography, Box, Button, Alert } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import AgentBriefing from '@/components/AgentBriefing';
 import PlanPreview from '@/components/checkin/PlanPreview';
+import HeadCoachDialogue from '@/components/checkin/HeadCoachDialogue';
 import { parseScheduleTable } from '@/lib/parse-schedule';
 import { getPlanWeekNumber } from '@/lib/week';
 import type { PlanItem } from '@/lib/types';
@@ -22,6 +23,7 @@ export default function CheckInResultsPage() {
   const [phase, setPhase] = useState<string>('init');
   const [error, setError] = useState<string | null>(null);
   const [planItems, setPlanItems] = useState<PlanItem[]>([]);
+  const [showDialogue, setShowDialogue] = useState(false);
   const startedRef = useRef(false);
 
   useEffect(() => {
@@ -146,7 +148,11 @@ export default function CheckInResultsPage() {
   }
 
   const handleLockIn = () => {
-    router.push('/plan');
+    router.push('/log');
+  };
+
+  const handleDiscuss = () => {
+    setShowDialogue(true);
   };
 
   return (
@@ -177,6 +183,7 @@ export default function CheckInResultsPage() {
           items={planItems}
           weekNumber={getPlanWeekNumber()}
           onLockIn={handleLockIn}
+          onDiscuss={handleDiscuss}
         />
       )}
 
@@ -191,6 +198,15 @@ export default function CheckInResultsPage() {
             Lock In
           </Button>
         </Box>
+      )}
+
+      {phase === 'done' && showDialogue && (
+        <HeadCoachDialogue
+          specialistOutputs={specialists}
+          synthesis={synthesis}
+          weekNumber={getPlanWeekNumber()}
+          onLockIn={handleLockIn}
+        />
       )}
     </Box>
   );
