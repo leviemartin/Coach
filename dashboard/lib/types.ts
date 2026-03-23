@@ -234,15 +234,19 @@ export interface WeeklyMetrics {
   rugProtocolDays: number | null;
   sessionsPlanned: number | null;
   sessionsCompleted: number | null;
-  bakerCystPain: number;
+  bakerCystPain: number | null;
   pullupCount: number | null;
   perceivedReadiness: number | null;
   planSatisfaction: number | null;
   modelUsed: string;
-  kitchenCutoffCompliance?: number | null;
-  avgEnergy?: number | null;
-  painDays?: number | null;
-  sleepDisruptionCount?: number | null;
+  kitchenCutoffCompliance: number | null;
+  avgEnergy: number | null;
+  painDays: number | null;
+  sleepDisruptionCount: number | null;
+}
+
+export function isNewFormatPayload(data: unknown): data is { subjectiveData: CheckinSubjectiveData } {
+  return typeof data === 'object' && data !== null && 'subjectiveData' in data;
 }
 
 export interface CeilingEntry {

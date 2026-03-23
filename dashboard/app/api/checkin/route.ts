@@ -12,6 +12,7 @@ import {
   deletePlanItems,
 } from '@/lib/db';
 import type { CheckInFormData, CheckinSubjectiveData, WeeklyMetrics, CeilingEntry } from '@/lib/types';
+import { isNewFormatPayload } from '@/lib/types';
 import type { TriageAnswer } from '@/lib/triage-agent';
 
 // New-format payload from the stepper flow
@@ -20,10 +21,6 @@ interface CheckinPayload {
   triageClarifications: TriageAnswer[];
   annotation: string;
   [key: string]: unknown;
-}
-
-function isNewFormat(body: unknown): body is CheckinPayload {
-  return typeof body === 'object' && body !== null && 'subjectiveData' in body;
 }
 
 export async function POST(request: Request) {
@@ -50,12 +47,14 @@ export async function POST(request: Request) {
   let subjectiveData: CheckinSubjectiveData | null = null;
   let legacyFormData: CheckInFormData | null = null;
 
-  if (isNewFormat(body)) {
+  if (isNewFormatPayload(body)) {
     // New stepper flow
-    subjectiveData = body.subjectiveData;
-    const triageClarifications = body.triageClarifications || [];
+    const payload = body as CheckinPayload;
+    subjectiveData = payload.subjectiveData;
+    const triageClarifications = payload.triageClarifications || [];
+    const annotation = typeof payload.annotation === 'string' ? payload.annotation.trim() : '';
     model = subjectiveData.model;
-    sharedContext = buildSharedContext(garmin.data, subjectiveData, triageClarifications);
+    sharedContext = buildSharedContext(garmin.data, subjectiveData, triageClarifications, annotation);
   } else {
     // Legacy form flow
     legacyFormData = body as CheckInFormData;
@@ -172,9 +171,9 @@ export async function POST(request: Request) {
           hydrationTracked: hasLogData
             ? weekSummary.hydration.tracked > 0
             : (legacyFormData?.hydrationTracked ?? false),
-          vampireCompliancePct: hasLogData
-            ? (weekSummary.vampire.compliant / 7) * 100
-            : (legacyFormData ? (legacyFormData.bedtimeCompliance / 7) * 100 : null),
+          vampireCompliancePct: hasLogData && weekSummary.vampire.daily.length > 0
+            ? (weekSummary.vampire.compliant / weekSummary.vampire.daily.length) * 100
+            : legacyFormData ? (legacyFormData.bedtimeCompliance / 7) * 100 : null,
           rugProtocolDays: hasLogData
             ? weekSummary.rug_protocol.done
             : (legacyFormData?.rugProtocolDays ?? null),
@@ -184,7 +183,7 @@ export async function POST(request: Request) {
           sessionsCompleted: hasLogData
             ? weekSummary.workouts.completed
             : (legacyFormData?.sessionsCompleted ?? null),
-          bakerCystPain: legacyFormData?.bakerCystPain ?? 0,
+          bakerCystPain: legacyFormData?.bakerCystPain ?? null,
           pullupCount: null,
           perceivedReadiness,
           planSatisfaction,

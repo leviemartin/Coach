@@ -476,7 +476,7 @@ function mapMetricsRow(row: unknown): WeeklyMetrics {
     rugProtocolDays: r.rug_protocol_days as number | null,
     sessionsPlanned: r.sessions_planned as number | null,
     sessionsCompleted: r.sessions_completed as number | null,
-    bakerCystPain: (r.baker_cyst_pain as number) ?? 0,
+    bakerCystPain: (r.baker_cyst_pain as number | null) ?? null,
     pullupCount: r.pullup_count as number | null,
     perceivedReadiness: r.perceived_readiness as number | null,
     planSatisfaction: r.plan_satisfaction as number | null,

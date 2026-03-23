@@ -41,20 +41,22 @@ export function buildSharedContext(
 export function buildSharedContext(
   garminData: GarminData | null,
   subjectiveData: CheckinSubjectiveData,
-  triageClarifications?: TriageAnswer[]
+  triageClarifications?: TriageAnswer[],
+  annotation?: string
 ): string;
 // ── Implementation ──────────────────────────────────────────────────────────
 export function buildSharedContext(
   garminData: GarminData | null,
   dataArg: CheckInFormData | CheckinSubjectiveData,
-  triageClarifications?: TriageAnswer[]
+  triageClarifications?: TriageAnswer[],
+  annotation?: string
 ): string {
-  // Detect legacy vs new format: CheckInFormData has 'hevyCsv'
+  // Detect legacy vs new format: CheckInFormData has 'hevyCsv'; use shared type guard on wrapped form
   const isLegacy = 'hevyCsv' in dataArg;
   if (isLegacy) {
     return buildSharedContextLegacy(garminData, dataArg as CheckInFormData);
   }
-  return buildSharedContextStructured(garminData, dataArg as CheckinSubjectiveData, triageClarifications);
+  return buildSharedContextStructured(garminData, dataArg as CheckinSubjectiveData, triageClarifications, annotation);
 }
 
 // ── Legacy path (unchanged logic from before) ───────────────────────────────
@@ -131,7 +133,8 @@ function buildSharedContextLegacy(
 function buildSharedContextStructured(
   garminData: GarminData | null,
   subjectiveData: CheckinSubjectiveData,
-  triageClarifications?: TriageAnswer[]
+  triageClarifications?: TriageAnswer[],
+  annotation?: string
 ): string {
   const profile = readAthleteProfile();
   const history = readTrainingHistory(4);
@@ -191,7 +194,11 @@ function buildSharedContextStructured(
   context += `- Plan satisfaction: ${subjectiveData.planSatisfaction}/5\n`;
   context += `- Reflection: ${subjectiveData.weekReflection || 'None provided'}\n`;
   context += `- Next week conflicts: ${subjectiveData.nextWeekConflicts || 'None'}\n`;
-  context += `- Questions: ${subjectiveData.questionsForCoaches || 'None'}\n\n`;
+  context += `- Questions: ${subjectiveData.questionsForCoaches || 'None'}\n`;
+  if (annotation && annotation.length > 0) {
+    context += `- Annotation: "${annotation}"\n`;
+  }
+  context += `\n`;
 
   // ── DEXA Data ─────────────────────────────────────────────────────────────
   context += buildDexaSection(garminData);
@@ -310,24 +317,15 @@ function buildSessionDetailsSection(sessions: ReturnType<typeof getWeekSessions>
 }
 
 // ── Shared helper: Tagged Notes ─────────────────────────────────────────────
-function buildTaggedNotesSection(notes: (DailyNote & { date: string })[], logs: DailyLog[]): string {
-  // Include both tagged notes and legacy free-text notes
-  const hasTagged = notes.length > 0;
-  const legacyNotes = logs.filter(l => l.notes && l.notes.trim() && !hasTagged);
-
-  if (!hasTagged && legacyNotes.length === 0) {
+function buildTaggedNotesSection(notes: (DailyNote & { date: string })[], _logs: DailyLog[]): string {
+  // Only show tagged notes — legacy free-text notes have been migrated to tagged notes
+  if (notes.length === 0) {
     return '';
   }
 
   let section = `### Tagged Notes\n`;
-  if (hasTagged) {
-    for (const n of notes) {
-      section += `${getDayAbbrev(n.date)} (${n.category}): "${n.text}"\n`;
-    }
-  } else {
-    for (const l of legacyNotes) {
-      section += `${getDayAbbrev(l.date)} (other): "${l.notes!.trim()}"\n`;
-    }
+  for (const n of notes) {
+    section += `${getDayAbbrev(n.date)} (${n.category}): "${n.text}"\n`;
   }
   return section + `\n`;
 }

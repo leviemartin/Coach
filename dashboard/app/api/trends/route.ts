@@ -42,11 +42,15 @@ export async function POST() {
       rugProtocolDays: null,
       sessionsPlanned: null,
       sessionsCompleted: null,
-      bakerCystPain: 0,
+      bakerCystPain: null,
       pullupCount: null,
       perceivedReadiness: null,
       planSatisfaction: null,
       modelUsed: 'unknown',
+      kitchenCutoffCompliance: null,
+      avgEnergy: null,
+      painDays: null,
+      sleepDisruptionCount: null,
     };
 
     upsertWeeklyMetrics(metrics);
