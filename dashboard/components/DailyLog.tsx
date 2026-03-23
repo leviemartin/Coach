@@ -18,6 +18,7 @@ import SessionPicker from './SessionPicker';
 import DailyChecklist from './DailyChecklist';
 import DayProgress from './DayProgress';
 import EnergyPainCard from './EnergyPainCard';
+import SleepDisruptionCard from './SleepDisruptionCard';
 import WeekComplianceBar from './WeekComplianceBar';
 import ComplianceSparkline from './ComplianceSparkline';
 import { computeDayCompliance, computeWeekCompliancePct, isBedtimeCompliant } from '@/lib/compliance';
@@ -37,6 +38,7 @@ interface LogData {
   energy_level: number | null;
   pain_level: number | null;
   pain_area: string | null;
+  sleep_disruption: string | null;
 }
 
 interface PlannedSession {
@@ -292,7 +294,21 @@ export default function DailyLog({
         </Box>
       )}
 
-      {/* 5. EnergyPainCard (if not sick) */}
+      {/* 5. SleepDisruptionCard (always visible) */}
+      {(() => {
+        const prevDate = new Date(date + 'T12:00:00');
+        prevDate.setDate(prevDate.getDate() - 1);
+        const previousDayName = prevDate.toLocaleDateString('en-US', { weekday: 'long' });
+        return (
+          <SleepDisruptionCard
+            value={formData.sleep_disruption}
+            previousDayName={previousDayName}
+            onChange={(value) => update({ sleep_disruption: value })}
+          />
+        );
+      })()}
+
+      {/* 6. EnergyPainCard (if not sick) */}
       {!isSick && (
         <EnergyPainCard
           energyLevel={formData.energy_level}
@@ -306,7 +322,7 @@ export default function DailyLog({
         />
       )}
 
-      {/* 6. DailyChecklist (if not sick) / Hydration standalone if sick */}
+      {/* 7. DailyChecklist (if not sick) / Hydration standalone if sick */}
       {!isSick ? (
         <DailyChecklist
           coreWorkDone={formData.core_work_done}
