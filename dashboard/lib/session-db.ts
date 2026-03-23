@@ -1,14 +1,17 @@
-import { getDb } from './db';
+import { getDb, getDailyLog, upsertDailyLog } from './db';
 import { getTrainingWeek } from './week';
+import { getWeekForDate } from './daily-log';
 import type { ParsedExercise, SessionSetState, SessionCardioState } from './types';
+import type Database from 'better-sqlite3';
 
 export function createSession(
   date: string,
   sessionType: string,
   sessionTitle: string,
   exercises: ParsedExercise[],
+  _db?: Database.Database,
 ): number {
-  const db = getDb();
+  const db = _db ?? getDb();
   const weekNumber = getTrainingWeek();
 
   // Check if a session already exists for this date+title (avoid FK-breaking REPLACE)
@@ -78,8 +81,9 @@ export function updateSet(
   actualWeightKg: number | null,
   actualReps: number | null,
   completed: boolean,
+  _db?: Database.Database,
 ): void {
-  const db = getDb();
+  const db = _db ?? getDb();
   const set = db.prepare('SELECT prescribed_weight_kg, prescribed_reps FROM session_sets WHERE id = ?').get(setId) as {
     prescribed_weight_kg: number | null;
     prescribed_reps: number | null;
@@ -96,15 +100,15 @@ export function updateSet(
   `).run(actualWeightKg, actualReps, completed ? 1 : 0, isModified ? 1 : 0, setId);
 }
 
-export function updateCardioRound(cardioId: number, completedRounds: number, completed: boolean): void {
-  const db = getDb();
+export function updateCardioRound(cardioId: number, completedRounds: number, completed: boolean, _db?: Database.Database): void {
+  const db = _db ?? getDb();
   db.prepare(`
     UPDATE session_cardio SET completed_rounds = ?, completed = ? WHERE id = ?
   `).run(completedRounds, completed ? 1 : 0, cardioId);
 }
 
-export function getSessionSets(sessionId: number): SessionSetState[] {
-  const db = getDb();
+export function getSessionSets(sessionId: number, _db?: Database.Database): SessionSetState[] {
+  const db = _db ?? getDb();
   const rows = db.prepare(`
     SELECT id, exercise_name, exercise_order, superset_group, set_number,
            prescribed_weight_kg, prescribed_reps, actual_weight_kg, actual_reps,
@@ -127,8 +131,8 @@ export function getSessionSets(sessionId: number): SessionSetState[] {
   }));
 }
 
-export function getSessionCardio(sessionId: number): SessionCardioState[] {
-  const db = getDb();
+export function getSessionCardio(sessionId: number, _db?: Database.Database): SessionCardioState[] {
+  const db = _db ?? getDb();
   const rows = db.prepare(`
     SELECT id, exercise_name, cardio_type, prescribed_rounds, completed_rounds,
            prescribed_duration_min, target_intensity, completed
@@ -147,13 +151,93 @@ export function getSessionCardio(sessionId: number): SessionCardioState[] {
   }));
 }
 
-export function completeSession(sessionId: number, notes: string): {
+/** Generate a human-readable session summary from sets and cardio data. */
+export function generateSessionSummary(
+  sessionTitle: string,
+  compliancePct: number,
+  sets: SessionSetState[],
+  cardio: SessionCardioState[],
+  weightChanges: Array<{ exercise: string; set: number; from: number | null; to: number | null }>,
+): string {
+  const lines: string[] = [];
+
+  lines.push(`${sessionTitle} (${compliancePct}% compliance)`);
+
+  // Group sets by exercise name
+  const exerciseMap = new Map<string, SessionSetState[]>();
+  for (const s of sets) {
+    const group = exerciseMap.get(s.exerciseName) ?? [];
+    group.push(s);
+    exerciseMap.set(s.exerciseName, group);
+  }
+
+  for (const [name, exSets] of exerciseMap) {
+    const totalSets = exSets.length;
+    const completedSets = exSets.filter((s) => s.completed).length;
+    const firstCompleted = exSets.find((s) => s.completed);
+    const prescribed = exSets[0];
+
+    if (completedSets === 0) {
+      lines.push(`- ${name}: 0/${totalSets} sets done`);
+    } else if (completedSets < totalSets) {
+      lines.push(`- ${name}: ${completedSets}/${totalSets} sets done`);
+    } else {
+      // All sets completed — show representative set
+      const reps = firstCompleted?.actualReps ?? prescribed.prescribedReps;
+      const weight = firstCompleted?.actualWeightKg ?? prescribed.prescribedWeightKg;
+      const weightStr = weight != null ? ` @ ${weight}kg` : '';
+      const repsStr = reps != null ? `${totalSets}x${reps}` : `${totalSets} sets`;
+
+      // Check if weight was changed vs prescribed
+      const prescribedWeight = prescribed.prescribedWeightKg;
+      const actualWeight = firstCompleted?.actualWeightKg ?? null;
+      const weightNote =
+        actualWeight != null && prescribedWeight != null && actualWeight !== prescribedWeight
+          ? ` (prescribed ${prescribedWeight}kg)`
+          : '';
+
+      lines.push(`- ${name}: ${repsStr}${weightStr} ✓${weightNote}`);
+    }
+  }
+
+  // Cardio exercises
+  for (const c of cardio) {
+    if (c.completed) {
+      lines.push(`- ${c.exerciseName}: ${c.completedRounds}/${c.prescribedRounds ?? '?'} rounds ✓`);
+    } else {
+      lines.push(`- ${c.exerciseName}: ${c.completedRounds}/${c.prescribedRounds ?? '?'} rounds done`);
+    }
+  }
+
+  // Weight changes section
+  if (weightChanges.length > 0) {
+    // Deduplicate by exercise name, keep only distinct changes
+    const seen = new Set<string>();
+    const changeLines: string[] = [];
+    for (const wc of weightChanges) {
+      const key = `${wc.exercise}:${wc.from}->${wc.to}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        const direction = (wc.to ?? 0) > (wc.from ?? 0) ? '+' : '';
+        const delta = wc.to != null && wc.from != null ? `${direction}${+(wc.to - wc.from).toFixed(2)}kg` : 'changed';
+        changeLines.push(`${wc.exercise} ${delta}`);
+      }
+    }
+    if (changeLines.length > 0) {
+      lines.push(`Weight changes: ${changeLines.join(', ')}`);
+    }
+  }
+
+  return lines.join('\n');
+}
+
+export function completeSession(sessionId: number, notes: string, _db?: Database.Database): {
   compliancePct: number;
   weightChanges: Array<{ exercise: string; set: number; from: number | null; to: number | null }>;
 } {
-  const db = getDb();
-  const sets = getSessionSets(sessionId);
-  const cardio = getSessionCardio(sessionId);
+  const db = _db ?? getDb();
+  const sets = getSessionSets(sessionId, db);
+  const cardio = getSessionCardio(sessionId, db);
 
   const totalSets = sets.length;
   const completedSets = sets.filter((s) => s.completed).length;
@@ -176,11 +260,46 @@ export function completeSession(sessionId: number, notes: string): {
     UPDATE session_logs SET completed_at = ?, notes = ?, compliance_pct = ? WHERE id = ?
   `).run(new Date().toISOString(), notes, compliancePct, sessionId);
 
-  const session = db.prepare('SELECT date FROM session_logs WHERE id = ?').get(sessionId) as { date: string } | undefined;
-  if (session) {
-    db.prepare(`
-      UPDATE daily_logs SET workout_completed = 1 WHERE date = ?
-    `).run(session.date);
+  const sessionRow = db.prepare('SELECT date, session_title FROM session_logs WHERE id = ?').get(sessionId) as {
+    date: string;
+    session_title: string;
+  } | undefined;
+
+  if (sessionRow) {
+    const summaryText = generateSessionSummary(
+      sessionRow.session_title,
+      compliancePct,
+      sets,
+      cardio,
+      weightChanges,
+    );
+
+    const existingLog = getDailyLog(sessionRow.date, db);
+    if (existingLog) {
+      db.prepare(`
+        UPDATE daily_logs SET workout_completed = 1, session_summary = ?, session_log_id = ? WHERE date = ?
+      `).run(summaryText, sessionId, sessionRow.date);
+    } else {
+      upsertDailyLog({
+        date: sessionRow.date,
+        week_number: getWeekForDate(sessionRow.date),
+        workout_completed: 1,
+        workout_plan_item_id: null,
+        core_work_done: 0,
+        rug_protocol_done: 0,
+        vampire_bedtime: null,
+        hydration_tracked: 0,
+        kitchen_cutoff_hit: 0,
+        is_sick_day: 0,
+        notes: null,
+        energy_level: null,
+        pain_level: null,
+        pain_area: null,
+        sleep_disruption: null,
+        session_summary: summaryText,
+        session_log_id: sessionId,
+      }, db);
+    }
   }
 
   return { compliancePct, weightChanges };
