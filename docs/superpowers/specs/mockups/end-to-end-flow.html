@@ -1,0 +1,220 @@
+<h2>End-to-End Flow: The Connected Pipeline</h2>
+<p class="subtitle">How data flows from daily input through coaching to next week's plan. One pipeline, no gaps.</p>
+
+<style>
+  .flow-card { background:#1a1a2e; border:1px solid #444; border-radius:12px; padding:20px; }
+  .flow-card h3 { margin-top:0; }
+  .flow-card .items { font-size:13px; line-height:2; color:#e0e0e0; }
+  .flow-card .items .label { color:#bbb; margin-top:8px; }
+  .dot-green::before { content:"● "; color:#4caf50; }
+  .dot-yellow::before { content:"● "; color:#ffd54f; }
+  .dot-blue::before { content:"● "; color:#4fc3f7; }
+  .dot-orange::before { content:"● "; color:#ff7043; }
+  .dot-boldgreen::before { content:"● "; color:#4caf50; font-weight:bold; }
+  .phase-label { padding:6px 16px; border-radius:20px; font-weight:bold; font-size:14px; display:inline-block; }
+  .phase-time { color:#aaa; font-size:13px; margin-left:12px; }
+  .step-badge { position:absolute; top:-10px; left:16px; padding:2px 12px; border-radius:10px; font-size:11px; font-weight:bold; }
+  .step-card { flex:1; min-width:200px; background:#1a1a2e; border:1px solid #444; padding:20px; position:relative; }
+  .step-card h3 { margin-top:8px; font-size:15px; }
+  .step-card .items { font-size:12px; line-height:1.8; color:#e0e0e0; }
+  .highlight-text { color:#ffd54f; }
+</style>
+
+<!-- PHASE 1: DAILY -->
+<div style="margin-bottom:40px;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+    <span class="phase-label" style="background:#4fc3f7;color:#000;">DAILY</span>
+    <span class="phase-time">Mon — Sun, throughout the day</span>
+  </div>
+
+  <div style="display:flex;gap:16px;flex-wrap:wrap;">
+    <!-- Daily Log -->
+    <div class="flow-card" style="flex:1;min-width:280px;">
+      <h3 style="color:#4fc3f7;">Daily Log <span style="font-size:12px;color:#888;">/log</span></h3>
+      <div class="items">
+        <div class="label">Morning / Anytime:</div>
+        <div style="padding-left:12px;">
+          <div class="dot-green">Energy level (1-5 tap)</div>
+          <div class="dot-green">Pain check (0-3 + area if > 0)</div>
+          <div class="dot-green">See today's suggested session + week overview</div>
+          <div class="dot-green">Start Session → opens <span style="color:#4fc3f7;">/session</span></div>
+        </div>
+        <div class="label" style="margin-top:12px;">After Gym:</div>
+        <div style="padding-left:12px;">
+          <div class="dot-yellow">Session summary auto-populated (expandable)</div>
+          <div class="dot-green">Core work checkbox</div>
+          <div class="dot-green">Tagged notes (injury / training / life / sleep)</div>
+        </div>
+        <div class="label" style="margin-top:12px;">Evening:</div>
+        <div style="padding-left:12px;">
+          <div class="dot-green">Mobility work checkbox</div>
+          <div class="dot-green">No food after 20:00 checkbox</div>
+          <div class="dot-green">Hydration logged checkbox</div>
+          <div class="dot-orange">Lights Out button (stamps time)</div>
+          <div class="dot-green">Sleep disruption tag (if applicable)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Session Tracker -->
+    <div class="flow-card" style="flex:1;min-width:280px;">
+      <h3 style="color:#4fc3f7;">Session Tracker <span style="font-size:12px;color:#888;">/session</span></h3>
+      <div class="items">
+        <div class="label">Launched from Daily Log:</div>
+        <div style="padding-left:12px;">
+          <div class="dot-green">Can pick any unfinished session for the week</div>
+          <div class="dot-yellow">Warns if session breaks sequencing rules</div>
+          <div class="dot-green">Log sets, reps, weight (as today)</div>
+          <div class="dot-green">Log cardio rounds/duration (as today)</div>
+        </div>
+        <div class="label" style="margin-top:12px;">On Complete:</div>
+        <div style="padding-left:12px;">
+          <div class="dot-blue">Writes summary → daily_logs.session_summary</div>
+          <div class="dot-blue">Links session → daily_logs.session_log_id</div>
+          <div class="dot-blue">Sets workout_completed = true</div>
+          <div class="dot-blue">Updates plan_item status → "completed"</div>
+          <div class="dot-blue">Updates plan_item assigned_date → actual date</div>
+          <div class="dot-blue">Checks ceiling progression</div>
+          <div class="dot-green">Returns to Daily Log</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow -->
+  <div style="text-align:center;padding:16px 0;color:#888;font-size:20px;">
+    &#9660; <span style="font-size:13px;">7 days of data accumulate in SQLite</span> &#9660;
+  </div>
+</div>
+
+<!-- PHASE 2: SUNDAY CHECKIN -->
+<div style="margin-bottom:40px;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+    <span class="phase-label" style="background:#ff7043;color:#000;">SUNDAY CHECKIN</span>
+    <span class="phase-time">Sunday 20:00+, after ruck + meals done</span>
+  </div>
+
+  <!-- Step flow -->
+  <div style="display:flex;gap:0;flex-wrap:wrap;">
+    <!-- Step 1 -->
+    <div class="step-card" style="border-radius:12px 0 0 12px;">
+      <div class="step-badge" style="background:#ff7043;color:#000;">STEP 1</div>
+      <h3 style="color:#ff7043;">Weekly Review</h3>
+      <div class="items">
+        Auto-assembled from daily logs:<br>
+        <div class="dot-blue">Sessions completed (with summaries)</div>
+        <div class="dot-blue">Compliance dashboard</div>
+        <div class="dot-blue">Pain/energy trends (7-day)</div>
+        <div class="dot-blue">Sleep pattern + disruptions</div>
+        <div class="dot-blue">Garmin data overlay</div>
+        <div class="dot-blue">All tagged notes by category</div>
+        <br>
+        <span class="highlight-text">You review, can annotate</span>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="step-card">
+      <div class="step-badge" style="background:#ff7043;color:#000;">STEP 2</div>
+      <h3 style="color:#ff7043;">Subjective Inputs</h3>
+      <div class="items">
+        Only what daily logs can't capture:<br>
+        <div class="dot-green">Perceived readiness (1-5)</div>
+        <div class="dot-green">Plan satisfaction (1-5)</div>
+        <div class="dot-green">Week reflection (free text)</div>
+        <div class="dot-green">Next week conflicts</div>
+        <div class="dot-green">Questions for coaches</div>
+        <br>
+        <span class="highlight-text">Minimal — most data already collected</span>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="step-card">
+      <div class="step-badge" style="background:#ff7043;color:#000;">STEP 3</div>
+      <h3 style="color:#ff7043;">Triage Agent</h3>
+      <div class="items">
+        AI scans everything and asks:<br>
+        <div class="dot-orange">Clarifying questions (3-5)</div>
+        <div class="dot-orange">Flags missing data</div>
+        <div class="dot-orange">Highlights contradictions</div>
+        <div class="dot-orange">Prompts for backfill</div>
+        <br>
+        <span class="highlight-text">You answer → data is complete</span><br>
+        <span class="highlight-text">Then: "Submit to coaches"</span>
+      </div>
+    </div>
+
+    <!-- Step 4 -->
+    <div class="step-card">
+      <div class="step-badge" style="background:#ff7043;color:#000;">STEP 4</div>
+      <h3 style="color:#ff7043;">Coach Synthesis</h3>
+      <div class="items">
+        7 specialists run (streaming):<br>
+        <div class="dot-blue">Each sees ALL data (structured)</div>
+        <div class="dot-blue">Daily notes filtered by domain</div>
+        <div class="dot-blue">Session actuals vs prescribed</div>
+        <div class="dot-blue">Pain/energy daily patterns</div>
+        <br>
+        Head Coach synthesizes:<br>
+        <div class="dot-yellow">Week analysis</div>
+        <div class="dot-yellow">Draft plan (sessions + sequencing rules)</div>
+      </div>
+    </div>
+
+    <!-- Step 5 -->
+    <div class="step-card" style="border-radius:0 12px 12px 0;">
+      <div class="step-badge" style="background:#4caf50;color:#000;">STEP 5</div>
+      <h3 style="color:#4caf50;">Head Coach Chat</h3>
+      <div class="items">
+        Open dialogue:<br>
+        <div class="dot-green">Ask "why" about any decision</div>
+        <div class="dot-green">Request swaps or adjustments</div>
+        <div class="dot-green">Challenge reasoning</div>
+        <div class="dot-green">Coach explains trade-offs</div>
+        <br>
+        When satisfied:<br>
+        <div class="dot-boldgreen"><strong>"Lock in plan"</strong></div>
+        <div class="dot-blue">Plan writes to DB</div>
+        <div class="dot-blue">Sessions appear on daily log</div>
+        <div class="dot-blue">Week archived</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PHASE 3: NEW WEEK -->
+<div style="margin-bottom:20px;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+    <span class="phase-label" style="background:#4caf50;color:#000;">NEW WEEK</span>
+    <span class="phase-time">Monday morning, plan is live</span>
+  </div>
+
+  <div class="flow-card" style="max-width:600px;">
+    <div class="items">
+      <div class="dot-green">Daily log shows Monday's suggested session</div>
+      <div class="dot-green">Week overview shows all sessions with sequencing guidance</div>
+      <div class="dot-yellow">Swapping a session shows constraint warnings if applicable</div>
+      <div class="dot-green">Cycle repeats</div>
+    </div>
+  </div>
+</div>
+
+<!-- Data flow summary -->
+<div style="margin-top:40px;background:#0d1117;border:2px solid #4fc3f7;border-radius:12px;padding:24px;">
+  <h3 style="margin-top:0;color:#4fc3f7;">The Single Pipeline</h3>
+  <div style="font-family:monospace;font-size:13px;line-height:2.2;color:#e0e0e0;">
+    <span style="color:#4fc3f7;">Daily Log</span> + <span style="color:#4fc3f7;">Session Tracker</span><br>
+    &nbsp;&nbsp;<span style="color:#666;">──write──▸</span> SQLite (daily_logs + daily_notes + session_logs + session_sets)<br>
+    <br>
+    <span style="color:#ff7043;">Checkin Step 1</span> <span style="color:#666;">──reads──▸</span> all daily data + Garmin JSON<br>
+    <span style="color:#ff7043;">Checkin Step 3</span> <span style="color:#666;">──triage answers──▸</span> appended to checkin context<br>
+    <span style="color:#ff7043;">Checkin Step 4</span> <span style="color:#666;">──full context──▸</span> 7 specialists + Head Coach<br>
+    <span style="color:#4caf50;">Checkin Step 5</span> <span style="color:#666;">──dialogue──▸</span> <span style="color:#ffd54f;">Draft plan refined</span><br>
+    <span style="color:#4caf50;">"Lock In"</span> <span style="color:#666;">──writes──▸</span> plan_items (with sequencing) + weekly_metrics + weekly_log archive<br>
+    <br>
+    <span style="color:#4caf50;">Plan</span> <span style="color:#666;">──feeds──▸</span> <span style="color:#4fc3f7;">Daily Log</span> (next week's sessions)<br>
+    <br>
+    <strong style="color:#fff;">No data entered twice. No gaps. One direction.</strong>
+  </div>
+</div>

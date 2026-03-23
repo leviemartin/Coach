@@ -1,0 +1,135 @@
+<h2>Architecture Approaches: Unified Coaching Flow</h2>
+<p class="subtitle">Three ways to restructure the data flow. All solve the same core problems — they differ in how aggressive the restructuring is.</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Daily Log as Hub — Incremental Refactor</h3>
+      <p style="margin-bottom:12px;">Keep existing pages but rewire the data flow. Daily log becomes the authoritative data source. Checkin pulls from daily logs instead of asking you to re-enter.</p>
+
+      <div style="background:#1a1a2e; padding:16px; border-radius:8px; margin:12px 0; font-family:monospace; font-size:12px; line-height:1.8;">
+        <span style="color:#4fc3f7;">Daily Log</span> (enhanced fields) <span style="color:#666;">──writes──▸</span> <span style="color:#aaa;">SQLite daily_logs</span><br>
+        <span style="color:#4fc3f7;">Session Tracker</span> <span style="color:#666;">──on complete──▸</span> <span style="color:#4fc3f7;">Daily Log</span> (auto-populates)<br>
+        <span style="color:#4fc3f7;">Garmin Sync</span> <span style="color:#666;">──enriches──▸</span> <span style="color:#aaa;">garmin_coach_data.json</span><br>
+        <span style="color:#ff7043;">Checkin</span> <span style="color:#666;">──reads all──▸</span> <span style="color:#aaa;">daily_logs + sessions + Garmin</span><br>
+        <span style="color:#ff7043;">Triage Agent</span> <span style="color:#666;">──asks──▸</span> <span style="color:#ff7043;">You answer</span><br>
+        <span style="color:#ff7043;">Coaches Run</span> <span style="color:#666;">──produce──▸</span> <span style="color:#ffd54f;">Draft Plan</span><br>
+        <span style="color:#ffd54f;">Head Coach Chat</span> <span style="color:#666;">──refine──▸</span> <span style="color:#4caf50;">Committed Plan</span><br>
+        <span style="color:#4caf50;">Plan</span> <span style="color:#666;">──distributes──▸</span> <span style="color:#4fc3f7;">Daily Log</span> (next week's sessions)
+      </div>
+
+      <div style="display:flex; gap:24px; margin-top:12px;">
+        <div style="flex:1;">
+          <h4 style="color:#4caf50; margin-bottom:6px;">Pros</h4>
+          <ul style="margin:0; padding-left:18px; font-size:13px;">
+            <li>Least disruption — existing pages stay</li>
+            <li>Checkin form simplifies (fewer manual fields)</li>
+            <li>Can ship incrementally</li>
+            <li>Session tracker unchanged</li>
+          </ul>
+        </div>
+        <div style="flex:1;">
+          <h4 style="color:#ef5350; margin-bottom:6px;">Cons</h4>
+          <ul style="margin:0; padding-left:18px; font-size:13px;">
+            <li>Still 4 separate pages — navigation overhead</li>
+            <li>Plan page becomes redundant but lingers</li>
+            <li>Triage + dialogue bolted onto existing checkin flow</li>
+            <li>Data model patched, not redesigned</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Daily Log as Hub — Full Consolidation</h3>
+      <p style="margin-bottom:12px;">Daily log becomes THE page you use every day. Plan view is embedded. Session starts from daily log. Checkin is a Sunday mode of the daily log, not a separate page. Two primary pages: <strong>Daily Log</strong> (daily + weekly + checkin) and <strong>Session Tracker</strong> (in-gym).</p>
+
+      <div style="background:#1a1a2e; padding:16px; border-radius:8px; margin:12px 0; font-family:monospace; font-size:12px; line-height:1.8;">
+        <span style="color:#ffd54f;">DAILY LOG PAGE</span> <span style="color:#666;">(your daily home)</span><br>
+        <span style="color:#666;">├─</span> <span style="color:#4fc3f7;">Day View</span>: today's session + checklist + notes <span style="color:#666;">(Mon-Sun)</span><br>
+        <span style="color:#666;">├─</span> <span style="color:#4fc3f7;">Week Overview</span>: expandable plan grid + compliance <span style="color:#666;">(always accessible)</span><br>
+        <span style="color:#666;">├─</span> <span style="color:#ff7043;">Sunday Checkin Mode</span>: review + subjective inputs + triage Q&A <span style="color:#666;">(20:00+)</span><br>
+        <span style="color:#666;">├─</span> <span style="color:#ff7043;">Coach Synthesis</span>: specialist outputs + Head Coach draft <span style="color:#666;">(after submit)</span><br>
+        <span style="color:#666;">└─</span> <span style="color:#ffd54f;">Head Coach Chat</span>: dialogue + plan refinement + commit <span style="color:#666;">(until satisfied)</span><br>
+        <br>
+        <span style="color:#ffd54f;">SESSION TRACKER</span> <span style="color:#666;">(in-gym, launched from daily log)</span><br>
+        <span style="color:#666;">└─</span> On complete <span style="color:#666;">──▸</span> writes summary back to daily log
+      </div>
+
+      <div style="display:flex; gap:24px; margin-top:12px;">
+        <div style="flex:1;">
+          <h4 style="color:#4caf50; margin-bottom:6px;">Pros</h4>
+          <ul style="margin:0; padding-left:18px; font-size:13px;">
+            <li>One page to rule them all — minimal navigation</li>
+            <li>Checkin is a natural weekly view, not a separate flow</li>
+            <li>Data flows in one direction: daily → weekly → coaches</li>
+            <li>Plan embedded = no redundant page</li>
+            <li>Feels cohesive — everything about your training life in one place</li>
+          </ul>
+        </div>
+        <div style="flex:1;">
+          <h4 style="color:#ef5350; margin-bottom:6px;">Cons</h4>
+          <ul style="margin:0; padding-left:18px; font-size:13px;">
+            <li>Larger refactor — more work to ship</li>
+            <li>Page complexity grows (day view + week view + checkin mode)</li>
+            <li>Risk of overloading one page with too many responsibilities</li>
+            <li>Need clear mode transitions (daily → weekly → checkin)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Phased Hub — Best of Both</h3>
+      <p style="margin-bottom:12px;">Daily log is the hub (like B), but the checkin stays its own page/route — accessed FROM the daily log when it's Sunday 20:00+. This keeps the daily log focused on daily tasks and the checkin focused on the weekly coaching conversation. Two daily pages, one weekly page.</p>
+
+      <div style="background:#1a1a2e; padding:16px; border-radius:8px; margin:12px 0; font-family:monospace; font-size:12px; line-height:1.8;">
+        <span style="color:#ffd54f;">DAILY LOG</span> <span style="color:#666;">/log</span><br>
+        <span style="color:#666;">├─</span> Day view with enhanced fields + session summary<br>
+        <span style="color:#666;">├─</span> Expandable week overview (plan grid)<br>
+        <span style="color:#666;">├─</span> Start session button → <span style="color:#4fc3f7;">Session Tracker</span> <span style="color:#666;">/session</span><br>
+        <span style="color:#666;">└─</span> Sunday 20:00+: "Ready to check in" → <span style="color:#ff7043;">Checkin</span> <span style="color:#666;">/checkin</span><br>
+        <br>
+        <span style="color:#ff7043;">CHECKIN</span> <span style="color:#666;">/checkin (redesigned)</span><br>
+        <span style="color:#666;">├─</span> Step 1: Auto-assembled weekly review (from daily logs + sessions + Garmin)<br>
+        <span style="color:#666;">├─</span> Step 2: Subjective inputs only (readiness, satisfaction, free text)<br>
+        <span style="color:#666;">├─</span> Step 3: Triage agent Q&A (3-5 questions)<br>
+        <span style="color:#666;">├─</span> Step 4: Coach synthesis (streaming specialists + Head Coach)<br>
+        <span style="color:#666;">└─</span> Step 5: Head Coach dialogue → commit plan<br>
+        <br>
+        <span style="color:#4fc3f7;">SESSION TRACKER</span> <span style="color:#666;">/session (unchanged)</span><br>
+        <span style="color:#666;">└─</span> On complete → writes to daily log
+      </div>
+
+      <div style="display:flex; gap:24px; margin-top:12px;">
+        <div style="flex:1;">
+          <h4 style="color:#4caf50; margin-bottom:6px;">Pros</h4>
+          <ul style="margin:0; padding-left:18px; font-size:13px;">
+            <li>Clear separation: daily tasks vs. weekly coaching conversation</li>
+            <li>Checkin page is purpose-built for the dialogue flow</li>
+            <li>Daily log stays clean and focused</li>
+            <li>Can ship daily log changes first, then checkin redesign</li>
+            <li>Each page has one job, done well</li>
+          </ul>
+        </div>
+        <div style="flex:1;">
+          <h4 style="color:#ef5350; margin-bottom:6px;">Cons</h4>
+          <ul style="margin:0; padding-left:18px; font-size:13px;">
+            <li>Still two pages to maintain (log + checkin)</li>
+            <li>Navigation between them needs to feel seamless</li>
+            <li>Slightly more surface area than full consolidation</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p style="margin-top:24px; color:#ccc; font-size:14px;"><strong>My recommendation: C (Phased Hub).</strong> It gives you the unified data flow of B without overloading a single page. The daily log is your daily companion — lightweight, fast, focused. The checkin is your weekly coaching session — rich, conversational, purposeful. The session tracker stays what it is — an in-gym tool. Three pages, three clear jobs, one data flow.</p>

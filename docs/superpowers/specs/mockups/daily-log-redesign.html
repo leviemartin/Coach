@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Log — Design Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #f8fafc;
+    color: #0f172a;
+    padding: 24px;
+    line-height: 1.5;
+  }
+
+  /* Typography */
+  h1 { font-size:1.75rem; font-weight:700; letter-spacing:-0.025em; margin-bottom:4px; }
+  h2 { font-size:1.5rem; font-weight:700; letter-spacing:-0.02em; margin-bottom:4px; }
+  h3 { font-size:1.125rem; font-weight:600; letter-spacing:-0.01em; }
+  .subtitle { color:#64748b; font-size:0.8125rem; margin-bottom:20px; }
+  .caption { font-size:0.75rem; color:#64748b; font-weight:500; }
+  .label {
+    font-size:0.6875rem; font-weight:600; text-transform:uppercase;
+    letter-spacing:1px; color:#64748b; margin-bottom:8px;
+  }
+
+  /* Cards — white, outlined, no shadow */
+  .card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card-accent-orange {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #f59e0b;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  .card-accent-blue {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #3b82f6;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  .card-accent-purple {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #8b5cf6;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  .card-accent-green {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #22c55e;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+
+  /* Chips */
+  .chip {
+    display:inline-flex; align-items:center;
+    padding: 2px 10px; border-radius:4px;
+    font-size:0.75rem; font-weight:600;
+  }
+  .chip-filled-blue { background:#dbeafe; color:#1d4ed8; }
+  .chip-filled-green { background:#dcfce7; color:#15803d; }
+  .chip-filled-orange { background:#ffedd5; color:#c2410c; }
+  .chip-filled-purple { background:#ede9fe; color:#6d28d9; }
+  .chip-filled-amber { background:#fef3c7; color:#b45309; }
+  .chip-filled-red { background:#fee2e2; color:#b91c1c; }
+  .chip-filled-teal { background:#ccfbf1; color:#0f766e; }
+  .chip-outlined-green { border:1px solid #22c55e; color:#15803d; background:transparent; }
+  .chip-outlined-amber { border:1px solid #f59e0b; color:#b45309; background:transparent; }
+  .chip-outlined-red { border:1px solid #ef4444; color:#b91c1c; background:transparent; }
+  .chip-outlined-slate { border:1px solid #cbd5e1; color:#64748b; background:transparent; }
+  .chip-week { background:#f1f5f9; color:#0f172a; border:1px solid #e2e8f0; padding:4px 12px; border-radius:6px; font-size:0.8125rem; font-weight:600; }
+
+  /* Buttons */
+  .btn {
+    display:inline-flex; align-items:center; justify-content:center;
+    padding:8px 20px; border-radius:6px; border:none;
+    font-family:inherit; font-size:0.8125rem; font-weight:600;
+    cursor:pointer; text-transform:none;
+  }
+  .btn-primary { background:#3b82f6; color:#fff; }
+  .btn-success { background:#22c55e; color:#fff; }
+  .btn-outlined { background:transparent; border:1px solid #e2e8f0; color:#64748b; }
+  .btn-indigo {
+    background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+    color:#e0e7ff; border:none;
+  }
+
+  /* Checkbox row */
+  .check-row {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 0; border-bottom:1px solid #f1f5f9;
+  }
+  .check-row:last-child { border-bottom:none; }
+  .check-label { display:flex; align-items:center; gap:10px; font-size:0.9375rem; color:#0f172a; }
+  .checkbox {
+    width:20px; height:20px; border-radius:4px; border:2px solid #cbd5e1;
+    background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+  .checkbox.checked { background:#22c55e; border-color:#22c55e; }
+  .checkbox.checked::after { content:"✓"; color:#fff; font-size:12px; font-weight:700; }
+
+  /* Session card */
+  .session-card {
+    background:#f8fafc; border:1px solid #3b82f6; border-radius:8px;
+    padding:14px 16px; margin:8px 0;
+  }
+  .session-card-available {
+    background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px;
+    padding:10px 16px; margin:6px 0;
+  }
+  .session-card-available:hover { border-color:#3b82f6; }
+  .session-card-warning {
+    background:#fffbeb; border:1px solid #f59e0b; border-radius:8px;
+    padding:10px 16px; margin:6px 0;
+  }
+  .session-card-done {
+    background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px;
+    padding:10px 16px; margin:6px 0; opacity:0.45;
+  }
+
+  /* Week grid */
+  .week-grid {
+    display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin:12px 0;
+  }
+  .week-cell {
+    background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px;
+    padding:10px 6px; text-align:center;
+  }
+  .week-cell.today { border-color:#3b82f6; background:#eff6ff; }
+  .week-cell.done { border-color:#22c55e; background:#f0fdf4; }
+  .week-cell.family { opacity:0.4; }
+  .week-cell .day-name { font-size:0.75rem; font-weight:600; margin-bottom:4px; color:#0f172a; }
+  .week-cell .day-session { font-size:0.625rem; color:#64748b; margin-bottom:2px; }
+  .week-cell .day-status { font-size:0.625rem; }
+
+  /* Note tag */
+  .note-tag {
+    background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px;
+    padding:8px 12px; margin:4px 0; display:flex; align-items:center; gap:8px;
+  }
+
+  /* Sleep card */
+  .sleep-card {
+    background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px;
+    padding:12px 16px; margin-top:12px;
+  }
+
+  /* Sequencing note */
+  .seq-note {
+    padding-left:10px; border-left:2px solid #e2e8f0; margin-bottom:8px;
+    font-size:0.8125rem; color:#64748b; font-style:italic;
+  }
+
+  /* Session summary */
+  .session-summary {
+    background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px;
+    padding:12px; margin-top:8px;
+  }
+
+  /* Layout */
+  .two-col { display:flex; gap:20px; flex-wrap:wrap; margin-bottom:32px; }
+  .col { flex:1; min-width:320px; }
+  .flex-between { display:flex; justify-content:space-between; align-items:center; }
+  .flex-center { display:flex; align-items:center; gap:8px; }
+  .mt-1 { margin-top:8px; }
+  .mt-2 { margin-top:16px; }
+  .mb-1 { margin-bottom:8px; }
+  .mb-2 { margin-bottom:16px; }
+
+  /* Divider */
+  hr { border:none; border-top:1px solid #e2e8f0; margin:16px 0; }
+
+  /* View badge */
+  .view-badge {
+    display:inline-flex; align-items:center; gap:6px;
+    padding:4px 12px; border-radius:4px; font-size:0.6875rem;
+    font-weight:600; text-transform:uppercase; letter-spacing:0.5px;
+    margin-bottom:12px;
+  }
+  .view-badge-blue { background:#dbeafe; color:#1d4ed8; border:1px solid #bfdbfe; }
+  .view-badge-amber { background:#fef3c7; color:#b45309; border:1px solid #fde68a; }
+  .view-badge-green { background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; }
+
+  /* Energy/pain selectors */
+  .tap-btn {
+    width:36px; height:34px; border-radius:4px; border:1px solid #e2e8f0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:13px; color:#64748b; cursor:pointer; background:#fff;
+  }
+  .tap-btn.selected-amber { background:#fef3c7; border-color:#f59e0b; color:#b45309; font-weight:600; }
+  .tap-btn.selected-green { background:#dcfce7; border-color:#22c55e; color:#15803d; font-weight:600; }
+</style>
+</head>
+<body>
+
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">
+  <h1>Daily Log</h1>
+  <span class="chip-week">Week 13</span>
+</div>
+<p class="subtitle">Mockups using the Coach app design language. Three states shown below.</p>
+
+<!-- ====== DAY VIEW ====== -->
+<div class="two-col">
+  <div class="col">
+    <div class="view-badge view-badge-blue">Default View — /log</div>
+
+    <div class="card">
+      <div class="flex-between mb-2">
+        <div>
+          <div class="flex-center">
+            <span style="color:#94a3b8;cursor:pointer;font-size:1.2rem;">&#9664;</span>
+            <h2>Wednesday, Mar 25</h2>
+            <span style="color:#94a3b8;cursor:pointer;font-size:1.2rem;">&#9654;</span>
+          </div>
+          <span class="caption">Week 13</span>
+        </div>
+      </div>
+
+      <!-- Today's session -->
+      <div class="session-card">
+        <div class="flex-between">
+          <div class="flex-center">
+            <span class="chip chip-filled-blue">Strength</span>
+            <span style="font-weight:600;">Upper Pull & Grip</span>
+          </div>
+          <button class="btn btn-success">Start Session</button>
+        </div>
+        <div class="mt-1 caption">
+          Suggested for today &middot; <span style="color:#3b82f6;cursor:pointer;">Swap session &#9662;</span>
+        </div>
+      </div>
+
+      <!-- Sleep disruption — LAST NIGHT -->
+      <div class="sleep-card">
+        <div class="flex-between">
+          <div>
+            <div class="label" style="margin-bottom:4px;">How was last night?</div>
+            <div class="flex-center">
+              <span class="chip chip-filled-amber">Kids woke up</span>
+              <span class="caption" style="margin-left:4px;">→ saved to Tue night</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr>
+
+      <!-- Energy + Pain -->
+      <div class="label">How are you feeling?</div>
+      <div style="display:flex;gap:20px;margin-bottom:16px;">
+        <div style="flex:1;">
+          <div class="caption mb-1">Energy</div>
+          <div style="display:flex;gap:4px;">
+            <div class="tap-btn">1</div>
+            <div class="tap-btn">2</div>
+            <div class="tap-btn selected-amber">3</div>
+            <div class="tap-btn">4</div>
+            <div class="tap-btn">5</div>
+          </div>
+        </div>
+        <div style="flex:1;">
+          <div class="caption mb-1">Pain</div>
+          <div style="display:flex;gap:4px;">
+            <div class="tap-btn selected-green" style="width:auto;padding:0 10px;font-size:11px;">None</div>
+            <div class="tap-btn" style="width:auto;padding:0 10px;font-size:11px;">Mild</div>
+            <div class="tap-btn" style="width:auto;padding:0 10px;font-size:11px;">Mod</div>
+            <div class="tap-btn" style="width:auto;padding:0 10px;font-size:11px;">Stop</div>
+          </div>
+        </div>
+      </div>
+
+      <hr>
+
+      <!-- Checklist -->
+      <div class="label">Daily Checklist</div>
+      <div class="check-row">
+        <div class="check-label"><div class="checkbox checked"></div> Core work</div>
+        <span class="chip chip-outlined-amber">2/3</span>
+      </div>
+      <div class="check-row">
+        <div class="check-label"><div class="checkbox"></div> Mobility work</div>
+        <span class="chip chip-outlined-green">5/7</span>
+      </div>
+      <div class="check-row">
+        <div class="check-label"><div class="checkbox checked"></div> No food after 20:00</div>
+        <span class="chip chip-outlined-green">6/7</span>
+      </div>
+      <div class="check-row">
+        <div class="check-label"><div class="checkbox"></div> Hydration logged</div>
+        <span class="chip chip-outlined-red">0/7</span>
+      </div>
+
+      <hr>
+
+      <!-- Lights Out -->
+      <div class="label">Lights Out</div>
+      <div style="display:flex;gap:12px;align-items:center;">
+        <button class="btn btn-indigo" style="flex:1;">&#9790;&ensp;Lights Out</button>
+        <span class="caption">Not logged yet</span>
+      </div>
+
+      <hr>
+
+      <!-- Notes -->
+      <div class="label">Notes</div>
+      <div class="note-tag">
+        <span class="chip chip-filled-orange" style="font-size:0.625rem;">training</span>
+        <span style="font-size:0.8125rem;color:#0f172a;">Shoulder felt tight on warm-up sets</span>
+      </div>
+      <div style="margin-top:8px;">
+        <span style="color:#3b82f6;font-size:0.8125rem;cursor:pointer;">+ Add note</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== SWAP MODE ====== -->
+  <div class="col">
+    <div class="view-badge view-badge-amber">Swap Mode — session picker expanded</div>
+
+    <div class="card">
+      <div class="flex-between mb-2">
+        <div>
+          <h2>Wednesday, Mar 25</h2>
+          <span class="caption">Week 13</span>
+        </div>
+      </div>
+
+      <div class="label">Pick a session for today</div>
+
+      <div class="session-card">
+        <div class="flex-between">
+          <div class="flex-center">
+            <span class="chip chip-filled-blue">Strength</span>
+            <span style="font-size:0.9375rem;">Upper Pull & Grip</span>
+          </div>
+          <span class="chip chip-outlined-green">Suggested</span>
+        </div>
+        <div class="caption mt-1">Sequence #3 &middot; Best after rest or lower body day</div>
+      </div>
+
+      <div class="session-card-available">
+        <div class="flex-between">
+          <div class="flex-center">
+            <span class="chip chip-filled-orange">Cardio</span>
+            <span style="font-size:0.9375rem;">Rower Sprints + Zone 2</span>
+          </div>
+          <span class="chip chip-outlined-slate">Available</span>
+        </div>
+        <div class="caption mt-1">Sequence #4 &middot; Needs 48h before next heavy legs</div>
+      </div>
+
+      <div class="session-card-warning">
+        <div class="flex-between">
+          <div class="flex-center">
+            <span class="chip chip-filled-blue">Strength</span>
+            <span style="font-size:0.9375rem;">Lower Heavy (Legs)</span>
+          </div>
+          <span class="chip chip-filled-amber">&#9888; Warning</span>
+        </div>
+        <div style="font-size:0.75rem;color:#b45309;margin-top:6px;">
+          Yesterday was Upper Push — coach recommends 24h gap before heavy compound day
+        </div>
+      </div>
+
+      <div class="session-card-done">
+        <div class="flex-between">
+          <div class="flex-center">
+            <span class="chip chip-filled-green">Strength</span>
+            <span style="font-size:0.9375rem;">Upper Push</span>
+          </div>
+          <span class="chip chip-outlined-green">Done Mon</span>
+        </div>
+      </div>
+
+      <div class="session-card-done">
+        <div class="flex-between">
+          <div class="flex-center">
+            <span class="chip chip-filled-teal">Cardio</span>
+            <span style="font-size:0.9375rem;">StairMaster Zone 4</span>
+          </div>
+          <span class="chip chip-outlined-green">Done Tue</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Completed session summary -->
+    <div class="view-badge view-badge-green">After Session — auto-populated</div>
+    <div class="card-accent-green">
+      <div class="flex-between mb-1">
+        <div class="flex-center">
+          <span class="chip chip-filled-blue">Strength</span>
+          <h3>Upper Pull & Grip</h3>
+        </div>
+        <span class="chip chip-filled-green">92%</span>
+      </div>
+      <div class="caption mb-1">Completed at 19:45 &middot; 52 min</div>
+
+      <div class="session-summary">
+        <div class="caption mb-1" style="cursor:pointer;">&#9662; Session details</div>
+        <div style="font-size:0.75rem;color:#64748b;line-height:1.8;">
+          Barbell Row: 3x8 @ 65kg &#10003;<br>
+          Lat Pulldown: 3x10 @ 55kg &#10003;<br>
+          Pull-ups: 3x3 @ BW <span style="color:#15803d;">+1 rep vs last week</span><br>
+          Dead Hang: 3x30s &#10003;<br>
+          Farmer Carry: 3x40m @ 32kg &#10003;<br>
+          <span style="color:#b91c1c;">Skipped: Face Pulls (shoulder tight)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== WEEK OVERVIEW ====== -->
+<div class="view-badge view-badge-green">Week Overview — expandable from daily log</div>
+
+<div class="card-accent-blue" style="border-radius:12px;">
+  <div class="flex-between mb-2">
+    <h3>Week 13 Plan</h3>
+    <span class="chip chip-outlined-green">3/5 sessions done</span>
+  </div>
+
+  <div class="week-grid">
+    <div class="week-cell done">
+      <div class="day-name" style="color:#15803d;">Mon</div>
+      <div class="day-session">Upper Push</div>
+      <div class="day-status" style="color:#15803d;">&#10003; Done</div>
+    </div>
+    <div class="week-cell done">
+      <div class="day-name" style="color:#15803d;">Tue</div>
+      <div class="day-session">StairMaster Z4</div>
+      <div class="day-status" style="color:#15803d;">&#10003; Done</div>
+    </div>
+    <div class="week-cell today">
+      <div class="day-name" style="color:#1d4ed8;">Wed</div>
+      <div class="day-session">Upper Pull</div>
+      <div class="day-status" style="color:#1d4ed8;">&#9654; Today</div>
+    </div>
+    <div class="week-cell">
+      <div class="day-name">Thu</div>
+      <div class="day-session">Rower Sprints</div>
+      <div class="day-status caption">Seq #4</div>
+    </div>
+    <div class="week-cell">
+      <div class="day-name">Fri</div>
+      <div class="day-session">Lower Heavy</div>
+      <div class="day-status caption">Seq #5</div>
+    </div>
+    <div class="week-cell family">
+      <div class="day-name">Sat</div>
+      <div class="day-session">Family Day</div>
+      <div class="day-status">&nbsp;</div>
+    </div>
+    <div class="week-cell done">
+      <div class="day-name" style="color:#15803d;">Sun</div>
+      <div class="day-session">Ruck</div>
+      <div class="day-status" style="color:#15803d;">&#10003; Done</div>
+    </div>
+  </div>
+
+  <hr>
+
+  <div class="label">Sequencing Guidance</div>
+  <div class="seq-note">"Upper Pull needs a rest or lower body day before it — don't pair with Upper Push back-to-back."</div>
+  <div class="seq-note">"Rower Sprints need 48h before Lower Heavy for CNS recovery."</div>
+  <div class="seq-note">"Lower Heavy can be swapped to any day with 24h clearance from compounds."</div>
+
+  <div style="text-align:center;margin-top:16px;">
+    <span class="caption">Tap any day to swap sessions. Constraints update automatically.</span>
+  </div>
+</div>
+
+</body>
+</html>

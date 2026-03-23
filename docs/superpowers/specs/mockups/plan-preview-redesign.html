@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan Preview — Redesigned</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #f8fafc;
+    color: #0f172a;
+    padding: 24px;
+    line-height: 1.5;
+  }
+  h1 { font-size:1.75rem; font-weight:700; letter-spacing:-0.025em; margin-bottom:4px; }
+  h2 { font-size:1.5rem; font-weight:700; letter-spacing:-0.02em; }
+  h3 { font-size:1.125rem; font-weight:600; letter-spacing:-0.01em; }
+  h4 { font-size:0.9375rem; font-weight:600; }
+  .subtitle { color:#64748b; font-size:0.8125rem; margin-bottom:20px; }
+  .caption { font-size:0.75rem; color:#64748b; font-weight:500; }
+  .label {
+    font-size:0.6875rem; font-weight:600; text-transform:uppercase;
+    letter-spacing:1px; color:#64748b; margin-bottom:8px;
+  }
+  .chip {
+    display:inline-flex; align-items:center;
+    padding: 2px 10px; border-radius:4px;
+    font-size:0.75rem; font-weight:600;
+  }
+  .chip-filled-blue { background:#dbeafe; color:#1d4ed8; }
+  .chip-filled-green { background:#dcfce7; color:#15803d; }
+  .chip-filled-orange { background:#ffedd5; color:#c2410c; }
+  .chip-filled-teal { background:#ccfbf1; color:#0f766e; }
+  .chip-filled-purple { background:#ede9fe; color:#6d28d9; }
+  .chip-filled-amber { background:#fef3c7; color:#b45309; }
+  .chip-filled-slate { background:#f1f5f9; color:#475569; }
+  .chip-outlined-green { border:1px solid #22c55e; color:#15803d; background:transparent; }
+  .chip-outlined-slate { border:1px solid #cbd5e1; color:#64748b; background:transparent; }
+  .chip-week { background:#f1f5f9; color:#0f172a; border:1px solid #e2e8f0; padding:4px 12px; border-radius:6px; font-size:0.8125rem; font-weight:600; }
+
+  /* Session day card */
+  .day-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .day-card:hover { border-color:#3b82f6; }
+  .day-header {
+    display:flex; justify-content:space-between; align-items:center;
+    padding:16px 20px;
+    cursor:pointer;
+  }
+  .day-header-left { display:flex; align-items:center; gap:12px; }
+  .day-name-big { font-size:0.9375rem; font-weight:700; min-width:40px; }
+  .day-date { font-size:0.75rem; color:#64748b; }
+  .day-detail {
+    border-top:1px solid #e2e8f0;
+    padding:16px 20px;
+    background:#fafbfc;
+  }
+
+  /* Exercise block */
+  .exercise-group {
+    background:#ffffff; border:1px solid #e2e8f0; border-radius:8px;
+    padding:12px 16px; margin-bottom:8px;
+  }
+  .exercise-group-header {
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:6px;
+  }
+  .exercise-row {
+    display:flex; justify-content:space-between; align-items:center;
+    padding:4px 0;
+    font-size:0.8125rem;
+  }
+  .exercise-name { color:#0f172a; }
+  .exercise-detail { color:#64748b; font-size:0.75rem; }
+
+  .superset-indicator {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:22px; height:22px; border-radius:4px;
+    font-size:0.6875rem; font-weight:700; margin-right:8px;
+  }
+  .superset-a { background:#dbeafe; color:#1d4ed8; }
+  .superset-b { background:#ede9fe; color:#6d28d9; }
+  .superset-c { background:#ffedd5; color:#c2410c; }
+  .superset-d { background:#fef3c7; color:#b45309; }
+
+  /* Coach cue */
+  .coach-cue {
+    background:#fffbeb; border:1px solid #fde68a; border-radius:6px;
+    padding:10px 14px; margin-top:12px;
+    font-size:0.8125rem; color:#92400e;
+  }
+  .coach-cue::before {
+    content:"Coach's Note: ";
+    font-weight:600;
+  }
+
+  /* Sequencing note */
+  .seq-chip {
+    display:inline-flex; align-items:center; gap:4px;
+    padding:2px 8px; border-radius:4px;
+    font-size:0.6875rem; font-weight:600;
+    background:#f1f5f9; color:#64748b; border:1px solid #e2e8f0;
+  }
+
+  /* Rest / Family card */
+  .rest-card {
+    background:#ffffff; border:1px solid #e2e8f0; border-radius:12px;
+    padding:16px 20px; margin-bottom:12px; opacity:0.6;
+  }
+
+  .flex-center { display:flex; align-items:center; gap:8px; }
+  .flex-between { display:flex; justify-content:space-between; align-items:center; }
+  hr { border:none; border-top:1px solid #e2e8f0; margin:12px 0; }
+
+  .view-badge {
+    display:inline-flex; padding:4px 12px; border-radius:4px; font-size:0.6875rem;
+    font-weight:600; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px;
+  }
+  .view-badge-blue { background:#dbeafe; color:#1d4ed8; border:1px solid #bfdbfe; }
+  .view-badge-amber { background:#fef3c7; color:#b45309; border:1px solid #fde68a; }
+
+  .btn {
+    display:inline-flex; align-items:center; justify-content:center;
+    padding:8px 20px; border-radius:6px; border:none;
+    font-family:inherit; font-size:0.8125rem; font-weight:600;
+    cursor:pointer; text-transform:none;
+  }
+  .btn-success { background:#22c55e; color:#fff; }
+  .btn-outlined { background:transparent; border:1px solid #e2e8f0; color:#64748b; }
+</style>
+</head>
+<body>
+
+<div class="view-badge view-badge-amber">Current — raw table output</div>
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:16px;margin-bottom:32px;overflow-x:auto;">
+  <table style="width:100%;border-collapse:collapse;font-size:12px;color:#64748b;">
+    <tr style="border-bottom:1px solid #e2e8f0;">
+      <td style="padding:8px;vertical-align:top;width:40px;">&#9744;</td>
+      <td style="padding:8px;vertical-align:top;width:70px;">Mon<br>Mar 23</td>
+      <td style="padding:8px;vertical-align:top;width:90px;">Strength + Cardio</td>
+      <td style="padding:8px;vertical-align:top;width:90px;">Upper Push + Aerobic</td>
+      <td style="padding:8px;vertical-align:top;width:80px;">DB Bench 20kg</td>
+      <td style="padding:8px;vertical-align:top;font-size:11px;line-height:1.6;">
+        W1: 5min bike Zone 2<br>W2: Band pull-aparts 2x20<br><br>
+        A1: DB Bench Press 3x12 @20kg<br>A2: Face Pulls 3x15 @15kg<br>[3 rounds, 90s rest]<br><br>
+        B1: DB Shoulder Press 3x10 @14kg<br>B2: Lateral Raises 3x12 @5kg<br>[3 rounds, 90s rest]<br><br>
+        C1: Push-ups 3x12<br>C2: Plank Hold 3x45s<br>[3 rounds, 60s rest]<br><br>
+        D1: Tricep Rope Pushdown 3x15 @20kg<br><br>
+        Cardio: StairMaster Zone 4: 10min warmup Z2, 4x3min Z4 / 2min Z2, 5min cooldown<br><br>
+        CD1: Chest doorway stretch 3x30s<br>CD2: Shoulder dislocates 2x15
+      </td>
+      <td style="padding:8px;vertical-align:top;font-size:11px;">80% effort today. Focus on movement quality. If any set feels too heavy, drop weight 10%. Extended rest OK.</td>
+      <td style="padding:8px;vertical-align:top;width:60px;"></td>
+    </tr>
+  </table>
+  <div style="text-align:center;margin-top:8px;font-size:11px;color:#94a3b8;">Dense, hard to scan, no visual hierarchy, exercise codes require decoding</div>
+</div>
+
+<div class="view-badge view-badge-blue">Redesigned — card-based plan preview</div>
+
+<div class="flex-between" style="margin-bottom:16px;">
+  <div class="flex-center">
+    <h1>Week 13</h1>
+    <span class="chip-week">Mar 23 — 29, 2026</span>
+  </div>
+  <span class="chip chip-outlined-green">Draft — review before locking in</span>
+</div>
+
+<!-- Monday -->
+<div class="day-card">
+  <div class="day-header">
+    <div class="day-header-left">
+      <div>
+        <span class="day-name-big">Mon</span>
+        <span class="day-date">Mar 23</span>
+      </div>
+      <span class="chip chip-filled-blue">Strength + Cardio</span>
+      <span style="font-weight:600;">Upper Push + Aerobic</span>
+    </div>
+    <div class="flex-center">
+      <span class="seq-chip">Seq #1</span>
+      <span class="caption">&#9662; Details</span>
+    </div>
+  </div>
+
+  <div class="day-detail">
+    <!-- Coach cue at top -->
+    <div class="coach-cue">80% effort today. Focus on movement quality. If any set feels too heavy, drop weight 10%. Extended rest OK.</div>
+
+    <div style="margin-top:16px;">
+      <!-- Warm-up -->
+      <div class="label">Warm-up</div>
+      <div class="exercise-group" style="border-color:#e2e8f0;background:#fafbfc;">
+        <div class="exercise-row">
+          <span class="exercise-name">Bike</span>
+          <span class="exercise-detail">5 min &middot; Zone 2</span>
+        </div>
+        <div class="exercise-row">
+          <span class="exercise-name">Band Pull-aparts</span>
+          <span class="exercise-detail">2 x 20</span>
+        </div>
+      </div>
+
+      <!-- Superset A -->
+      <div class="label" style="margin-top:12px;">Superset A <span style="color:#94a3b8;font-weight:400;text-transform:none;letter-spacing:0;">— 3 rounds, 90s rest</span></div>
+      <div class="exercise-group">
+        <div class="exercise-row">
+          <div class="flex-center">
+            <span class="superset-indicator superset-a">A1</span>
+            <span class="exercise-name">DB Bench Press</span>
+          </div>
+          <span class="exercise-detail">3 x 12 @ <strong style="color:#0f172a;">20kg</strong></span>
+        </div>
+        <div class="exercise-row">
+          <div class="flex-center">
+            <span class="superset-indicator superset-a">A2</span>
+            <span class="exercise-name">Face Pulls</span>
+          </div>
+          <span class="exercise-detail">3 x 15 @ <strong style="color:#0f172a;">15kg</strong></span>
+        </div>
+      </div>
+
+      <!-- Superset B -->
+      <div class="label" style="margin-top:12px;">Superset B <span style="color:#94a3b8;font-weight:400;text-transform:none;letter-spacing:0;">— 3 rounds, 90s rest</span></div>
+      <div class="exercise-group">
+        <div class="exercise-row">
+          <div class="flex-center">
+            <span class="superset-indicator superset-b">B1</span>
+            <span class="exercise-name">DB Shoulder Press</span>
+          </div>
+          <span class="exercise-detail">3 x 10 @ <strong style="color:#0f172a;">14kg</strong></span>
+        </div>
+        <div class="exercise-row">
+          <div class="flex-center">
+            <span class="superset-indicator superset-b">B2</span>
+            <span class="exercise-name">Lateral Raises</span>
+          </div>
+          <span class="exercise-detail">3 x 12 @ <strong style="color:#0f172a;">5kg</strong></span>
+        </div>
+      </div>
+
+      <!-- Superset C -->
+      <div class="label" style="margin-top:12px;">Superset C <span style="color:#94a3b8;font-weight:400;text-transform:none;letter-spacing:0;">— 3 rounds, 60s rest</span></div>
+      <div class="exercise-group">
+        <div class="exercise-row">
+          <div class="flex-center">
+            <span class="superset-indicator superset-c">C1</span>
+            <span class="exercise-name">Push-ups</span>
+          </div>
+          <span class="exercise-detail">3 x 12</span>
+        </div>
+        <div class="exercise-row">
+          <div class="flex-center">
+            <span class="superset-indicator superset-c">C2</span>
+            <span class="exercise-name">Plank Hold</span>
+          </div>
+          <span class="exercise-detail">3 x 45s</span>
+        </div>
+      </div>
+
+      <!-- Standalone D -->
+      <div class="label" style="margin-top:12px;">Isolation</div>
+      <div class="exercise-group">
+        <div class="exercise-row">
+          <div class="flex-center">
+            <span class="superset-indicator superset-d">D1</span>
+            <span class="exercise-name">Tricep Rope Pushdown</span>
+          </div>
+          <span class="exercise-detail">3 x 15 @ <strong style="color:#0f172a;">20kg</strong></span>
+        </div>
+      </div>
+
+      <!-- Cardio -->
+      <div class="label" style="margin-top:12px;">Cardio</div>
+      <div class="exercise-group" style="border-color:#14b8a6;">
+        <div class="exercise-group-header">
+          <div class="flex-center">
+            <span class="chip chip-filled-teal" style="font-size:0.625rem;">StairMaster</span>
+            <span class="exercise-name">Zone 4 Intervals</span>
+          </div>
+          <span class="exercise-detail">~30 min total</span>
+        </div>
+        <div style="font-size:0.75rem;color:#64748b;line-height:1.8;padding-top:4px;border-top:1px solid #f1f5f9;margin-top:4px;">
+          10 min warm-up Zone 2<br>
+          4 x 3 min Zone 4 / 2 min Zone 2 recovery<br>
+          5 min cooldown
+        </div>
+      </div>
+
+      <!-- Cool-down -->
+      <div class="label" style="margin-top:12px;">Cool-down</div>
+      <div class="exercise-group" style="border-color:#e2e8f0;background:#fafbfc;">
+        <div class="exercise-row">
+          <span class="exercise-name">Chest Doorway Stretch</span>
+          <span class="exercise-detail">3 x 30s</span>
+        </div>
+        <div class="exercise-row">
+          <span class="exercise-name">Shoulder Dislocates</span>
+          <span class="exercise-detail">2 x 15</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tuesday -->
+<div class="day-card">
+  <div class="day-header">
+    <div class="day-header-left">
+      <div>
+        <span class="day-name-big">Tue</span>
+        <span class="day-date">Mar 24</span>
+      </div>
+      <span class="chip chip-filled-blue">Strength</span>
+      <span style="font-weight:600;">Upper Pull & Grip</span>
+    </div>
+    <div class="flex-center">
+      <span class="seq-chip">Seq #2 &middot; not after Upper Push</span>
+      <span class="caption">&#9654; Expand</span>
+    </div>
+  </div>
+</div>
+
+<!-- Wednesday -->
+<div class="day-card">
+  <div class="day-header">
+    <div class="day-header-left">
+      <div>
+        <span class="day-name-big">Wed</span>
+        <span class="day-date">Mar 25</span>
+      </div>
+      <span class="chip chip-filled-orange">Cardio</span>
+      <span style="font-weight:600;">Rower Sprints + Zone 2</span>
+    </div>
+    <div class="flex-center">
+      <span class="seq-chip">Seq #3 &middot; 48h before heavy legs</span>
+      <span class="caption">&#9654; Expand</span>
+    </div>
+  </div>
+</div>
+
+<!-- Thursday -->
+<div class="day-card">
+  <div class="day-header">
+    <div class="day-header-left">
+      <div>
+        <span class="day-name-big">Thu</span>
+        <span class="day-date">Mar 26</span>
+      </div>
+      <span class="chip chip-filled-blue">Strength</span>
+      <span style="font-weight:600;">Lower Heavy (Legs)</span>
+    </div>
+    <div class="flex-center">
+      <span class="seq-chip">Seq #4 &middot; 24h after compounds</span>
+      <span class="caption">&#9654; Expand</span>
+    </div>
+  </div>
+</div>
+
+<!-- Friday -->
+<div class="day-card">
+  <div class="day-header">
+    <div class="day-header-left">
+      <div>
+        <span class="day-name-big">Fri</span>
+        <span class="day-date">Mar 27</span>
+      </div>
+      <span class="chip chip-filled-purple">Recovery</span>
+      <span style="font-weight:600;">Active Recovery Walk</span>
+    </div>
+    <div class="flex-center">
+      <span class="seq-chip">Flexible</span>
+      <span class="caption">&#9654; Expand</span>
+    </div>
+  </div>
+</div>
+
+<!-- Saturday -->
+<div class="rest-card">
+  <div class="flex-between">
+    <div class="flex-center">
+      <span class="day-name-big" style="color:#94a3b8;">Sat</span>
+      <span class="day-date">Mar 28</span>
+      <span class="chip chip-filled-slate">Family Day</span>
+    </div>
+  </div>
+</div>
+
+<!-- Sunday -->
+<div class="day-card">
+  <div class="day-header">
+    <div class="day-header-left">
+      <div>
+        <span class="day-name-big">Sun</span>
+        <span class="day-date">Mar 29</span>
+      </div>
+      <span class="chip chip-filled-teal">Ruck</span>
+      <span style="font-weight:600;">Sunday Ruck — 90 min, 7.5kg vest</span>
+    </div>
+    <div class="flex-center">
+      <span class="seq-chip">Fixed — Sunday</span>
+      <span class="caption">&#9654; Expand</span>
+    </div>
+  </div>
+</div>
+
+<hr style="margin:32px 0;">
+
+<div style="text-align:center;">
+  <div class="caption" style="margin-bottom:12px;">Satisfied with this plan?</div>
+  <div class="flex-center" style="justify-content:center;gap:12px;">
+    <button class="btn btn-outlined">Discuss with Head Coach</button>
+    <button class="btn btn-success">Lock In Plan</button>
+  </div>
+</div>
+
+</body>
+</html>
