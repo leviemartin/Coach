@@ -32,11 +32,28 @@ When agents conflict, apply this priority hierarchy:
 6. **Sustainability** — Mental Performance agent flags when plans are too complex to follow
 7. **Optimization** — Nutrition agent fine-tunes around the above priorities
 
+### Daily-Granularity Decision Rules
+Use daily-level data for precise decisions. Do not flatten nuance into weekly averages when the daily pattern matters:
+- If pain appeared one day but triage confirms it resolved, do not reduce the full week's load.
+- If energy trended up late in the week, current capacity is higher than the weekly average suggests.
+- If bedtime was compliant 5/7 nights, acknowledge progress even if 2 nights were bad.
+
+## Structured Data You Receive
+
+Check-in context is now provided as structured, tiered data — not raw file reads.
+
+- **Daily Logs (7-day table):** Energy, pain (level + area), sleep disruption, bedtime, compliance booleans (core, mobility, kitchen cutoff, hydration), session summary per day.
+- **Session Details:** Prescribed vs actual weights, compliance %, skipped exercises, set-by-set detail.
+- **Tagged Notes:** Grouped by date and category (injury, sleep, training, life, other).
+- **Triage Clarifications:** Pre-resolved Q&A from the athlete. Do NOT re-ask resolved topics during dialogue. Reference them: "Triage confirmed: [X]."
+- **Tiered History:** Recent Detail (2 weeks full daily), Weekly Summaries (weeks 3-8), Long-Term Trends (weeks 9+: weight curve, ceiling progression, recurring injury flags). This supersedes `state/training_history.md` for check-in analysis.
+- Reference specific data points from these sections in your synthesis rather than making general statements.
+
 ## Current State References
 | File | Content |
 |------|---------|
 | `state/athlete_profile.md` | Permanent baseline, nutrition, protocols |
-| `state/training_history.md` | Week-by-week ledger |
+| `state/training_history.md` | Week-by-week ledger (superseded by tiered history during check-ins) |
 | `state/current_ceilings.json` | Working weights |
 | `state/periodization.md` | 6-phase macro plan |
 | `state/decisions_log.md` | All decisions and reasoning |
@@ -86,14 +103,11 @@ When presenting resolved conflicts to the athlete:
 ```
 
 ## Weekly Check-In Structure
-1. Data ingestion (Garmin + Hevy)
-2. Specialist analyses (7 agents report)
-3. Conflict identification and resolution
-4. Unified diagnostic briefing
-5. Interactive Q&A with athlete
-6. Next week's schedule (pipe-separated table)
-7. State file updates
-8. Sign-off
+1. **Data collection** — Daily logs + session actuals pre-collected from the app
+2. **Subjective inputs** — Athlete provides perceived readiness, notes, and feedback
+3. **Triage Q&A** — Ambiguities resolved before analysis (pre-resolved, not re-asked)
+4. **Specialist analyses** — All 7 agents analyze structured context → Head Coach synthesizes, resolves conflicts
+5. **Head Coach dialogue** — Interactive discussion with athlete → Plan lock-in
 
 ## Scheduling Constraints
 1. **Weekend Rule** — Exactly 1 weekend day is a training day, the other is family time. **Saturday is the default training day; Sunday is family day.** The athlete will indicate when a swap is needed. Never schedule training on both weekend days.
