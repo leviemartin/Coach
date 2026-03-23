@@ -68,6 +68,8 @@ export default function StrengthExercise({ exerciseName, sets, isCurrent = false
           {sets.map((set) => {
             const edit = getEdit(set);
             const modified = isModified(set);
+            const hasWeight = set.prescribedWeightKg != null;
+            const hasReps = set.prescribedReps != null;
 
             return (
               <Box
@@ -93,32 +95,45 @@ export default function StrengthExercise({ exerciseName, sets, isCurrent = false
                   // Completed: read-only with green checkmark
                   <>
                     <Typography variant="body2" sx={{ flex: 1, fontWeight: 600 }}>
-                      {set.actualWeightKg != null ? `${set.actualWeightKg}kg` : '—'}
-                      {' × '}
-                      {set.actualReps ?? '—'}
+                      {set.actualWeightKg != null && `${set.actualWeightKg}kg`}
+                      {set.actualWeightKg != null && set.actualReps != null && ' × '}
+                      {set.actualReps != null && `${set.actualReps} reps`}
+                      {set.actualWeightKg == null && set.actualReps == null && '✓'}
                     </Typography>
                     <CheckCircleIcon sx={{ color: semanticColors.recovery.good, fontSize: 20 }} />
                   </>
                 ) : (
-                  // Active: editable weight and reps
+                  // Active: editable fields — only show what's relevant
                   <>
-                    <TextField
-                      size="small"
-                      value={edit.weight}
-                      onChange={(e) => updateEdit(set.id!, 'weight', e.target.value)}
-                      placeholder={set.prescribedWeightKg?.toString() ?? '—'}
-                      inputProps={{ inputMode: 'decimal', style: { textAlign: 'center', padding: '6px 8px' } }}
-                      sx={{ width: 64, '& .MuiOutlinedInput-root': { borderRadius: '6px' } }}
-                    />
-                    <Typography variant="body2" color="text.secondary">×</Typography>
-                    <TextField
-                      size="small"
-                      value={edit.reps}
-                      onChange={(e) => updateEdit(set.id!, 'reps', e.target.value)}
-                      placeholder={set.prescribedReps?.toString() ?? '—'}
-                      inputProps={{ inputMode: 'numeric', style: { textAlign: 'center', padding: '6px 8px' } }}
-                      sx={{ width: 52, '& .MuiOutlinedInput-root': { borderRadius: '6px' } }}
-                    />
+                    {hasWeight && (
+                      <>
+                        <TextField
+                          size="small"
+                          value={edit.weight}
+                          onChange={(e) => updateEdit(set.id!, 'weight', e.target.value)}
+                          placeholder={set.prescribedWeightKg?.toString() ?? '—'}
+                          inputProps={{ inputMode: 'decimal', style: { textAlign: 'center', padding: '6px 8px' } }}
+                          sx={{ width: 64, '& .MuiOutlinedInput-root': { borderRadius: '6px' } }}
+                        />
+                        <Typography variant="caption" color="text.secondary">kg</Typography>
+                      </>
+                    )}
+                    {hasWeight && hasReps && (
+                      <Typography variant="body2" color="text.secondary">×</Typography>
+                    )}
+                    {hasReps && (
+                      <>
+                        <TextField
+                          size="small"
+                          value={edit.reps}
+                          onChange={(e) => updateEdit(set.id!, 'reps', e.target.value)}
+                          placeholder={set.prescribedReps?.toString() ?? '—'}
+                          inputProps={{ inputMode: 'numeric', style: { textAlign: 'center', padding: '6px 8px' } }}
+                          sx={{ width: 52, '& .MuiOutlinedInput-root': { borderRadius: '6px' } }}
+                        />
+                        <Typography variant="caption" color="text.secondary">reps</Typography>
+                      </>
+                    )}
                     <Button
                       size="small"
                       variant="contained"
@@ -135,7 +150,7 @@ export default function StrengthExercise({ exerciseName, sets, isCurrent = false
                         '&:hover': { backgroundColor: '#2563eb' },
                       }}
                     >
-                      Complete Set {set.setNumber} ✓
+                      {hasWeight || hasReps ? `Complete Set ${set.setNumber} ✓` : 'Done ✓'}
                     </Button>
                   </>
                 )}

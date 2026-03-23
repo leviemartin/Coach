@@ -110,10 +110,12 @@ export function parseWorkoutPlan(
       const letter = labelMatch[1].toUpperCase();
       const exerciseText = labelMatch[3];
 
+      // W (warm-up) and CD (cool-down) prefixes are never supersets
+      const isNonSupersetPrefix = /^(W|CD)$/i.test(letter);
       let supersetGroup: number | null = null;
-      if (supersetGroupMap.has(letter)) {
+      if (!isNonSupersetPrefix && supersetGroupMap.has(letter)) {
         supersetGroup = supersetGroupMap.get(letter)!;
-      } else {
+      } else if (!isNonSupersetPrefix) {
         const hasPartner = lines.some((l) => {
           const m = l.match(/^([A-Z]{1,3})\d+:/i);
           return m && m[1].toUpperCase() === letter && l !== line;

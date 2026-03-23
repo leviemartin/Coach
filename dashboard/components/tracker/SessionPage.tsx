@@ -306,7 +306,7 @@ export default function SessionPage() {
             exerciseName={ex.name}
             cardio={cardioState}
             coachCue={ex.coachCue}
-            workoutDescription={session.workoutDescription}
+            workoutDescription={blocks.length === 1 ? session.workoutDescription : null}
             onUpdateCardio={handleUpdateCardio}
           />
         );
