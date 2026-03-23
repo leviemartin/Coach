@@ -59,6 +59,11 @@ interface LogData {
   kitchen_cutoff_hit: number;
   is_sick_day: number;
   notes: string | null;
+  energy_level: number | null;
+  pain_level: number | null;
+  pain_area: string | null;
+  sleep_disruption: string | null;
+  session_summary: string | null;
 }
 
 interface PlannedSession {
@@ -95,6 +100,11 @@ const DEFAULT_LOG: LogData = {
   kitchen_cutoff_hit: 0,
   is_sick_day: 0,
   notes: null,
+  energy_level: null,
+  pain_level: null,
+  pain_area: null,
+  sleep_disruption: null,
+  session_summary: null,
 };
 
 export default function DailyLogPage() {
@@ -120,7 +130,13 @@ export default function DailyLogPage() {
       const res = await fetch(`/api/log?date=${date}`);
       if (res.ok) {
         const data = await res.json();
-        setLog(data.log || DEFAULT_LOG);
+        const prevSleepDisruption: string | null = data.sleep_disruption_for_last_night ?? null;
+        const rawLog: LogData = data.log || DEFAULT_LOG;
+        // Pre-populate sleep_disruption with previous night's saved value when current day has none
+        setLog({
+          ...rawLog,
+          sleep_disruption: rawLog.sleep_disruption ?? prevSleepDisruption,
+        });
         setDailyLogId(data.log?.id ?? null);
         setDailyNotes(data.daily_notes || []);
         setPlannedSession(data.planned_session || null);

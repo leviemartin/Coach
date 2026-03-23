@@ -37,6 +37,10 @@ export async function GET(request: Request) {
 
   const dailyNotes = log ? getDailyNotes(log.id) : [];
 
+  const prevDate = getPreviousDate(date);
+  const prevLog = getDailyLog(prevDate);
+  const sleepDisruptionForLastNight = prevLog?.sleep_disruption ?? null;
+
   return NextResponse.json({
     log: log || {
       date,
@@ -56,6 +60,7 @@ export async function GET(request: Request) {
       session_summary: null,
       session_log_id: null,
     },
+    sleep_disruption_for_last_night: sleepDisruptionForLastNight,
     daily_notes: dailyNotes,
     planned_session: plannedSession,
     uncompleted_sessions: uncompletedSessions,

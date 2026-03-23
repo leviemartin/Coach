@@ -380,7 +380,7 @@ describe('formatWeekSummaryForAgents new sections', () => {
       hydration: { tracked: 0, total: 7 },
       kitchen_cutoff: { hit: 0, total: 7 },
       sick_days: 0,
-      notes: [],
+      notes: [] as Array<{ date: string; text: string }>,
       energy_levels: [] as Array<{ date: string; level: number }>,
       pain_days: [] as Array<{ date: string; level: number; area: string | null }>,
       sleep_disruptions: [] as Array<{ date: string; type: string }>,
