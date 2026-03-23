@@ -373,12 +373,13 @@ Tue (sleep): "Kids woke at 2am and 4am"
 
 ### 5.3 Coach Persona Updates
 
-**Important constraint:** Any changes to coach persona files (`coaches/*.md`) or their consumption logic require a separate review with the athlete. Changes must be presented with:
-- **What** specifically changes in the persona
-- **Why** the change is needed (what coaching gap does it address)
-- **Impact** on the coaching output
+Coach personas (`coaches/*.md`) will need updates to leverage the new structured data (daily granularity, tagged notes, session actuals, pain/energy patterns, sequencing output). These updates are part of this implementation — not a separate track — because the coaches need to understand the new data format to produce useful output.
 
-This is NOT part of the implementation plan for this spec. Coach personas are updated in a separate PR after this infrastructure is in place.
+**Review requirement:** Before any coach persona file is modified, the proposed changes must be presented to the athlete with:
+- **What** specifically changes in the persona
+- **Why** the change is needed (what gap in coaching output does it address)
+
+The athlete approves before the change is committed. This applies to every coach file touched during implementation.
 
 ---
 
@@ -542,12 +543,10 @@ This spec can be shipped incrementally:
 
 Each phase is independently valuable. Phase A alone fixes the "daily log data not reaching coaches" problem.
 
-### 10.3 Coach Persona Updates (Separate Track)
+### 10.3 Coach Persona Updates
 
-After infrastructure is in place, coach personas need updating to:
-- Reference the new structured data format
-- Leverage daily granularity (pain/energy patterns, not just weekly averages)
-- Output sequencing metadata with plans
-- Support the dialogue step
-
-These changes require separate review with detailed "why and what" presentation before implementation.
+Coach persona updates are part of the phased delivery (primarily Phase C and E). Each persona update requires athlete review before commit — see Section 5.3. Updates include:
+- Referencing the new structured data format (daily tables, tagged notes, session actuals)
+- Leveraging daily granularity (pain/energy patterns, not just weekly averages)
+- Outputting sequencing metadata with plans (sequence_order, sequence_notes, sequence_group)
+- Supporting the Head Coach dialogue step
