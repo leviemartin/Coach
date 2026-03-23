@@ -319,6 +319,7 @@ export default function SessionPage() {
           key={ex.name}
           exerciseName={ex.name}
           sets={exSets}
+          durationSeconds={ex.durationSeconds}
           isCurrent
           onUpdateSet={handleUpdateSet}
         />
@@ -330,6 +331,7 @@ export default function SessionPage() {
     const supersetExercises = block.exercises.map((ex) => ({
       name: ex.name,
       sets: session.sets.filter((s) => s.exerciseName === ex.canonicalName),
+      durationSeconds: ex.durationSeconds,
     }));
 
     return (
@@ -389,12 +391,14 @@ export default function SessionPage() {
   // ── Exercise list items for nav ────────────────────────────────────────────
   const exerciseListItems = blocks.map((block, idx) => {
     const comp = blockCompletion(block, session.sets, session.cardio);
+    const dur = block.kind === 'single' ? block.exercise.durationSeconds : null;
     return {
       name: blockDisplayName(block),
       completed: comp.completed,
       current: idx === currentBlockIndex,
       setsCompleted: comp.setsCompleted,
       setsTotal: comp.setsTotal,
+      durationSeconds: dur,
     };
   });
 

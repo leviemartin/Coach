@@ -9,11 +9,12 @@ import type { SessionSetState } from '@/lib/types';
 interface StrengthExerciseProps {
   exerciseName: string;
   sets: SessionSetState[];
+  durationSeconds?: number | null;
   isCurrent?: boolean;
   onUpdateSet: (setId: number, actualWeightKg: number | null, actualReps: number | null, completed: boolean) => void;
 }
 
-export default function StrengthExercise({ exerciseName, sets, isCurrent = false, onUpdateSet }: StrengthExerciseProps) {
+export default function StrengthExercise({ exerciseName, sets, durationSeconds, isCurrent = false, onUpdateSet }: StrengthExerciseProps) {
   // Track local edits before completing
   const [edits, setEdits] = useState<Record<number, { weight: string; reps: string }>>({});
 
@@ -63,6 +64,11 @@ export default function StrengthExercise({ exerciseName, sets, isCurrent = false
       <CardContent>
         <Typography variant="subtitle1" fontWeight={700} mb={2}>
           {exerciseName}
+          {durationSeconds != null && (
+            <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1, fontWeight: 400 }}>
+              {durationSeconds}s each
+            </Typography>
+          )}
         </Typography>
         <Stack spacing={1}>
           {sets.map((set) => {
@@ -98,13 +104,19 @@ export default function StrengthExercise({ exerciseName, sets, isCurrent = false
                       {set.actualWeightKg != null && `${set.actualWeightKg}kg`}
                       {set.actualWeightKg != null && set.actualReps != null && ' × '}
                       {set.actualReps != null && `${set.actualReps} reps`}
-                      {set.actualWeightKg == null && set.actualReps == null && '✓'}
+                      {set.actualWeightKg == null && set.actualReps == null && durationSeconds != null && `${durationSeconds}s ✓`}
+                      {set.actualWeightKg == null && set.actualReps == null && durationSeconds == null && '✓'}
                     </Typography>
                     <CheckCircleIcon sx={{ color: semanticColors.recovery.good, fontSize: 20 }} />
                   </>
                 ) : (
                   // Active: editable fields — only show what's relevant
                   <>
+                    {!hasWeight && !hasReps && durationSeconds != null && (
+                      <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
+                        {durationSeconds}s hold
+                      </Typography>
+                    )}
                     {hasWeight && (
                       <>
                         <TextField

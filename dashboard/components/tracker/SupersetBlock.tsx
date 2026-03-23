@@ -8,6 +8,7 @@ import StrengthExercise from './StrengthExercise';
 interface SupersetExercise {
   name: string;
   sets: SessionSetState[];
+  durationSeconds?: number | null;
 }
 
 interface SupersetBlockProps {
@@ -68,6 +69,7 @@ export default function SupersetBlock({ groupName, exercises, restSeconds, onUpd
             <StrengthExercise
               exerciseName={ex.name}
               sets={ex.sets}
+              durationSeconds={ex.durationSeconds}
               onUpdateSet={onUpdateSet}
             />
           </Box>

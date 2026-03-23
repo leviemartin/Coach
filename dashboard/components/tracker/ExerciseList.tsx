@@ -15,11 +15,18 @@ interface ExerciseListItem {
   current: boolean;
   setsCompleted: number;
   setsTotal: number;
+  durationSeconds?: number | null;
 }
 
 interface ExerciseListProps {
   exercises: ExerciseListItem[];
   onSelect: (index: number) => void;
+}
+
+function formatSets(total: number, completed: number | null, duration: number | null | undefined): string {
+  const suffix = duration != null ? ` × ${duration}s` : ' sets';
+  if (completed != null) return `${completed}/${total}${suffix}`;
+  return `${total}${suffix}`;
 }
 
 export default function ExerciseList({ exercises, onSelect }: ExerciseListProps) {
@@ -74,15 +81,15 @@ export default function ExerciseList({ exercises, onSelect }: ExerciseListProps)
                 secondary={
                   isCurrent ? (
                     <Typography variant="caption" color="#3b82f6" fontWeight={600}>
-                      {ex.setsCompleted}/{ex.setsTotal} sets
+                      {formatSets(ex.setsTotal, ex.setsCompleted, ex.durationSeconds)}
                     </Typography>
                   ) : isCompleted ? (
                     <Typography variant="caption" color="#22c55e">
-                      {ex.setsTotal}/{ex.setsTotal} sets
+                      {formatSets(ex.setsTotal, ex.setsTotal, ex.durationSeconds)}
                     </Typography>
                   ) : (
                     <Typography variant="caption" color="text.disabled">
-                      {ex.setsTotal} sets
+                      {formatSets(ex.setsTotal, null, ex.durationSeconds)}
                     </Typography>
                   )
                 }
