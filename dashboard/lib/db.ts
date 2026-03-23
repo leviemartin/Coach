@@ -6,7 +6,7 @@ import { normalizeWorkoutText } from './parse-schedule';
 import { DB_PATH } from './constants';
 
 // Schema version — bump this when adding tables or columns to force re-init on cached connections
-const SCHEMA_VERSION = 8; // v8: added flexible scheduling columns to plan_items
+const SCHEMA_VERSION = 9; // v9: added weekly_metrics columns for daily-log-derived stats
 
 // Use globalThis to persist across hot reloads in dev
 const globalForDb = globalThis as unknown as { _coachDb?: Database.Database; _coachDbSchema?: number };
@@ -399,6 +399,12 @@ export function initTablesOn(db: Database.Database) {
       db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('plan_status_backfill', '1')").run();
     }
   } catch { /* non-fatal */ }
+
+  // Migration v9: add daily-log-derived columns to weekly_metrics
+  try { db.exec(`ALTER TABLE weekly_metrics ADD COLUMN kitchen_cutoff_compliance INTEGER`); } catch {}
+  try { db.exec(`ALTER TABLE weekly_metrics ADD COLUMN avg_energy REAL`); } catch {}
+  try { db.exec(`ALTER TABLE weekly_metrics ADD COLUMN pain_days INTEGER`); } catch {}
+  try { db.exec(`ALTER TABLE weekly_metrics ADD COLUMN sleep_disruption_count INTEGER`); } catch {}
 }
 
 // Settings
@@ -422,14 +428,16 @@ export function upsertWeeklyMetrics(m: WeeklyMetrics): void {
       avg_sleep_score, avg_training_readiness, avg_rhr, avg_hrv,
       calories_avg, protein_avg, hydration_tracked, vampire_compliance_pct,
       rug_protocol_days, sessions_planned, sessions_completed,
-      baker_cyst_pain, pullup_count, perceived_readiness, plan_satisfaction, model_used
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      baker_cyst_pain, pullup_count, perceived_readiness, plan_satisfaction, model_used,
+      kitchen_cutoff_compliance, avg_energy, pain_days, sleep_disruption_count
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     m.weekNumber, m.checkInDate, m.weightKg, m.bodyFatPct, m.muscleMassKg,
     m.avgSleepScore, m.avgTrainingReadiness, m.avgRhr, m.avgHrv,
     m.caloriesAvg, m.proteinAvg, m.hydrationTracked ? 1 : 0,
     m.vampireCompliancePct, m.rugProtocolDays, m.sessionsPlanned,
-    m.sessionsCompleted, m.bakerCystPain, m.pullupCount, m.perceivedReadiness, m.planSatisfaction, m.modelUsed
+    m.sessionsCompleted, m.bakerCystPain, m.pullupCount, m.perceivedReadiness, m.planSatisfaction, m.modelUsed,
+    m.kitchenCutoffCompliance ?? null, m.avgEnergy ?? null, m.painDays ?? null, m.sleepDisruptionCount ?? null
   );
 }
 
@@ -473,6 +481,10 @@ function mapMetricsRow(row: unknown): WeeklyMetrics {
     perceivedReadiness: r.perceived_readiness as number | null,
     planSatisfaction: r.plan_satisfaction as number | null,
     modelUsed: r.model_used as string,
+    kitchenCutoffCompliance: r.kitchen_cutoff_compliance as number | null,
+    avgEnergy: r.avg_energy as number | null,
+    painDays: r.pain_days as number | null,
+    sleepDisruptionCount: r.sleep_disruption_count as number | null,
   };
 }
 

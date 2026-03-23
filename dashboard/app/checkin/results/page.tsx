@@ -4,8 +4,6 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Typography, Box, Button, Alert } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import AgentBriefing from '@/components/AgentBriefing';
-import type { CheckInFormData } from '@/lib/types';
-
 interface SpecialistOutput {
   agentId: string;
   label: string;
@@ -37,24 +35,25 @@ export default function CheckInResultsPage() {
       return;
     }
 
-    let formData: CheckInFormData;
+    let payload: Record<string, unknown>;
     try {
-      formData = JSON.parse(raw);
+      payload = JSON.parse(raw);
     } catch {
       setError('Corrupted check-in data. Please restart the check-in.');
       return;
     }
 
-    runCheckIn(formData);
+    // Send as-is — the API route detects new vs legacy format
+    runCheckIn(payload);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function runCheckIn(formData: CheckInFormData) {
+  async function runCheckIn(payload: Record<string, unknown>) {
     try {
       const response = await fetch('/api/checkin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {

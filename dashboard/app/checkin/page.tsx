@@ -16,7 +16,7 @@ import WeeklyReview from '@/components/checkin/WeeklyReview';
 import SubjectiveInputs from '@/components/checkin/SubjectiveInputs';
 import TriageQA from '@/components/checkin/TriageQA';
 import { getTrainingWeek } from '@/lib/week';
-import type { CheckInFormData, CheckinSubjectiveData } from '@/lib/types';
+import type { CheckinSubjectiveData } from '@/lib/types';
 import type { TriageAnswer } from '@/lib/triage-agent';
 import type { WeeklyReviewData } from '@/app/api/checkin/review/route';
 
@@ -57,30 +57,13 @@ export default function CheckInPage() {
     if (activeStep === 2) return;
 
     if (activeStep >= 3) {
-      // TODO(C4): Remove legacy bridge — checkin API will consume CheckinSubjectiveData directly
-      // Build minimal form data and hand off to results page (legacy path)
-      const formData: Partial<CheckInFormData> = {
-        hevyCsv: '',
-        bakerCystPain: 0,
-        lowerBackFatigue: 0,
-        sessionsCompleted: 0,
-        sessionsPlanned: 5,
-        missedSessions: '',
-        strengthWins: '',
-        struggles: subjectiveData.weekReflection || annotation,
-        bedtimeCompliance: 0,
-        rugProtocolDays: 0,
-        hydrationTracked: false,
-        upcomingConflicts: subjectiveData.nextWeekConflicts,
-        focusNextWeek: '',
-        questionsForCoaches: subjectiveData.questionsForCoaches,
-        perceivedReadiness: subjectiveData.perceivedReadiness,
-        planSatisfaction: subjectiveData.planSatisfaction,
-        planFeedback: '',
-        // TODO(C4): 'mixed' will be handled natively by the new checkin API; this coercion loses Smart Mix behavior
-        model: subjectiveData.model === 'mixed' ? 'sonnet' : subjectiveData.model,
+      // New-format payload for the structured checkin API
+      const payload = {
+        subjectiveData,
+        triageClarifications: triageAnswers,
+        annotation,
       };
-      sessionStorage.setItem('checkin_form_data', JSON.stringify(formData));
+      sessionStorage.setItem('checkin_form_data', JSON.stringify(payload));
       router.push('/checkin/results');
       return;
     }

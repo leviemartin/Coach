@@ -239,6 +239,10 @@ export interface WeeklyMetrics {
   perceivedReadiness: number | null;
   planSatisfaction: number | null;
   modelUsed: string;
+  kitchenCutoffCompliance?: number | null;
+  avgEnergy?: number | null;
+  painDays?: number | null;
+  sleepDisruptionCount?: number | null;
 }
 
 export interface CeilingEntry {

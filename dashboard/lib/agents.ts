@@ -1,10 +1,15 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { readAgentPersona, readAthleteProfile, readTrainingHistory, readCeilings, readPeriodization, readDecisionsLog, readDexaScans } from './state';
 import { SPECIALIST_IDS, AGENT_LABELS, DEFAULT_MODEL, OPUS_MODEL } from './constants';
-import type { GarminData, CheckInFormData, AgentOutput } from './types';
+import type { GarminData, CheckInFormData, CheckinSubjectiveData, AgentOutput } from './types';
 import { formatHevySummary, parseHevyCsv } from './parse-hevy';
-import { computeWeekSummary, formatWeekSummaryForAgents } from './daily-log';
+import { computeWeekSummary, getDayAbbrev, formatWeekSummaryForAgents } from './daily-log';
 import { getTrainingWeek } from './week';
+import { getDailyLogsByWeek, getWeekNotes } from './db';
+import type { DailyLog, DailyNote } from './db';
+import { getWeekSessions } from './session-db';
+import { isBedtimeCompliant, fromBedtimeStorage } from './daily-log';
+import type { TriageAnswer } from './triage-agent';
 
 let _client: Anthropic | null = null;
 
@@ -19,13 +24,41 @@ function getClient(): Anthropic {
   return _client;
 }
 
-function resolveModel(model: CheckInFormData['model'], isHeadCoach = false): string {
+type ModelChoice = 'sonnet' | 'opus' | 'mixed';
+
+function resolveModel(model: ModelChoice, isHeadCoach = false): string {
   if (model === 'opus') return OPUS_MODEL;
   if (model === 'mixed') return isHeadCoach ? OPUS_MODEL : DEFAULT_MODEL;
   return DEFAULT_MODEL;
 }
 
+// ── Legacy overload for backward compatibility ──────────────────────────────
 export function buildSharedContext(
+  garminData: GarminData | null,
+  formData: CheckInFormData
+): string;
+// ── New structured overload ─────────────────────────────────────────────────
+export function buildSharedContext(
+  garminData: GarminData | null,
+  subjectiveData: CheckinSubjectiveData,
+  triageClarifications?: TriageAnswer[]
+): string;
+// ── Implementation ──────────────────────────────────────────────────────────
+export function buildSharedContext(
+  garminData: GarminData | null,
+  dataArg: CheckInFormData | CheckinSubjectiveData,
+  triageClarifications?: TriageAnswer[]
+): string {
+  // Detect legacy vs new format: CheckInFormData has 'hevyCsv'
+  const isLegacy = 'hevyCsv' in dataArg;
+  if (isLegacy) {
+    return buildSharedContextLegacy(garminData, dataArg as CheckInFormData);
+  }
+  return buildSharedContextStructured(garminData, dataArg as CheckinSubjectiveData, triageClarifications);
+}
+
+// ── Legacy path (unchanged logic from before) ───────────────────────────────
+function buildSharedContextLegacy(
   garminData: GarminData | null,
   formData: CheckInFormData
 ): string {
@@ -57,35 +90,7 @@ export function buildSharedContext(
     context += `## Garmin Data\nNo Garmin data available this week.\n\n`;
   }
 
-  // Compute Combined Readiness Score (60% subjective, 40% Garmin weekly avg)
-  let combinedReadinessSection = `## Combined Readiness Score (USE THIS FOR WEEKLY PLANNING)\n`;
-  const perceivedNormalized = (formData.perceivedReadiness / 5) * 100; // Scale 1-5 → 20-100
-  let garminAvgReadiness: number | null = null;
-  if (garminData?.performance_stats?.training_readiness?.daily) {
-    const scores = garminData.performance_stats.training_readiness.daily
-      .map((d: { score?: number }) => d.score)
-      .filter((s): s is number => s != null);
-    if (scores.length > 0) {
-      garminAvgReadiness = Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length);
-    }
-  }
-  if (garminAvgReadiness !== null) {
-    const combined = Math.round(perceivedNormalized * 0.6 + garminAvgReadiness * 0.4);
-    combinedReadinessSection += `- Athlete perceived readiness: ${formData.perceivedReadiness}/5 (normalized: ${Math.round(perceivedNormalized)})\n`;
-    combinedReadinessSection += `- Garmin weekly avg readiness: ${garminAvgReadiness} (from ${garminData!.performance_stats.training_readiness!.daily.length} days)\n`;
-    combinedReadinessSection += `- **Combined score: ${combined}** (60% subjective + 40% Garmin)\n`;
-    combinedReadinessSection += `**Decision matrix (use combined score, NOT single-day minimums):**\n`;
-    combinedReadinessSection += `- >50: Train as programmed\n`;
-    combinedReadinessSection += `- 35-50: Reduce volume 20%, maintain intensity (THIS IS THE DAD BASELINE — expected for a parent of 2 with baby #3 incoming)\n`;
-    combinedReadinessSection += `- <35: Deload — Zone 2 flush + mobility only\n`;
-    combinedReadinessSection += `- <20: Rest day. No negotiation.\n`;
-    combinedReadinessSection += `**CRITICAL:** Use the WEEKLY AVERAGE for weekly plan design. Individual daily scores (including outlier lows) are for same-day session adjustments ONLY — they do not drive the entire week's programming.\n`;
-  } else {
-    combinedReadinessSection += `- Athlete perceived readiness: ${formData.perceivedReadiness}/5\n`;
-    combinedReadinessSection += `- Garmin readiness: No data available\n`;
-    combinedReadinessSection += `- Using perceived readiness only. Scale: 1-2 = deload, 3 = normal, 4-5 = push.\n`;
-  }
-  context += combinedReadinessSection + `\n`;
+  context += buildCombinedReadinessSection(formData.perceivedReadiness, garminData);
 
   context += `## Hevy Training Log\n${hevySummary}\n\n`;
 
@@ -102,48 +107,7 @@ export function buildSharedContext(
     context += `### Raw Hevy CSV\n\`\`\`csv\n${formData.hevyCsv}\n\`\`\`\n\n`;
   }
 
-  // DEXA Scan Data & Garmin Calibration
-  const dexaData = readDexaScans();
-  if (dexaData.scans.length > 0) {
-    context += `## DEXA Scan Data & Garmin Calibration\n`;
-    const latest = dexaData.scans[dexaData.scans.length - 1];
-    context += `**Latest scan:** #${latest.scanNumber} on ${latest.date} (${latest.phase})\n`;
-    context += `- DEXA body fat: ${latest.totalBodyFatPct}% | Lean mass: ${latest.totalLeanMassKg}kg | Fat mass: ${latest.fatMassKg}kg\n`;
-    context += `- Bone mineral density: ${latest.boneMineralDensityGcm2} g/cm² | Bone mass: ${latest.boneMassKg}kg\n`;
-    context += `- Weight at scan: ${latest.weightAtScanKg}kg\n`;
-    if (latest.garminBodyFatPct != null) {
-      context += `- Garmin nearest reading (${latest.garminReadingDate}): BF ${latest.garminBodyFatPct}%, muscle ${latest.garminMuscleMassKg}kg, weight ${latest.garminWeightKg}kg\n`;
-    }
-    if (latest.garminBodyFatPct != null) {
-      context += `- **Calibration offsets:** Garmin BF ${latest.calibration.bodyFatOffsetPct > 0 ? 'underreads' : 'overreads'} by ${Math.abs(latest.calibration.bodyFatOffsetPct).toFixed(1)}% | Lean mass delta: ${latest.calibration.leanMassOffsetKg > 0 ? '+' : ''}${latest.calibration.leanMassOffsetKg.toFixed(1)}kg\n`;
-    } else {
-      context += `- **Calibration:** No Garmin body composition reading available near scan date — offsets not calculated\n`;
-    }
-
-    // DEXA-corrected current-week Garmin BF%
-    if (garminData?.health_stats_7d?.body_composition?.daily) {
-      const latestGarminBF = garminData.health_stats_7d.body_composition.daily
-        .filter((d) => d.body_fat_pct != null && d.body_fat_pct > 0)
-        .pop();
-      if (latestGarminBF?.body_fat_pct) {
-        const corrected = Math.round((latestGarminBF.body_fat_pct + latest.calibration.bodyFatOffsetPct) * 10) / 10;
-        context += `- **DEXA-corrected current Garmin BF%:** ${corrected}% (Garmin raw: ${latestGarminBF.body_fat_pct}% + offset ${latest.calibration.bodyFatOffsetPct > 0 ? '+' : ''}${latest.calibration.bodyFatOffsetPct}%)\n`;
-      }
-    }
-
-    // Scan history
-    if (dexaData.scans.length > 1) {
-      context += `- Scan history: ${dexaData.scans.map((s) => `#${s.scanNumber} (${s.date}): BF ${s.totalBodyFatPct}%, lean ${s.totalLeanMassKg}kg`).join(' | ')}\n`;
-    }
-
-    // Next scan reminder
-    const scanCount = dexaData.scans.length;
-    if (scanCount < 3) {
-      const nextDates = ['November 2026', 'May 2027'];
-      context += `- **Next DEXA scan:** #${scanCount + 1} planned for ${nextDates[scanCount - 1] || 'TBD'}\n`;
-    }
-    context += `\n`;
-  }
+  context += buildDexaSection(garminData);
 
   context += `## Subjective Check-In\n`;
   context += `- Baker's Cyst pain: ${formData.bakerCystPain}/10\n`;
@@ -162,6 +126,262 @@ export function buildSharedContext(
 
   return context;
 }
+
+// ── New structured path ─────────────────────────────────────────────────────
+function buildSharedContextStructured(
+  garminData: GarminData | null,
+  subjectiveData: CheckinSubjectiveData,
+  triageClarifications?: TriageAnswer[]
+): string {
+  const profile = readAthleteProfile();
+  const history = readTrainingHistory(4);
+  const ceilings = readCeilings();
+  const periodization = readPeriodization();
+  const decisions = readDecisionsLog();
+  const currentWeek = getTrainingWeek();
+
+  let context = `# Weekly Check-In Data\n\n`;
+
+  // ── Athlete Plan Feedback ─────────────────────────────────────────────────
+  context += `## Athlete Plan Feedback (PRIORITY — Read First)\n`;
+  context += `- Plan satisfaction: ${subjectiveData.planSatisfaction}/5 (1=too light, 3=right, 5=too much)\n`;
+  context += `- Reflection: ${subjectiveData.weekReflection || 'None provided'}\n`;
+  context += `**Instruction:** The athlete's subjective experience of last week's plan is a primary input. If satisfaction <=2 (too light), do not reduce volume further unless injury or combined readiness <35 demands it. If satisfaction >=4 (too much), consider reducing. If combined readiness <35 triggered a deload and feedback says "too light," the deload is working as designed — maintain it. Address this feedback explicitly in your assessment.\n\n`;
+
+  // ── Reference Data ────────────────────────────────────────────────────────
+  context += `## Athlete Profile\n${profile}\n\n`;
+  context += `## Current Phase & Periodization\n${periodization}\n\n`;
+  context += `## Active Decisions & Gates\n${decisions}\n\n`;
+  context += `## Current Working Ceilings\n\`\`\`json\n${JSON.stringify(ceilings, null, 2)}\n\`\`\`\n\n`;
+  context += `## Training History (Last 4 Weeks)\n${history}\n\n`;
+
+  // ── Garmin Data ───────────────────────────────────────────────────────────
+  if (garminData) {
+    context += `## Garmin Data Export\n\`\`\`json\n${JSON.stringify(garminData, null, 2)}\n\`\`\`\n\n`;
+  } else {
+    context += `## Garmin Data\nNo Garmin data available this week.\n\n`;
+  }
+
+  // ── Combined Readiness ────────────────────────────────────────────────────
+  context += buildCombinedReadinessSection(subjectiveData.perceivedReadiness, garminData);
+
+  // ── This Week's Data (structured tables) ──────────────────────────────────
+  context += `## This Week's Data (Week ${currentWeek})\n\n`;
+
+  // Daily Logs table
+  const dailyLogs = getDailyLogsByWeek(currentWeek);
+  context += buildDailyLogsTable(dailyLogs, currentWeek);
+
+  // Session Details
+  const sessions = getWeekSessions(currentWeek);
+  context += buildSessionDetailsSection(sessions);
+
+  // Tagged Notes
+  const weekNotes = getWeekNotes(currentWeek);
+  context += buildTaggedNotesSection(weekNotes, dailyLogs);
+
+  // Triage Clarifications
+  if (triageClarifications && triageClarifications.length > 0) {
+    context += buildTriageClarificationsSection(triageClarifications);
+  }
+
+  // ── Subjective Inputs ─────────────────────────────────────────────────────
+  context += `### Subjective Inputs\n`;
+  context += `- Perceived readiness: ${subjectiveData.perceivedReadiness}/5\n`;
+  context += `- Plan satisfaction: ${subjectiveData.planSatisfaction}/5\n`;
+  context += `- Reflection: ${subjectiveData.weekReflection || 'None provided'}\n`;
+  context += `- Next week conflicts: ${subjectiveData.nextWeekConflicts || 'None'}\n`;
+  context += `- Questions: ${subjectiveData.questionsForCoaches || 'None'}\n\n`;
+
+  // ── DEXA Data ─────────────────────────────────────────────────────────────
+  context += buildDexaSection(garminData);
+
+  return context;
+}
+
+// ── Shared helper: Combined Readiness Section ───────────────────────────────
+function buildCombinedReadinessSection(
+  perceivedReadiness: number,
+  garminData: GarminData | null
+): string {
+  let section = `## Combined Readiness Score (USE THIS FOR WEEKLY PLANNING)\n`;
+  const perceivedNormalized = (perceivedReadiness / 5) * 100;
+  let garminAvgReadiness: number | null = null;
+  if (garminData?.performance_stats?.training_readiness?.daily) {
+    const scores = garminData.performance_stats.training_readiness.daily
+      .map((d: { score?: number }) => d.score)
+      .filter((s): s is number => s != null);
+    if (scores.length > 0) {
+      garminAvgReadiness = Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length);
+    }
+  }
+  if (garminAvgReadiness !== null) {
+    const combined = Math.round(perceivedNormalized * 0.6 + garminAvgReadiness * 0.4);
+    section += `- Athlete perceived readiness: ${perceivedReadiness}/5 (normalized: ${Math.round(perceivedNormalized)})\n`;
+    section += `- Garmin weekly avg readiness: ${garminAvgReadiness} (from ${garminData!.performance_stats.training_readiness!.daily.length} days)\n`;
+    section += `- **Combined score: ${combined}** (60% subjective + 40% Garmin)\n`;
+    section += `**Decision matrix (use combined score, NOT single-day minimums):**\n`;
+    section += `- >50: Train as programmed\n`;
+    section += `- 35-50: Reduce volume 20%, maintain intensity (THIS IS THE DAD BASELINE — expected for a parent of 2 with baby #3 incoming)\n`;
+    section += `- <35: Deload — Zone 2 flush + mobility only\n`;
+    section += `- <20: Rest day. No negotiation.\n`;
+    section += `**CRITICAL:** Use the WEEKLY AVERAGE for weekly plan design. Individual daily scores (including outlier lows) are for same-day session adjustments ONLY — they do not drive the entire week's programming.\n`;
+  } else {
+    section += `- Athlete perceived readiness: ${perceivedReadiness}/5\n`;
+    section += `- Garmin readiness: No data available\n`;
+    section += `- Using perceived readiness only. Scale: 1-2 = deload, 3 = normal, 4-5 = push.\n`;
+  }
+  return section + `\n`;
+}
+
+// ── Shared helper: Daily Logs Table ─────────────────────────────────────────
+function buildDailyLogsTable(logs: DailyLog[], weekNumber: number): string {
+  if (logs.length === 0) {
+    return `### Daily Logs (7-day detail)\nNo daily logs recorded for week ${weekNumber}.\n\n`;
+  }
+
+  let table = `### Daily Logs (7-day detail)\n`;
+  table += `| Day | Energy | Pain | Pain Area | Sleep Disruption | Bedtime | Compliant | Kitchen | Core | Mobility | Hydration | Session |\n`;
+  table += `|-----|--------|------|-----------|-----------------|---------|-----------|---------|------|----------|-----------|---------|\n`;
+
+  for (const log of logs) {
+    const dayAbbr = getDayAbbrev(log.date);
+    const energy = log.energy_level != null ? String(log.energy_level) : '-';
+    const pain = log.pain_level != null ? String(log.pain_level) : '0';
+    const painArea = log.pain_area || '-';
+    const sleepDisrupt = log.sleep_disruption || '-';
+    const bedtime = log.vampire_bedtime ? fromBedtimeStorage(log.vampire_bedtime) : '-';
+    const compliant = log.vampire_bedtime ? (isBedtimeCompliant(log.vampire_bedtime) ? 'Y' : 'N') : '-';
+    const kitchen = log.kitchen_cutoff_hit ? 'Y' : 'N';
+    const core = log.core_work_done ? 'Y' : 'N';
+    const rug = log.rug_protocol_done ? 'Y' : 'N';
+    const hydration = log.hydration_tracked ? 'Y' : 'N';
+    const session = log.session_summary || (log.workout_completed ? 'Completed' : '-');
+
+    table += `| ${dayAbbr} | ${energy} | ${pain} | ${painArea} | ${sleepDisrupt} | ${bedtime} | ${compliant} | ${kitchen} | ${core} | ${rug} | ${hydration} | ${session} |\n`;
+  }
+
+  return table + `\n`;
+}
+
+// ── Shared helper: Session Details ──────────────────────────────────────────
+function buildSessionDetailsSection(sessions: ReturnType<typeof getWeekSessions>): string {
+  if (sessions.length === 0) {
+    return `### Session Details\nNo completed sessions recorded this week.\n\n`;
+  }
+
+  let section = `### Session Details\n`;
+  for (const s of sessions) {
+    const complianceStr = s.compliancePct != null ? `${s.compliancePct}%` : 'N/A';
+    section += `**${getDayAbbrev(s.date)} — ${s.sessionTitle}** (${s.sessionType}, compliance: ${complianceStr})\n`;
+
+    // Summarize sets: group by exercise
+    if (s.sets.length > 0) {
+      const byExercise = new Map<string, typeof s.sets>();
+      for (const set of s.sets) {
+        const existing = byExercise.get(set.exerciseName) || [];
+        existing.push(set);
+        byExercise.set(set.exerciseName, existing);
+      }
+      for (const [name, sets] of byExercise) {
+        const completedSets = sets.filter(st => st.completed);
+        const totalSets = sets.length;
+        const weightStr = sets[0].actualWeightKg != null
+          ? `${sets[0].actualWeightKg}kg`
+          : sets[0].prescribedWeightKg != null
+            ? `${sets[0].prescribedWeightKg}kg (prescribed)`
+            : 'BW';
+        const modified = sets.some(st => st.isModified) ? ' [modified]' : '';
+        section += `- ${name}: ${completedSets.length}/${totalSets} sets @ ${weightStr}${modified}\n`;
+      }
+    }
+
+    // Summarize cardio
+    if (s.cardio.length > 0) {
+      for (const c of s.cardio) {
+        const doneStr = c.completed ? 'done' : `${c.completedRounds}/${c.prescribedRounds ?? '?'} rounds`;
+        section += `- ${c.exerciseName}: ${doneStr}\n`;
+      }
+    }
+    section += `\n`;
+  }
+
+  return section;
+}
+
+// ── Shared helper: Tagged Notes ─────────────────────────────────────────────
+function buildTaggedNotesSection(notes: (DailyNote & { date: string })[], logs: DailyLog[]): string {
+  // Include both tagged notes and legacy free-text notes
+  const hasTagged = notes.length > 0;
+  const legacyNotes = logs.filter(l => l.notes && l.notes.trim() && !hasTagged);
+
+  if (!hasTagged && legacyNotes.length === 0) {
+    return '';
+  }
+
+  let section = `### Tagged Notes\n`;
+  if (hasTagged) {
+    for (const n of notes) {
+      section += `${getDayAbbrev(n.date)} (${n.category}): "${n.text}"\n`;
+    }
+  } else {
+    for (const l of legacyNotes) {
+      section += `${getDayAbbrev(l.date)} (other): "${l.notes!.trim()}"\n`;
+    }
+  }
+  return section + `\n`;
+}
+
+// ── Shared helper: Triage Clarifications ────────────────────────────────────
+function buildTriageClarificationsSection(clarifications: TriageAnswer[]): string {
+  let section = `### Triage Clarifications\n`;
+  for (let i = 0; i < clarifications.length; i++) {
+    const c = clarifications[i];
+    section += `${i + 1}. Topic: ${c.topic} — Status: ${c.status} — Context: ${c.context} [${c.routing_hint}]\n`;
+  }
+  return section + `\n`;
+}
+
+// ── Shared helper: DEXA Section ─────────────────────────────────────────────
+function buildDexaSection(garminData: GarminData | null): string {
+  const dexaData = readDexaScans();
+  if (dexaData.scans.length === 0) return '';
+
+  let section = `## DEXA Scan Data & Garmin Calibration\n`;
+  const latest = dexaData.scans[dexaData.scans.length - 1];
+  section += `**Latest scan:** #${latest.scanNumber} on ${latest.date} (${latest.phase})\n`;
+  section += `- DEXA body fat: ${latest.totalBodyFatPct}% | Lean mass: ${latest.totalLeanMassKg}kg | Fat mass: ${latest.fatMassKg}kg\n`;
+  section += `- Bone mineral density: ${latest.boneMineralDensityGcm2} g/cm2 | Bone mass: ${latest.boneMassKg}kg\n`;
+  section += `- Weight at scan: ${latest.weightAtScanKg}kg\n`;
+  if (latest.garminBodyFatPct != null) {
+    section += `- Garmin nearest reading (${latest.garminReadingDate}): BF ${latest.garminBodyFatPct}%, muscle ${latest.garminMuscleMassKg}kg, weight ${latest.garminWeightKg}kg\n`;
+    section += `- **Calibration offsets:** Garmin BF ${latest.calibration.bodyFatOffsetPct > 0 ? 'underreads' : 'overreads'} by ${Math.abs(latest.calibration.bodyFatOffsetPct).toFixed(1)}% | Lean mass delta: ${latest.calibration.leanMassOffsetKg > 0 ? '+' : ''}${latest.calibration.leanMassOffsetKg.toFixed(1)}kg\n`;
+  } else {
+    section += `- **Calibration:** No Garmin body composition reading available near scan date — offsets not calculated\n`;
+  }
+
+  if (garminData?.health_stats_7d?.body_composition?.daily) {
+    const latestGarminBF = garminData.health_stats_7d.body_composition.daily
+      .filter((d) => d.body_fat_pct != null && d.body_fat_pct > 0)
+      .pop();
+    if (latestGarminBF?.body_fat_pct) {
+      const corrected = Math.round((latestGarminBF.body_fat_pct + latest.calibration.bodyFatOffsetPct) * 10) / 10;
+      section += `- **DEXA-corrected current Garmin BF%:** ${corrected}% (Garmin raw: ${latestGarminBF.body_fat_pct}% + offset ${latest.calibration.bodyFatOffsetPct > 0 ? '+' : ''}${latest.calibration.bodyFatOffsetPct}%)\n`;
+    }
+  }
+
+  if (dexaData.scans.length > 1) {
+    section += `- Scan history: ${dexaData.scans.map((s) => `#${s.scanNumber} (${s.date}): BF ${s.totalBodyFatPct}%, lean ${s.totalLeanMassKg}kg`).join(' | ')}\n`;
+  }
+
+  const scanCount = dexaData.scans.length;
+  if (scanCount < 3) {
+    const nextDates = ['November 2026', 'May 2027'];
+    section += `- **Next DEXA scan:** #${scanCount + 1} planned for ${nextDates[scanCount - 1] || 'TBD'}\n`;
+  }
+  return section + `\n`;
+}
+
 
 export async function runSpecialist(
   agentId: string,
@@ -224,7 +444,7 @@ export async function runSpecialist(
  */
 export async function* runSpecialistsSequentially(
   sharedContext: string,
-  model: CheckInFormData['model']
+  model: ModelChoice
 ): AsyncGenerator<AgentOutput> {
   getClient();
   const resolvedModel = resolveModel(model, false);
@@ -299,7 +519,7 @@ export function buildSynthesisPrompt(
 export async function* streamHeadCoachSynthesis(
   specialistOutputs: AgentOutput[],
   sharedContext: string,
-  model: CheckInFormData['model']
+  model: ModelChoice
 ): AsyncGenerator<string> {
   const client = getClient();
   const persona = readAgentPersona('head_coach');

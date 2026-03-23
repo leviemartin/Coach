@@ -2,15 +2,29 @@ import { NextResponse } from 'next/server';
 import { readGarminData, extractExtendedSummary } from '@/lib/garmin';
 import { buildSharedContext, runSpecialistsSequentially, streamHeadCoachSynthesis } from '@/lib/agents';
 import { writeWeeklyLog, appendTrainingHistory, readCeilings, writeCeilings } from '@/lib/state';
-import { getPlanWeekNumber } from '@/lib/week';
+import { getPlanWeekNumber, getTrainingWeek } from '@/lib/week';
 import { parseScheduleTable } from '@/lib/parse-schedule';
+import { computeWeekSummary } from '@/lib/daily-log';
 import {
   upsertWeeklyMetrics,
   insertPlanItems,
   insertCeilingHistory,
   deletePlanItems,
 } from '@/lib/db';
-import type { CheckInFormData, WeeklyMetrics, CeilingEntry } from '@/lib/types';
+import type { CheckInFormData, CheckinSubjectiveData, WeeklyMetrics, CeilingEntry } from '@/lib/types';
+import type { TriageAnswer } from '@/lib/triage-agent';
+
+// New-format payload from the stepper flow
+interface CheckinPayload {
+  subjectiveData: CheckinSubjectiveData;
+  triageClarifications: TriageAnswer[];
+  annotation: string;
+  [key: string]: unknown;
+}
+
+function isNewFormat(body: unknown): body is CheckinPayload {
+  return typeof body === 'object' && body !== null && 'subjectiveData' in body;
+}
 
 export async function POST(request: Request) {
   // Validate API key early
@@ -21,15 +35,33 @@ export async function POST(request: Request) {
     );
   }
 
-  let formData: CheckInFormData;
+  let body: unknown;
   try {
-    formData = await request.json();
+    body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
   const garmin = readGarminData();
-  const sharedContext = buildSharedContext(garmin.data, formData);
+
+  // Determine format and build context + model accordingly
+  let sharedContext: string;
+  let model: 'sonnet' | 'opus' | 'mixed';
+  let subjectiveData: CheckinSubjectiveData | null = null;
+  let legacyFormData: CheckInFormData | null = null;
+
+  if (isNewFormat(body)) {
+    // New stepper flow
+    subjectiveData = body.subjectiveData;
+    const triageClarifications = body.triageClarifications || [];
+    model = subjectiveData.model;
+    sharedContext = buildSharedContext(garmin.data, subjectiveData, triageClarifications);
+  } else {
+    // Legacy form flow
+    legacyFormData = body as CheckInFormData;
+    model = legacyFormData.model;
+    sharedContext = buildSharedContext(garmin.data, legacyFormData);
+  }
 
   const encoder = new TextEncoder();
 
@@ -59,7 +91,7 @@ export async function POST(request: Request) {
         send('status', { phase: 'specialists', message: 'Running specialist analyses...' });
 
         const specialistOutputs = [];
-        for await (const output of runSpecialistsSequentially(sharedContext, formData.model)) {
+        for await (const output of runSpecialistsSequentially(sharedContext, model)) {
           specialistOutputs.push(output);
           send('specialist', {
             agentId: output.agentId,
@@ -76,7 +108,7 @@ export async function POST(request: Request) {
         for await (const chunk of streamHeadCoachSynthesis(
           specialistOutputs,
           sharedContext,
-          formData.model
+          model
         )) {
           fullSynthesis += chunk;
           send('synthesis_chunk', { text: chunk });
@@ -111,8 +143,19 @@ export async function POST(request: Request) {
         // Extract Garmin summary for metrics
         const garminSummary = garmin.data ? extractExtendedSummary(garmin.data) : null;
 
-        // Save weekly metrics to SQLite
-        const modelName = formData.model === 'opus' ? 'opus' : formData.model === 'mixed' ? 'mixed' : 'sonnet';
+        // Build weekly metrics — auto-calculate from daily logs when possible
+        const currentWeek = getTrainingWeek();
+        const weekSummary = computeWeekSummary(currentWeek);
+        const hasLogData = weekSummary.days_logged > 0;
+
+        const modelName = model === 'opus' ? 'opus' : model === 'mixed' ? 'mixed' : 'sonnet';
+
+        // Resolve subjective fields from whichever format was used
+        const perceivedReadiness = subjectiveData?.perceivedReadiness
+          ?? legacyFormData?.perceivedReadiness ?? null;
+        const planSatisfaction = subjectiveData?.planSatisfaction
+          ?? legacyFormData?.planSatisfaction ?? null;
+
         const metrics: WeeklyMetrics = {
           weekNumber,
           checkInDate: today,
@@ -125,16 +168,37 @@ export async function POST(request: Request) {
           avgHrv: garminSummary?.avgHrv ?? null,
           caloriesAvg: garminSummary?.caloriesAvg ?? null,
           proteinAvg: garminSummary?.proteinAvg ?? null,
-          hydrationTracked: formData.hydrationTracked,
-          vampireCompliancePct: (formData.bedtimeCompliance / 7) * 100,
-          rugProtocolDays: formData.rugProtocolDays,
-          sessionsPlanned: formData.sessionsPlanned,
-          sessionsCompleted: formData.sessionsCompleted,
-          bakerCystPain: formData.bakerCystPain,
-          pullupCount: null, // Extracted from Hevy data if available
-          perceivedReadiness: formData.perceivedReadiness,
-          planSatisfaction: formData.planSatisfaction,
+          // Auto-calculate from daily logs when available, fallback to legacy form data
+          hydrationTracked: hasLogData
+            ? weekSummary.hydration.tracked > 0
+            : (legacyFormData?.hydrationTracked ?? false),
+          vampireCompliancePct: hasLogData
+            ? (weekSummary.vampire.compliant / 7) * 100
+            : (legacyFormData ? (legacyFormData.bedtimeCompliance / 7) * 100 : null),
+          rugProtocolDays: hasLogData
+            ? weekSummary.rug_protocol.done
+            : (legacyFormData?.rugProtocolDays ?? null),
+          sessionsPlanned: hasLogData
+            ? weekSummary.workouts.planned
+            : (legacyFormData?.sessionsPlanned ?? null),
+          sessionsCompleted: hasLogData
+            ? weekSummary.workouts.completed
+            : (legacyFormData?.sessionsCompleted ?? null),
+          bakerCystPain: legacyFormData?.bakerCystPain ?? 0,
+          pullupCount: null,
+          perceivedReadiness,
+          planSatisfaction,
           modelUsed: modelName,
+          // New daily-log-derived fields
+          kitchenCutoffCompliance: hasLogData ? weekSummary.kitchen_cutoff.hit : null,
+          avgEnergy: hasLogData && weekSummary.energy_levels.length > 0
+            ? Math.round(
+                (weekSummary.energy_levels.reduce((s, e) => s + e.level, 0) /
+                  weekSummary.energy_levels.length) * 10
+              ) / 10
+            : null,
+          painDays: hasLogData ? weekSummary.pain_days.length : null,
+          sleepDisruptionCount: hasLogData ? weekSummary.sleep_disruptions.length : null,
         };
         upsertWeeklyMetrics(metrics);
 
