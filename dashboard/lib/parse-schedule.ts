@@ -1,5 +1,66 @@
 import type { PlanItem } from './types';
 
+interface SequencingRule {
+  sessionNum: number;
+  focus: string;
+  seqOrder: number;
+  group: string | null;
+  note: string | null;
+}
+
+/**
+ * Parses the optional "## Sequencing Rules" section from Head Coach output.
+ *
+ * Expected format:
+ * ## Sequencing Rules
+ * - Session 1 (Upper Push) → Seq #1, Group: upper_compound
+ * - Session 2 (Upper Pull) → Seq #2, Group: upper_compound, Note: "not within 24h of Upper Push"
+ * - Session 3 (Rower Sprints) → Seq #3, Note: "48h before heavy legs"
+ * - Session 4 (Sunday Ruck) → Seq #4
+ */
+export function parseSequencingRules(markdown: string): SequencingRule[] {
+  const rules: SequencingRule[] = [];
+
+  // Find the "## Sequencing Rules" section
+  const sectionMatch = markdown.match(/##\s+Sequencing Rules\s*\n([\s\S]*?)(?:\n##|\s*$)/);
+  if (!sectionMatch) return rules;
+
+  const sectionBody = sectionMatch[1];
+  const lines = sectionBody.split('\n');
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('-')) continue;
+
+    // Match: - Session N (Focus Text) → Seq #M, ...
+    const sessionMatch = trimmed.match(/^-\s+Session\s+(\d+)\s+\(([^)]+)\)\s*→\s*Seq\s+#(\d+)(.*)/i);
+    if (!sessionMatch) continue;
+
+    const sessionNum = parseInt(sessionMatch[1], 10);
+    const focus = sessionMatch[2].trim();
+    const seqOrder = parseInt(sessionMatch[3], 10);
+    const rest = sessionMatch[4] || '';
+
+    // Extract Group: xyz (stops at comma or end of string)
+    let group: string | null = null;
+    const groupMatch = rest.match(/,\s*Group:\s*([^,"\n]+?)(?:\s*,|\s*$)/);
+    if (groupMatch) {
+      group = groupMatch[1].trim();
+    }
+
+    // Extract Note: "text"
+    let note: string | null = null;
+    const noteMatch = rest.match(/,\s*Note:\s*"([^"]+)"/);
+    if (noteMatch) {
+      note = noteMatch[1].trim();
+    }
+
+    rules.push({ sessionNum, focus, seqOrder, group, note });
+  }
+
+  return rules;
+}
+
 /**
  * Normalize AI-generated workout text that contains HTML/markdown formatting.
  * Converts <br> tags, markdown bold, bullet chars into clean newline-separated text.
@@ -126,6 +187,20 @@ export function parseScheduleTable(markdown: string, weekNumber: number): PlanIt
       completedAt: null,
       subTasks: [],
     });
+  }
+
+  // Merge sequencing metadata if a "## Sequencing Rules" section exists
+  const rules = parseSequencingRules(markdown);
+  for (const rule of rules) {
+    const item = items.find(
+      (i) =>
+        i.focus.toLowerCase().includes(rule.focus.toLowerCase()) ||
+        rule.focus.toLowerCase().includes(i.focus.toLowerCase()),
+    );
+    if (item) {
+      if (rule.note !== null) item.sequenceNotes = rule.note;
+      if (rule.group !== null) item.sequenceGroup = rule.group;
+    }
   }
 
   return items;
