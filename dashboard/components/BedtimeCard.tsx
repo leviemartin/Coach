@@ -77,7 +77,7 @@ export default function BedtimeCard({ bedtime, onUpdate }: BedtimeCardProps) {
     <Card variant="outlined">
       <CardContent>
         <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-          Bedtime (Vampire Protocol)
+          Lights Out
         </Typography>
 
         {!bedtime && !editing ? (

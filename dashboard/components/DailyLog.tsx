@@ -168,8 +168,8 @@ export default function DailyLog({
   const weekMetrics = [
     { label: 'Sessions', current: sessionsCompleted, target: sessionsPlanned || 1 },
     { label: 'Core', current: weekTallies.core, target: 3 },
-    { label: 'Rug', current: weekTallies.rug, target: 7 },
-    { label: 'Kitchen', current: weekTallies.kitchen, target: 7 },
+    { label: 'Mobility', current: weekTallies.rug, target: 7 },
+    { label: 'Food Cut', current: weekTallies.kitchen, target: 7 },
     { label: 'Hydration', current: weekTallies.hydration, target: 7 },
     { label: 'Bedtime', current: bedtimeCompliantCount, target: 7 },
   ];

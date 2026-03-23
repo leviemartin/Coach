@@ -38,28 +38,28 @@ export default function DailyChecklist({
   const items: ChecklistItem[] = [
     {
       field: 'core_work_done',
-      label: 'Core work done',
+      label: 'Core Work',
       checked: !!coreWorkDone,
       tallyKey: 'core',
       target: 3,
     },
     {
       field: 'rug_protocol_done',
-      label: 'Rug Protocol (GOWOD)',
+      label: 'Mobility Work',
       checked: !!rugProtocolDone,
       tallyKey: 'rug',
       target: 7,
     },
     {
       field: 'kitchen_cutoff_hit',
-      label: 'Kitchen Cutoff (20:00)',
+      label: 'No Food After 20:00',
       checked: !!kitchenCutoffHit,
       tallyKey: 'kitchen',
       target: 7,
     },
     {
       field: 'hydration_tracked',
-      label: 'Hydration tracked',
+      label: 'Hydration Logged',
       checked: !!hydrationTracked,
       tallyKey: 'hydration',
       target: 7,
