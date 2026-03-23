@@ -236,21 +236,21 @@ export default function PlanDayCard({ item, defaultExpanded = false }: PlanDayCa
           {warmupGroups.length > 0 && (
             <Box>
               <SectionLabel>Warm-up</SectionLabel>
-              {warmupGroups.map((g, i) => <ExerciseBlock key={i} group={g} />)}
+              {warmupGroups.map((g, i) => <ExerciseBlock key={`${g.type}-${g.letter || ''}-${i}`} group={g} />)}
             </Box>
           )}
 
           {/* Exercise blocks */}
           {exerciseGroups.length > 0 && (
             <Box>
-              {exerciseGroups.map((g, i) => <ExerciseBlock key={i} group={g} />)}
+              {exerciseGroups.map((g, i) => <ExerciseBlock key={`${g.type}-${g.letter || ''}-${i}`} group={g} />)}
             </Box>
           )}
 
           {/* Cardio */}
           {cardioGroups.length > 0 && (
             <Box>
-              {cardioGroups.map((g, i) => <ExerciseBlock key={i} group={g} />)}
+              {cardioGroups.map((g, i) => <ExerciseBlock key={`${g.type}-${g.letter || ''}-${i}`} group={g} />)}
             </Box>
           )}
 
@@ -258,7 +258,7 @@ export default function PlanDayCard({ item, defaultExpanded = false }: PlanDayCa
           {cooldownGroups.length > 0 && (
             <Box>
               <SectionLabel>Cool-down</SectionLabel>
-              {cooldownGroups.map((g, i) => <ExerciseBlock key={i} group={g} />)}
+              {cooldownGroups.map((g, i) => <ExerciseBlock key={`${g.type}-${g.letter || ''}-${i}`} group={g} />)}
             </Box>
           )}
 

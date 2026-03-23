@@ -15,7 +15,8 @@ function weekDateRange(items: PlanItem[]): string {
     const first = withDates[0].assignedDate!;
     const last = withDates[withDates.length - 1].assignedDate!;
     const fmt = (d: string) => {
-      const date = new Date(d);
+      const [year, month, day] = d.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
       return date.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
     };
     return `${fmt(first)} — ${fmt(last)}`;

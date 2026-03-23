@@ -53,6 +53,16 @@ function parseWeight(detail: string): Pick<ExerciseRow, 'hasWeight' | 'textBefor
       textAfter: match[3],
     };
   }
+  // Weight-first format: "28kg x10" or "28kg x10 x3"
+  const weightFirstMatch = detail.match(/^(\d+(?:\.\d+)?(?:kg|lbs?|lb))\s*(.*)$/i);
+  if (weightFirstMatch) {
+    return {
+      hasWeight: true,
+      textBefore: '',
+      weightPart: weightFirstMatch[1],
+      textAfter: weightFirstMatch[2] ? ` ${weightFirstMatch[2]}` : '',
+    };
+  }
   return { hasWeight: false, textBefore: detail, weightPart: '', textAfter: '' };
 }
 
@@ -71,10 +81,12 @@ function parseExerciseLine(line: string): { label: string; name: string; detail:
     const rest = supersetMatch[2].trim();
 
     // Try to split name from detail — look for weight pattern or "xN" reps
-    // Patterns: "Goblet Squat: 28kg x10" / "Goblet Squat 28kg x10" / "Goblet Squat x12"
+    // Patterns: "Goblet Squat: 28kg x10" / "Goblet Squat 28kg x10" / "Goblet Squat x12" / "Squat: 3 x 5 @ 100kg"
+    // Order matters: weight-containing patterns must fire before bare "x\d+" to avoid eating "3" into the name.
     const weightDetailMatch = rest.match(/^(.+?)[:\s]+(\d+(?:\.\d+)?(?:kg|lbs?|lb)\s+x\s*\d+.*)$/i)
-      || rest.match(/^(.+?)\s+(x\s*\d+.*)$/i)
-      || rest.match(/^(.+?)[:\s]+(\d+(?:\s*x\s*\d+).*)$/i);
+      || rest.match(/^(.+?)\s+(\d+(?:\.\d+)?(?:kg|lbs?|lb)\s+x\s*\d+.*)$/i)
+      || rest.match(/^(.+?)[:\s]+(\d+(?:\s*x\s*\d+).*)$/i)
+      || rest.match(/^(.+?)\s+(x\s*\d+.*)$/i);
 
     if (weightDetailMatch) {
       return { label, name: weightDetailMatch[1].trim(), detail: weightDetailMatch[2].trim() };
@@ -192,10 +204,15 @@ export function parseWorkoutPlan(text: string): ExerciseGroup[] {
     }
 
     // ── Unmatched lines after exercises might be standalone items ─────────────
-    if (currentSection === 'exercises' && currentGroup && line.startsWith('-')) {
-      const { label, name, detail } = parseExerciseLine(line);
-      const weightInfo = parseWeight(detail);
-      currentGroup.exercises.push({ label, name, detail, ...weightInfo });
+    if (currentSection === 'exercises' && currentGroup) {
+      if (line.startsWith('-')) {
+        const { label, name, detail } = parseExerciseLine(line);
+        const weightInfo = parseWeight(detail);
+        currentGroup.exercises.push({ label, name, detail, ...weightInfo });
+      } else {
+        // Fallback: treat as plain text exercise entry
+        currentGroup.exercises.push({ label: '', name: line, detail: '', hasWeight: false, textBefore: line, weightPart: '', textAfter: '' });
+      }
     }
   }
 
@@ -221,11 +238,6 @@ interface ExerciseBlockProps {
 export default function ExerciseBlock({ group }: ExerciseBlockProps) {
   const isWarmCool = group.type === 'warmup' || group.type === 'cooldown';
   const isCardio = group.type === 'cardio';
-
-  // Section label above the box
-  const sectionLabel = group.type === 'superset' || group.type === 'standalone'
-    ? null // label shown inside header
-    : null; // warm-up/cool-down/cardio labels are shown by PlanDayCard
 
   const borderColor = isCardio ? '#14b8a6' : '#e2e8f0';
   const bgColor = isWarmCool ? '#fafbfc' : '#ffffff';
