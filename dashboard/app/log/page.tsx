@@ -309,6 +309,7 @@ export default function DailyLogPage() {
           dailyLogId={dailyLogId}
           dailyNotes={dailyNotes}
           onNotesChange={handleNotesChange}
+          onDayClick={setCurrentDate}
         />
       </Box>
     </Box>

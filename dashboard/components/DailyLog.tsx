@@ -3,6 +3,9 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Box,
   Card,
   CardContent,
@@ -11,6 +14,7 @@ import {
   Switch,
   Typography,
 } from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import BedtimeCard from './BedtimeCard';
 import TaggedNotes from './TaggedNotes';
@@ -23,6 +27,8 @@ import EnergyPainCard from './EnergyPainCard';
 import SleepDisruptionCard from './SleepDisruptionCard';
 import WeekComplianceBar from './WeekComplianceBar';
 import ComplianceSparkline from './ComplianceSparkline';
+import WeekOverview from './WeekOverview';
+import type { WeekDay } from './WeekOverview';
 import { computeDayCompliance, computeWeekCompliancePct, isBedtimeCompliant } from '@/lib/compliance';
 import { semanticColors } from '@/lib/design-tokens';
 import type { UncompletedSession } from './SessionPicker';
@@ -82,6 +88,88 @@ export interface DailyLogProps {
   dailyLogId: number | null;
   dailyNotes: DailyNote[];
   onNotesChange: () => void;
+  /** Optional: called when a day cell is clicked in the week overview */
+  onDayClick?: (date: string) => void;
+}
+
+// ── Week date helpers ────────────────────────────────────────────────────────
+const MS_PER_DAY = 86_400_000;
+const EPOCH_LOCAL = new Date(2025, 11, 29); // Dec 29, 2025 (Monday)
+const DAY_ABBR = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+function parseLocalDate(dateStr: string): Date {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function toDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function getWeekDatesForDate(dateStr: string): string[] {
+  const dateLocal = parseLocalDate(dateStr);
+  const daysSince = Math.round((dateLocal.getTime() - EPOCH_LOCAL.getTime()) / MS_PER_DAY);
+  const weekNumber = daysSince < 0 ? 1 : Math.floor(daysSince / 7) + 1;
+  const monday = new Date(EPOCH_LOCAL.getTime() + (weekNumber - 1) * 7 * MS_PER_DAY);
+  return Array.from({ length: 7 }, (_, i) => toDateStr(new Date(monday.getTime() + i * MS_PER_DAY)));
+}
+
+function buildWeekDays(
+  date: string,
+  weekLogs: WeekLog[],
+  plannedSession: PlannedSession | null,
+  uncompletedSessions: UncompletedSession[],
+): WeekDay[] {
+  const weekDates = getWeekDatesForDate(date);
+
+  return weekDates.map((d, i) => {
+    const dayName = DAY_ABBR[i];
+    const dayOfWeek = parseLocalDate(d).getDay(); // 0=Sun, 6=Sat
+    const isSaturday = dayOfWeek === 6;
+    const isToday = d === date;
+
+    // Determine session info: check planned session for this date
+    // uncompletedSessions have a `day` field (day name like "Monday")
+    // plannedSession is for the current date only
+    let sessionType: string | null = null;
+    let sessionFocus: string | null = null;
+
+    if (d === date && plannedSession) {
+      sessionType = plannedSession.session_type;
+      sessionFocus = plannedSession.focus;
+    } else {
+      // Try to find from uncompletedSessions by day name
+      const dayFullNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const dayFullName = dayFullNames[dayOfWeek];
+      const uncompleted = uncompletedSessions.find((s) => s.day === dayFullName);
+      if (uncompleted) {
+        sessionType = uncompleted.session_type;
+        sessionFocus = uncompleted.focus;
+      }
+    }
+
+    if (isSaturday) {
+      return { date: d, dayName, sessionType: null, sessionFocus: null, status: 'family' };
+    }
+
+    const wl = weekLogs.find((l) => l.date === d);
+    if (wl?.workout_completed) {
+      return { date: d, dayName, sessionType, sessionFocus, status: 'done' };
+    }
+
+    if (isToday) {
+      return { date: d, dayName, sessionType, sessionFocus, status: 'today' };
+    }
+
+    if (!sessionType) {
+      return { date: d, dayName, sessionType: null, sessionFocus: null, status: 'rest' };
+    }
+
+    return { date: d, dayName, sessionType, sessionFocus, status: 'pending' };
+  });
 }
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'failed';
@@ -99,6 +187,7 @@ export default function DailyLog({
   dailyLogId,
   dailyNotes,
   onNotesChange,
+  onDayClick,
 }: DailyLogProps) {
   const [formData, setFormData] = useState<LogData>(log);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
@@ -171,6 +260,9 @@ export default function DailyLog({
   const sessionsCompleted = weekLogs.filter((l) => l.workout_completed === 1).length;
   const sessionsPlanned = uncompletedSessions.length + sessionsCompleted;
 
+  // ── Week overview days ───────────────────────────────────────────────────
+  const weekDays = buildWeekDays(date, weekLogs, plannedSession, uncompletedSessions);
+
   // ── Day compliance (progress ring) ──────────────────────────────────────
   const hasPlannedSession = !!plannedSession || selectedPlanItemId != null;
   const dayCompliance = computeDayCompliance(formData, hasPlannedSession);
@@ -229,7 +321,34 @@ export default function DailyLog({
         )}
       </Box>
 
-      {/* 2. DayProgress (if not Saturday) */}
+      {/* 2. Week Overview accordion */}
+      <Accordion
+        disableGutters
+        elevation={0}
+        sx={{
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: '8px !important',
+          '&:before': { display: 'none' },
+        }}
+      >
+        <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ px: 2, py: 0.5, minHeight: 40 }}>
+          <Typography variant="body2" fontWeight={600}>
+            This Week
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails sx={{ px: 1.5, pb: 1.5, pt: 0.5 }}>
+          <WeekOverview
+            days={weekDays}
+            sessionsCompleted={sessionsCompleted}
+            sessionsPlanned={sessionsPlanned}
+            currentDate={date}
+            onDayClick={onDayClick ?? (() => {})}
+          />
+        </AccordionDetails>
+      </Accordion>
+
+      {/* 3. DayProgress (if not Saturday) */}
       {!isSaturday && (
         <DayProgress
           checked={dayCompliance.checked}
@@ -238,7 +357,7 @@ export default function DailyLog({
         />
       )}
 
-      {/* 3. Sick day toggle */}
+      {/* 4. Sick day toggle */}
       <Card variant="outlined">
         <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
           <FormControlLabel
