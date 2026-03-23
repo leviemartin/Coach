@@ -13,8 +13,9 @@ import { useRouter } from 'next/navigation';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
 import WeeklyReview from '@/components/checkin/WeeklyReview';
+import SubjectiveInputs from '@/components/checkin/SubjectiveInputs';
 import { getTrainingWeek } from '@/lib/week';
-import type { CheckInFormData } from '@/lib/types';
+import type { CheckInFormData, CheckinSubjectiveData } from '@/lib/types';
 
 const STEPS = [
   'Weekly Review',
@@ -35,6 +36,14 @@ export default function CheckInPage() {
   const weekNumber = getTrainingWeek();
   const [activeStep, setActiveStep] = useState(0);
   const [annotation, setAnnotation] = useState('');
+  const [subjectiveData, setSubjectiveData] = useState<CheckinSubjectiveData>({
+    perceivedReadiness: 3,
+    planSatisfaction: 3,
+    weekReflection: '',
+    nextWeekConflicts: '',
+    questionsForCoaches: '',
+    model: 'mixed',
+  });
 
   // Step 1 data passed forward — annotation is the key output
   const handleNext = () => {
@@ -49,17 +58,17 @@ export default function CheckInPage() {
         sessionsPlanned: 5,
         missedSessions: '',
         strengthWins: '',
-        struggles: annotation,
+        struggles: subjectiveData.weekReflection || annotation,
         bedtimeCompliance: 0,
         rugProtocolDays: 0,
         hydrationTracked: false,
-        upcomingConflicts: '',
+        upcomingConflicts: subjectiveData.nextWeekConflicts,
         focusNextWeek: '',
-        questionsForCoaches: '',
-        perceivedReadiness: 3,
-        planSatisfaction: 3,
+        questionsForCoaches: subjectiveData.questionsForCoaches,
+        perceivedReadiness: subjectiveData.perceivedReadiness,
+        planSatisfaction: subjectiveData.planSatisfaction,
         planFeedback: '',
-        model: 'sonnet',
+        model: subjectiveData.model === 'mixed' ? 'sonnet' : subjectiveData.model,
       };
       sessionStorage.setItem('checkin_form_data', JSON.stringify(formData));
       router.push('/checkin/results');
@@ -94,22 +103,10 @@ export default function CheckInPage() {
       )}
 
       {activeStep === 1 && (
-        <Box
-          sx={{
-            border: '1px dashed #e2e8f0',
-            borderRadius: 2,
-            p: 4,
-            textAlign: 'center',
-            color: 'text.secondary',
-          }}
-        >
-          <Typography variant="h6" fontWeight={600} gutterBottom>
-            Step 2: Subjective Inputs
-          </Typography>
-          <Typography variant="body2">
-            Coming in Task C2 — simplified check-in survey replacing the old form.
-          </Typography>
-        </Box>
+        <SubjectiveInputs
+          data={subjectiveData}
+          onChange={setSubjectiveData}
+        />
       )}
 
       {activeStep === 2 && (

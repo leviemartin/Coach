@@ -171,6 +171,15 @@ export interface CheckInFormData {
   model: 'sonnet' | 'opus' | 'mixed';
 }
 
+export interface CheckinSubjectiveData {
+  perceivedReadiness: number;  // 1-5
+  planSatisfaction: number;    // 1-5
+  weekReflection: string;
+  nextWeekConflicts: string;
+  questionsForCoaches: string;
+  model: 'sonnet' | 'opus' | 'mixed';
+}
+
 export interface AgentOutput {
   agentId: string;
   label: string;
