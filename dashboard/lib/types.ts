@@ -200,6 +200,12 @@ export interface PlanItem {
   completed: boolean;
   completedAt: string | null;
   subTasks: SubTask[];
+  // Flexible scheduling fields (v8)
+  sequenceOrder?: number;
+  sequenceNotes?: string | null;
+  sequenceGroup?: string | null;
+  assignedDate?: string | null;
+  status?: 'pending' | 'scheduled' | 'completed' | 'skipped';
 }
 
 export interface WeeklyMetrics {

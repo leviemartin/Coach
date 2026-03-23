@@ -6,7 +6,7 @@ import { normalizeWorkoutText } from './parse-schedule';
 import { DB_PATH } from './constants';
 
 // Schema version — bump this when adding tables or columns to force re-init on cached connections
-const SCHEMA_VERSION = 7; // v7: added daily_notes table
+const SCHEMA_VERSION = 8; // v8: added flexible scheduling columns to plan_items
 
 // Use globalThis to persist across hot reloads in dev
 const globalForDb = globalThis as unknown as { _coachDb?: Database.Database; _coachDbSchema?: number };
@@ -73,7 +73,11 @@ export function initTablesOn(db: Database.Database) {
       coach_cues TEXT,
       athlete_notes TEXT DEFAULT '',
       completed INTEGER DEFAULT 0,
-      completed_at TEXT
+      completed_at TEXT,
+      sequence_notes TEXT,
+      sequence_group TEXT,
+      assigned_date TEXT,
+      status TEXT DEFAULT 'pending'
     );
 
     CREATE TABLE IF NOT EXISTS settings (
@@ -379,6 +383,22 @@ export function initTablesOn(db: Database.Database) {
       })();
     }
   } catch { /* non-fatal */ }
+
+  // Migration v8: add flexible scheduling columns to plan_items
+  try { db.exec(`ALTER TABLE plan_items ADD COLUMN sequence_notes TEXT`); } catch {}
+  try { db.exec(`ALTER TABLE plan_items ADD COLUMN sequence_group TEXT`); } catch {}
+  try { db.exec(`ALTER TABLE plan_items ADD COLUMN assigned_date TEXT`); } catch {}
+  try { db.exec(`ALTER TABLE plan_items ADD COLUMN status TEXT DEFAULT 'pending'`); } catch {}
+
+  // Migration v8 backfill: populate status from completed boolean (run once)
+  try {
+    const statusMigrated = db.prepare("SELECT value FROM settings WHERE key = 'plan_status_backfill'").get();
+    if (!statusMigrated) {
+      db.exec("UPDATE plan_items SET status = 'completed' WHERE completed = 1");
+      db.exec("UPDATE plan_items SET status = 'pending' WHERE completed = 0 OR completed IS NULL");
+      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('plan_status_backfill', '1')").run();
+    }
+  } catch { /* non-fatal */ }
 }
 
 // Settings
@@ -463,8 +483,8 @@ export function insertPlanItems(items: PlanItem[]): void {
     INSERT INTO plan_items (
       week_number, day_order, day, session_type, focus,
       starting_weight, workout_plan, coach_cues, athlete_notes,
-      completed, completed_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      completed, completed_at, sequence_notes, sequence_group, assigned_date, status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   const insertMany = db.transaction((items: PlanItem[]) => {
@@ -472,7 +492,9 @@ export function insertPlanItems(items: PlanItem[]): void {
       stmt.run(
         item.weekNumber, item.dayOrder, item.day, item.sessionType,
         item.focus, item.startingWeight, item.workoutPlan, item.coachCues,
-        item.athleteNotes, item.completed ? 1 : 0, item.completedAt
+        item.athleteNotes, item.completed ? 1 : 0, item.completedAt,
+        item.sequenceNotes || null, item.sequenceGroup || null,
+        item.assignedDate || null, item.status || 'pending'
       );
     }
   });
@@ -517,6 +539,11 @@ function mapPlanRow(row: unknown): PlanItem {
     completed: !!(r.completed),
     completedAt: r.completed_at as string | null,
     subTasks,
+    sequenceOrder: r.day_order as number,
+    sequenceNotes: (r.sequence_notes as string) || null,
+    sequenceGroup: (r.sequence_group as string) || null,
+    assignedDate: (r.assigned_date as string) || null,
+    status: (r.status as string || 'pending') as 'pending' | 'scheduled' | 'completed' | 'skipped',
   };
 }
 
