@@ -174,12 +174,14 @@ export interface WeeklyReviewProps {
   weekNumber: number;
   annotation: string;
   onAnnotationChange: (value: string) => void;
+  onDataLoad?: (data: WeeklyReviewData) => void;
 }
 
 export default function WeeklyReview({
   weekNumber,
   annotation,
   onAnnotationChange,
+  onDataLoad,
 }: WeeklyReviewProps) {
   const [data, setData] = useState<WeeklyReviewData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -195,6 +197,7 @@ export default function WeeklyReview({
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json: WeeklyReviewData = await res.json();
       setData(json);
+      onDataLoad?.(json);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load review data');
     } finally {

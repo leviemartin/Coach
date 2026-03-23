@@ -14,8 +14,11 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
 import WeeklyReview from '@/components/checkin/WeeklyReview';
 import SubjectiveInputs from '@/components/checkin/SubjectiveInputs';
+import TriageQA from '@/components/checkin/TriageQA';
 import { getTrainingWeek } from '@/lib/week';
 import type { CheckInFormData, CheckinSubjectiveData } from '@/lib/types';
+import type { TriageAnswer } from '@/lib/triage-agent';
+import type { WeeklyReviewData } from '@/app/api/checkin/review/route';
 
 const STEPS = [
   'Weekly Review',
@@ -36,6 +39,8 @@ export default function CheckInPage() {
   const weekNumber = getTrainingWeek();
   const [activeStep, setActiveStep] = useState(0);
   const [annotation, setAnnotation] = useState('');
+  const [reviewData, setReviewData] = useState<WeeklyReviewData | null>(null);
+  const [triageAnswers, setTriageAnswers] = useState<TriageAnswer[]>([]);
   const [subjectiveData, setSubjectiveData] = useState<CheckinSubjectiveData>({
     perceivedReadiness: 0,
     planSatisfaction: 0,
@@ -47,8 +52,10 @@ export default function CheckInPage() {
 
   // Step 1 data passed forward — annotation is the key output
   const handleNext = () => {
-    // Steps 2–3: placeholders for C2/C3 — skip to results for now
-    if (activeStep >= 2) {
+    // Step 3 (Triage) advances via TriageQA's onComplete — not this button
+    if (activeStep === 2) return;
+
+    if (activeStep >= 3) {
       // TODO(C4): Remove legacy bridge — checkin API will consume CheckinSubjectiveData directly
       // Build minimal form data and hand off to results page (legacy path)
       const formData: Partial<CheckInFormData> = {
@@ -79,6 +86,11 @@ export default function CheckInPage() {
     setActiveStep((s) => s + 1);
   };
 
+  const handleTriageComplete = (answers: TriageAnswer[]) => {
+    setTriageAnswers(answers);
+    setActiveStep((s) => s + 1);
+  };
+
   const handleBack = () => setActiveStep((s) => Math.max(0, s - 1));
 
   return (
@@ -101,6 +113,7 @@ export default function CheckInPage() {
           weekNumber={weekNumber}
           annotation={annotation}
           onAnnotationChange={setAnnotation}
+          onDataLoad={setReviewData}
         />
       )}
 
@@ -112,22 +125,11 @@ export default function CheckInPage() {
       )}
 
       {activeStep === 2 && (
-        <Box
-          sx={{
-            border: '1px dashed #e2e8f0',
-            borderRadius: 2,
-            p: 4,
-            textAlign: 'center',
-            color: 'text.secondary',
-          }}
-        >
-          <Typography variant="h6" fontWeight={600} gutterBottom>
-            Step 3: Triage Agent
-          </Typography>
-          <Typography variant="body2">
-            Coming in Task C3 — AI-driven Q&amp;A to surface missing context.
-          </Typography>
-        </Box>
+        <TriageQA
+          reviewData={reviewData}
+          subjectiveData={subjectiveData}
+          onComplete={handleTriageComplete}
+        />
       )}
 
       {activeStep === 3 && (
@@ -169,22 +171,25 @@ export default function CheckInPage() {
       )}
 
       {/* ── Navigation ───────────────────────────────────────────── */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
-        <Button
-          variant="outlined"
-          onClick={handleBack}
-          disabled={activeStep === 0}
-        >
-          Back
-        </Button>
-        <Button
-          variant="contained"
-          onClick={handleNext}
-          disableElevation
-        >
-          {activeStep === 4 ? 'Go to Coach' : 'Next'}
-        </Button>
-      </Box>
+      {/* Step 3 (Triage) manages its own navigation — hide default Next button */}
+      {activeStep !== 2 && (
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
+          <Button
+            variant="outlined"
+            onClick={handleBack}
+            disabled={activeStep === 0}
+          >
+            Back
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleNext}
+            disableElevation
+          >
+            {activeStep === 4 ? 'Go to Coach' : 'Next'}
+          </Button>
+        </Box>
+      )}
     </Box>
   );
 }
