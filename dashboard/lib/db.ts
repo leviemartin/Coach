@@ -492,7 +492,7 @@ export function insertPlanItems(items: PlanItem[]): void {
       stmt.run(
         item.weekNumber, item.dayOrder, item.day, item.sessionType,
         item.focus, item.startingWeight, item.workoutPlan, item.coachCues,
-        item.athleteNotes, item.completed ? 1 : 0, item.completedAt,
+        item.athleteNotes, (item.status === 'completed' || item.completed) ? 1 : 0, item.completedAt,
         item.sequenceNotes || null, item.sequenceGroup || null,
         item.assignedDate || null, item.status || 'pending'
       );
@@ -734,8 +734,7 @@ export function getUncompletedSessionsForWeek(weekNumber: number): UncompletedSe
   return db.prepare(`
     SELECT p.id, p.day, p.session_type, p.focus, p.workout_plan
     FROM plan_items p
-    LEFT JOIN daily_logs d ON d.workout_plan_item_id = p.id AND d.workout_completed = 1
-    WHERE p.week_number = ? AND d.id IS NULL
+    WHERE p.week_number = ? AND p.status NOT IN ('completed', 'skipped')
     ORDER BY p.id
   `).all(weekNumber) as UncompletedSession[];
 }
