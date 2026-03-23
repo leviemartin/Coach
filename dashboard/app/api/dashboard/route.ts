@@ -66,16 +66,39 @@ export async function GET() {
   const loadFocus = freshness.data ? extractLoadFocus(freshness.data) : null;
   const hrZones = freshness.data ? extractHrZones(freshness.data) : null;
 
-  // Weight history from weekly_metrics
+  // Weight history — combine DB metrics with Garmin body composition trend
   const allMetrics = getWeeklyMetrics();
   const weightHistory: WeightHistoryPoint[] = allMetrics
     .filter((m) => m.weightKg != null)
     .map((m) => ({ weekNumber: m.weekNumber, avgWeightKg: m.weightKg! }));
 
-  // Add current week from Garmin if not in metrics yet
+  // Seed from Garmin 4-week body composition trend (grouped by week)
+  const bodyTrend = freshness.data?.four_week_context?.body_composition_trend as
+    Array<{ date: string; weight_kg: number }> | undefined;
+  if (bodyTrend?.length) {
+    const epoch = new Date('2025-12-29').getTime();
+    const weekMap = new Map<number, number[]>();
+    for (const entry of bodyTrend) {
+      if (!entry.weight_kg) continue;
+      const wk = Math.floor((new Date(entry.date).getTime() - epoch) / (7 * 86400000)) + 1;
+      if (!weekMap.has(wk)) weekMap.set(wk, []);
+      weekMap.get(wk)!.push(entry.weight_kg);
+    }
+    for (const [wk, weights] of weekMap) {
+      if (!weightHistory.find((w) => w.weekNumber === wk)) {
+        const avg = Math.round((weights.reduce((a, b) => a + b, 0) / weights.length) * 100) / 100;
+        weightHistory.push({ weekNumber: wk, avgWeightKg: avg });
+      }
+    }
+  }
+
+  // Add current week from Garmin if not in history yet
   if (garmin?.weight && !weightHistory.find((w) => w.weekNumber === currentWeek)) {
     weightHistory.push({ weekNumber: currentWeek, avgWeightKg: garmin.weight });
   }
+
+  // Sort by week
+  weightHistory.sort((a, b) => a.weekNumber - b.weekNumber);
 
   // Recovery score — use latest perceived readiness from daily logs + Garmin
   // For now, use Garmin readiness only (perceived comes from daily log)
@@ -91,12 +114,10 @@ export async function GET() {
         score: null,
       }));
 
-  // Weight from start (W1)
-  const startWeight = weightHistory.length > 0
-    ? weightHistory.reduce((min, w) => w.weekNumber < min.weekNumber ? w : min).avgWeightKg
-    : null;
-  const weightFromStart = garmin?.weight && startWeight
-    ? Math.round((garmin.weight - startWeight) * 10) / 10
+  // Weight from start — known starting weight 102kg (Jan 2026, athlete profile)
+  const STARTING_WEIGHT = 102;
+  const weightFromStart = garmin?.weight
+    ? Math.round((garmin.weight - STARTING_WEIGHT) * 10) / 10
     : null;
 
   // Phase targets

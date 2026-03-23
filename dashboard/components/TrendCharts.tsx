@@ -155,16 +155,14 @@ export default function TrendCharts({
                 })()}
               </Box>
               {/* Start weight annotation */}
-              {metrics.length > 0 && metrics[0].weightKg != null && (
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
-                  <Typography variant="caption" color="text.secondary">
-                    Start: <strong>{metrics[0].weightKg}kg</strong> (W{metrics[0].weekNumber})
-                  </Typography>
-                  <Typography variant="caption" color="success.main">
-                    Target: 89kg {metrics[metrics.length - 1].weightKg != null ? `· Now: ${metrics[metrics.length - 1].weightKg}kg` : ''}
-                  </Typography>
-                </Box>
-              )}
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
+                <Typography variant="caption" color="text.secondary">
+                  Start: <strong>102kg</strong> (W1)
+                </Typography>
+                <Typography variant="caption" color="success.main">
+                  Target: 89kg {metrics[metrics.length - 1]?.weightKg != null ? `· Now: ${metrics[metrics.length - 1].weightKg}kg` : ''}
+                </Typography>
+              </Box>
             </CardContent>
           </Card>
         </Grid>

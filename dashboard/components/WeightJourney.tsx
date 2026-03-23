@@ -32,7 +32,13 @@ export default function WeightJourney({
   const chartW = width - padLeft - padRight;
   const chartH = height - padTop - padBottom;
 
-  // Y-axis range: from max weight to race weight (89kg), with some padding
+  // Derive current phase target from currentWeek
+  const phaseBoundariesLookup = [1, 14, 27, 45, 58, 71, 79];
+  const currentPhaseIdx = phaseBoundariesLookup.findIndex((b, i) =>
+    currentWeek >= b && currentWeek < (phaseBoundariesLookup[i + 1] ?? 999));
+  const currentPhaseTarget = phaseTargets[currentPhaseIdx]?.targetWeightKg ?? 89;
+
+  // Y-axis range: from max weight to lowest target, with some padding
   const allWeights = weightHistory.map((w) => w.avgWeightKg);
   const targetWeights = phaseTargets.map((p) => p.targetWeightKg);
   const yMax = Math.max(...allWeights, ...targetWeights, 102) + 1;
@@ -80,7 +86,7 @@ export default function WeightJourney({
         <Typography sx={{ ...typography.primaryMetric, lineHeight: 1.1 }}>
           {currentWeight ?? '—'}
         </Typography>
-        <Typography sx={{ fontSize: '0.875rem', color: '#94a3b8', fontWeight: 600 }}>
+        <Typography sx={{ fontSize: '0.875rem', color: 'currentColor', fontWeight: 600 }}>
           kg
         </Typography>
       </Box>
@@ -137,13 +143,13 @@ export default function WeightJourney({
           )}
 
           {/* Start label */}
-          <text x={padLeft} y={padTop - 2} fontSize="8" fill="#94a3b8" fontFamily="Inter, sans-serif">
+          <text x={padLeft} y={padTop - 2} fontSize="8" fill="currentColor" opacity="0.5" fontFamily="Inter, sans-serif">
             {Math.round(allWeights[0] ?? 102)}kg
           </text>
 
-          {/* Target label */}
-          <text x={width - padRight} y={toY(89) - 4} fontSize="8" fill="#94a3b8" textAnchor="end" fontFamily="Inter, sans-serif">
-            89kg target
+          {/* Current phase target label */}
+          <text x={width - padRight} y={toY(currentPhaseTarget) - 4} fontSize="8" fill="currentColor" opacity="0.5" textAnchor="end" fontFamily="Inter, sans-serif">
+            {currentPhaseTarget}kg target
           </text>
 
           {/* Week label */}
@@ -165,11 +171,11 @@ export default function WeightJourney({
       <Box sx={{ display: 'flex', gap: 2, mt: 0.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
           <Box sx={{ width: 16, height: 2, bgcolor: semanticColors.body, borderRadius: 1 }} />
-          <Typography sx={{ fontSize: '0.625rem', color: '#94a3b8' }}>Actual</Typography>
+          <Typography sx={{ fontSize: '0.625rem', color: 'currentColor' }}>Actual</Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
           <Box sx={{ width: 16, height: 0, borderTop: '2px dashed #94a3b8' }} />
-          <Typography sx={{ fontSize: '0.625rem', color: '#94a3b8' }}>Phase target</Typography>
+          <Typography sx={{ fontSize: '0.625rem', color: 'currentColor' }}>Phase target</Typography>
         </Box>
       </Box>
     </HeroCard>
