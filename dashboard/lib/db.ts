@@ -6,7 +6,7 @@ import { normalizeWorkoutText } from './parse-schedule';
 import { DB_PATH } from './constants';
 
 // Schema version — bump this when adding tables or columns to force re-init on cached connections
-const SCHEMA_VERSION = 6; // v6: added energy_level, pain_level, pain_area, sleep_disruption, session_summary, session_log_id to daily_logs
+const SCHEMA_VERSION = 7; // v7: added daily_notes table
 
 // Use globalThis to persist across hot reloads in dev
 const globalForDb = globalThis as unknown as { _coachDb?: Database.Database; _coachDbSchema?: number };
@@ -339,6 +339,42 @@ export function initTablesOn(db: Database.Database) {
         }
         db.prepare(
           "INSERT INTO settings (key, value) VALUES ('workout_normalize_v3', ?)"
+        ).run(new Date().toISOString());
+      })();
+    }
+  } catch { /* non-fatal */ }
+
+  // daily_notes table (tagged notes attached to daily logs)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS daily_notes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      daily_log_id INTEGER NOT NULL REFERENCES daily_logs(id),
+      category TEXT NOT NULL CHECK(category IN ('injury','sleep','training','life','other')),
+      text TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_daily_notes_log ON daily_notes(daily_log_id);
+    CREATE INDEX IF NOT EXISTS idx_daily_notes_category ON daily_notes(category);
+  `);
+
+  // Migration notes_migration_v1: move existing non-null daily_logs.notes into daily_notes with category 'other'
+  try {
+    const migrated = db.prepare(
+      "SELECT value FROM settings WHERE key = 'notes_migration_v1'"
+    ).get();
+    if (!migrated) {
+      const rows = db.prepare(
+        "SELECT id, notes, created_at FROM daily_logs WHERE notes IS NOT NULL AND notes != ''"
+      ).all() as { id: number; notes: string; created_at: string }[];
+      const insert = db.prepare(
+        "INSERT INTO daily_notes (daily_log_id, category, text, created_at) VALUES (?, 'other', ?, ?)"
+      );
+      db.transaction(() => {
+        for (const row of rows) {
+          insert.run(row.id, row.notes, row.created_at);
+        }
+        db.prepare(
+          "INSERT INTO settings (key, value) VALUES ('notes_migration_v1', ?)"
         ).run(new Date().toISOString());
       })();
     }
@@ -677,6 +713,43 @@ export function getUncompletedSessionsForWeek(weekNumber: number): UncompletedSe
     WHERE p.week_number = ? AND d.id IS NULL
     ORDER BY p.id
   `).all(weekNumber) as UncompletedSession[];
+}
+
+// Daily Notes
+export interface DailyNote {
+  id: number;
+  daily_log_id: number;
+  category: 'injury' | 'sleep' | 'training' | 'life' | 'other';
+  text: string;
+  created_at: string;
+}
+
+export function insertDailyNote(dailyLogId: number, category: DailyNote['category'], text: string, _db = getDb()): DailyNote {
+  const now = new Date().toISOString();
+  const result = _db.prepare(
+    'INSERT INTO daily_notes (daily_log_id, category, text, created_at) VALUES (?, ?, ?, ?)'
+  ).run(dailyLogId, category, text, now);
+  return _db.prepare('SELECT * FROM daily_notes WHERE id = ?').get(result.lastInsertRowid) as DailyNote;
+}
+
+export function getDailyNotes(dailyLogId: number, _db = getDb()): DailyNote[] {
+  return _db.prepare(
+    'SELECT * FROM daily_notes WHERE daily_log_id = ? ORDER BY created_at ASC'
+  ).all(dailyLogId) as DailyNote[];
+}
+
+export function getWeekNotes(weekNumber: number, _db = getDb()): (DailyNote & { date: string })[] {
+  return _db.prepare(`
+    SELECT dn.*, dl.date
+    FROM daily_notes dn
+    JOIN daily_logs dl ON dn.daily_log_id = dl.id
+    WHERE dl.week_number = ?
+    ORDER BY dl.date ASC, dn.created_at ASC
+  `).all(weekNumber) as (DailyNote & { date: string })[];
+}
+
+export function deleteDailyNote(id: number, _db = getDb()): void {
+  _db.prepare('DELETE FROM daily_notes WHERE id = ?').run(id);
 }
 
 export function upsertDailyLog(log: Omit<DailyLog, 'id' | 'created_at' | 'updated_at'>): DailyLog {
