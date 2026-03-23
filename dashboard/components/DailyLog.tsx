@@ -318,16 +318,21 @@ export default function DailyLog({
   };
 
   const handleSwap = async (planItemId: number) => {
-    const res = await fetch('/api/plan/swap', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ planItemId, targetDate: date }),
-    });
-    const data = await res.json();
-    // data.warning is informational — swap still succeeds
-    void data;
-    setSwapMode(false);
-    await onSave({ ...formData, workout_plan_item_id: planItemId });
+    try {
+      const res = await fetch('/api/plan/swap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planItemId, targetDate: date }),
+      });
+      if (!res.ok) {
+        console.error('Swap failed:', res.status);
+        return;
+      }
+      setSwapMode(false);
+      await onSave({ ...formData, workout_plan_item_id: planItemId });
+    } catch (err) {
+      console.error('Swap error:', err);
+    }
   };
 
   return (

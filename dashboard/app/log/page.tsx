@@ -199,6 +199,7 @@ export default function DailyLogPage() {
     });
     if (!res.ok) throw new Error('Save failed');
     fetchWeekLogs();
+    fetchDayLog(currentDate);
   };
 
   const navigateDay = (delta: number) => {
