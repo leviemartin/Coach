@@ -16,6 +16,7 @@ import BedtimeCard from './BedtimeCard';
 import TaggedNotes from './TaggedNotes';
 import type { DailyNote } from './TaggedNotes';
 import SessionPicker from './SessionPicker';
+import SessionSummaryCard from './SessionSummaryCard';
 import DailyChecklist from './DailyChecklist';
 import DayProgress from './DayProgress';
 import EnergyPainCard from './EnergyPainCard';
@@ -40,6 +41,7 @@ interface LogData {
   pain_level: number | null;
   pain_area: string | null;
   sleep_disruption: string | null;
+  session_summary: string | null;
 }
 
 interface PlannedSession {
@@ -299,6 +301,11 @@ export default function DailyLog({
             </Link>
           )}
         </Box>
+      )}
+
+      {/* 4c. SessionSummaryCard (after session completed) */}
+      {!isSick && formData.session_summary && (
+        <SessionSummaryCard sessionSummary={formData.session_summary} />
       )}
 
       {/* 5. SleepDisruptionCard (always visible) */}
