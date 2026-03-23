@@ -157,7 +157,7 @@ function buildSharedContextStructured(
   context += `## Current Phase & Periodization\n${periodization}\n\n`;
   context += `## Active Decisions & Gates\n${decisions}\n\n`;
   context += `## Current Working Ceilings\n\`\`\`json\n${JSON.stringify(ceilings, null, 2)}\n\`\`\`\n\n`;
-  context += `## Historical Context\n${tieredHistory.format()}\n`;
+  context += tieredHistory.format() + '\n';
 
   // ── Garmin Data ───────────────────────────────────────────────────────────
   if (garminData) {

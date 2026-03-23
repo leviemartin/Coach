@@ -78,10 +78,10 @@ describe('buildSharedContext tiered history integration', () => {
     vi.clearAllMocks();
   });
 
-  it('structured context includes Historical Context section', async () => {
+  it('structured context includes Coaching History section', async () => {
     const { buildSharedContext } = await import('../lib/agents');
     const result = buildSharedContext(null, makeSubjectiveData());
-    expect(result).toContain('## Historical Context');
+    expect(result).toContain('## Coaching History');
   });
 
   it('structured context includes Recent Detail section', async () => {
