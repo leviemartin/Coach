@@ -72,6 +72,17 @@ describe('sequencing constraints', () => {
     expect(result.warning).toBeUndefined();
   });
 
+  it('family day counts as separation (pure calendar math)', () => {
+    // Friday = training, Saturday = family day, Sunday = training
+    const items: PlanItem[] = [
+      makePlanItem({ id: 1, day: 'Friday', assignedDate: '2026-03-27', sequenceGroup: 'upper_compound' }),
+      makePlanItem({ id: 2, day: 'Sunday', assignedDate: '2026-03-29', sequenceGroup: 'upper_compound' }),
+    ];
+    const result = checkSequencingConstraints(items, 2, '2026-03-29');
+    expect(result.allowed).toBe(true);
+    expect(result.warning).toBeUndefined(); // 2 days apart, family Saturday separates them
+  });
+
   it('includes sequence_notes in warning when available', () => {
     const items: PlanItem[] = [
       makePlanItem({ id: 1, day: 'Monday', assignedDate: '2026-03-23', sequenceGroup: 'upper_compound', sequenceNotes: 'not within 24h of Upper Push' }),

@@ -31,11 +31,11 @@ export function checkSequencingConstraints(
     const diffDays = diffMs / (1000 * 60 * 60 * 24);
 
     if (diffDays <= 1) {
-      // Adjacent — generate warning
+      // Same-day or adjacent — generate warning
       const notes = targetSession.sequenceNotes || item.sequenceNotes;
       const warning = notes
-        ? `Coach recommends: ${notes} (${targetSession.sequenceGroup} group conflict)`
-        : `Sessions in group "${targetSession.sequenceGroup}" are on adjacent days`;
+        ? `Coach recommends: ${notes}`
+        : `Sessions in "${targetSession.sequenceGroup}" group should not be on adjacent days`;
       return { allowed: true, warning };
     }
   }
