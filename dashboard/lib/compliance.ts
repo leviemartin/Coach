@@ -9,7 +9,6 @@
 
 export interface DayComplianceInput {
   workout_completed: number;
-  core_work_done: number;
   rug_protocol_done: number;
   vampire_bedtime: string | null;
   hydration_tracked: number;
@@ -29,7 +28,8 @@ export interface ComplianceResult {
  * Compute compliance for a single day.
  *
  * Sick days: only hydration + bedtime count (total = 2).
- * Normal days: core, rug, bedtime, hydration, kitchen (5) + workout if hasPlannedSession (6).
+ * Normal days: rug, bedtime, hydration, kitchen (4) + workout if hasPlannedSession (5).
+ * Core work is part of training sessions, not a separate compliance item.
  */
 export function computeDayCompliance(
   log: DayComplianceInput,
@@ -44,12 +44,11 @@ export function computeDayCompliance(
   }
 
   let checked =
-    (log.core_work_done ? 1 : 0) +
     (log.rug_protocol_done ? 1 : 0) +
     (log.vampire_bedtime ? 1 : 0) +
     (log.hydration_tracked ? 1 : 0) +
     (log.kitchen_cutoff_hit ? 1 : 0);
-  let total = 5;
+  let total = 4;
 
   if (hasPlannedSession) {
     total += 1;

@@ -746,7 +746,9 @@ export function getUncompletedSessionsForWeek(weekNumber: number): UncompletedSe
   return db.prepare(`
     SELECT p.id, p.day, p.session_type, p.focus, p.workout_plan
     FROM plan_items p
-    WHERE p.week_number = ? AND p.status NOT IN ('completed', 'skipped')
+    WHERE p.week_number = ?
+      AND p.status NOT IN ('completed', 'skipped')
+      AND LOWER(p.session_type) NOT IN ('rest', 'rest day', 'family', 'family day', 'family time')
     ORDER BY p.id
   `).all(weekNumber) as UncompletedSession[];
 }

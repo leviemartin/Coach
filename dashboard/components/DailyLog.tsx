@@ -255,7 +255,6 @@ export default function DailyLog({
 
   // ── Compute week tallies from weekLogs ──────────────────────────────────
   const weekTallies: WeekTallies = {
-    core: weekLogs.filter((l) => l.core_work_done).length,
     rug: weekLogs.filter((l) => l.rug_protocol_done).length,
     kitchen: weekLogs.filter((l) => l.kitchen_cutoff_hit).length,
     hydration: weekLogs.filter((l) => l.hydration_tracked).length,
@@ -279,7 +278,6 @@ export default function DailyLog({
 
   const weekMetrics = [
     { label: 'Sessions', current: sessionsCompleted, target: sessionsPlanned || 1 },
-    { label: 'Core', current: weekTallies.core, target: 3 },
     { label: 'Mobility', current: weekTallies.rug, target: 7 },
     { label: 'Food Cut', current: weekTallies.kitchen, target: 7 },
     { label: 'Hydration', current: weekTallies.hydration, target: 7 },
@@ -517,7 +515,6 @@ export default function DailyLog({
       {/* 7. DailyChecklist (if not sick) / Hydration standalone if sick */}
       {!isSick ? (
         <DailyChecklist
-          coreWorkDone={formData.core_work_done}
           rugProtocolDone={formData.rug_protocol_done}
           kitchenCutoffHit={formData.kitchen_cutoff_hit}
           hydrationTracked={formData.hydration_tracked}

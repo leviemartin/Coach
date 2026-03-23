@@ -325,11 +325,10 @@ export default function WeeklyReview({
               done={compliance.workouts.completed}
               total={compliance.workouts.planned}
             />
-            <ComplianceRow label="Core Work (3/wk target)" done={compliance.core.done} total={compliance.core.target} />
-            <ComplianceRow label="Rug Protocol" done={compliance.rug_protocol.done} total={7} />
-            <ComplianceRow label="Vampire Bedtime" done={compliance.vampire.compliant} total={7} />
-            <ComplianceRow label="Kitchen Cutoff" done={compliance.kitchen_cutoff.hit} total={7} />
-            <ComplianceRow label="Hydration Tracked" done={compliance.hydration.tracked} total={7} />
+            <ComplianceRow label="Mobility Work" done={compliance.rug_protocol.done} total={7} />
+            <ComplianceRow label="Lights Out" done={compliance.vampire.compliant} total={7} />
+            <ComplianceRow label="No Food After 20:00" done={compliance.kitchen_cutoff.hit} total={7} />
+            <ComplianceRow label="Hydration Logged" done={compliance.hydration.tracked} total={7} />
 
             {compliance.vampire.avg_bedtime && (
               <Typography variant="caption" color="text.secondary">

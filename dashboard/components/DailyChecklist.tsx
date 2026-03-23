@@ -4,14 +4,12 @@ import { Box, Card, CardContent, Checkbox, Chip, FormControlLabel, Typography } 
 import { semanticColors } from '@/lib/design-tokens';
 
 export interface WeekTallies {
-  core: number;
   rug: number;
   kitchen: number;
   hydration: number;
 }
 
 export interface DailyChecklistProps {
-  coreWorkDone: number;
   rugProtocolDone: number;
   kitchenCutoffHit: number;
   hydrationTracked: number;
@@ -28,7 +26,6 @@ interface ChecklistItem {
 }
 
 export default function DailyChecklist({
-  coreWorkDone,
   rugProtocolDone,
   kitchenCutoffHit,
   hydrationTracked,
@@ -36,13 +33,6 @@ export default function DailyChecklist({
   onUpdate,
 }: DailyChecklistProps) {
   const items: ChecklistItem[] = [
-    {
-      field: 'core_work_done',
-      label: 'Core Work',
-      checked: !!coreWorkDone,
-      tallyKey: 'core',
-      target: 3,
-    },
     {
       field: 'rug_protocol_done',
       label: 'Mobility Work',
