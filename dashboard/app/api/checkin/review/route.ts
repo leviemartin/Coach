@@ -53,6 +53,9 @@ export async function GET(request: Request) {
     hasData: garminFreshness.data !== null,
   };
 
+  // combinedReadiness omitted — perceivedReadiness is collected in Step 2 (SubjectiveInputs),
+  // not available at the Step 1 review stage. Condition #5 (recovery veto) will not fire from
+  // the review API. A future improvement could re-evaluate after Step 2 completes.
   const modelSuggestion = suggestModel(compliance, weekNumber);
 
   const payload: WeeklyReviewData = {

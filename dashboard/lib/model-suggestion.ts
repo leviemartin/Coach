@@ -12,8 +12,6 @@ export interface ModelSuggestion {
  */
 const PHASE_2_START = new Date('2026-04-06T00:00:00');
 
-/** Weeks until race day at Morzine (July 5, 2027) */
-const MORZINE_RACE_DATE = new Date('2027-07-05T00:00:00');
 
 export function suggestModel(
   compliance: WeekSummary,
@@ -89,6 +87,3 @@ export function suggestModel(
 
   return { suggestion, reasons };
 }
-
-// Unused export kept for reference — Morzine is 69 weeks out
-export { MORZINE_RACE_DATE };
