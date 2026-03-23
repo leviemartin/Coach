@@ -1,5 +1,5 @@
-import Anthropic from '@anthropic-ai/sdk';
 import { readAgentPersona } from './state';
+import { getClient } from './agents';
 import { OPUS_MODEL } from './constants';
 import type { AgentOutput } from './types';
 
@@ -16,21 +16,6 @@ export interface DialogueRequest {
   specialistOutputs: AgentOutput[];
   sharedContext: string;
   draftPlan: string;
-}
-
-// ── Client ───────────────────────────────────────────────────────────────────
-
-let _client: Anthropic | null = null;
-
-function getClient(): Anthropic {
-  if (!_client) {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      throw new Error('ANTHROPIC_API_KEY is not set. Add it to dashboard/.env.local');
-    }
-    _client = new Anthropic({ apiKey });
-  }
-  return _client;
 }
 
 // ── System Prompt ────────────────────────────────────────────────────────────

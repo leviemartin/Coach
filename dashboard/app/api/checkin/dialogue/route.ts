@@ -10,6 +10,12 @@ function isValidDialogueRequest(body: unknown): body is DialogueRequest {
   if (typeof b.message !== 'string' || b.message.trim().length === 0) return false;
   if (!Array.isArray(b.conversationHistory)) return false;
   if (!Array.isArray(b.specialistOutputs)) return false;
+  for (const out of b.specialistOutputs as unknown[]) {
+    if (typeof out !== 'object' || out === null) return false;
+    const o = out as Record<string, unknown>;
+    if (typeof o.label !== 'string') return false;
+    if (typeof o.content !== 'string' && typeof o.error !== 'string') return false;
+  }
   if (typeof b.sharedContext !== 'string') return false;
   if (typeof b.draftPlan !== 'string') return false;
 
