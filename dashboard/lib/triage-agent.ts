@@ -168,5 +168,14 @@ export async function generateTriageQuestions(
     throw new Error('Triage agent returned an empty or invalid question list');
   }
 
-  return parsed.slice(0, 5);
+  const valid = parsed.filter(
+    (q): q is TriageQuestion =>
+      typeof q === 'object' && q !== null &&
+      typeof q.topic === 'string' &&
+      typeof q.question === 'string'
+  );
+  if (valid.length === 0) {
+    throw new Error('Triage agent returned questions with invalid structure');
+  }
+  return valid.slice(0, 5);
 }

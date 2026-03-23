@@ -40,6 +40,7 @@ export default function CheckInPage() {
   const [activeStep, setActiveStep] = useState(0);
   const [annotation, setAnnotation] = useState('');
   const [reviewData, setReviewData] = useState<WeeklyReviewData | null>(null);
+  // Triage answers stored here; will be passed to C4 synthesis step — not yet wired to legacy bridge
   const [triageAnswers, setTriageAnswers] = useState<TriageAnswer[]>([]);
   const [subjectiveData, setSubjectiveData] = useState<CheckinSubjectiveData>({
     perceivedReadiness: 0,

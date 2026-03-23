@@ -44,10 +44,8 @@ function inferRoutingHint(topic: string): TriageAnswer['routing_hint'] {
   return TOPIC_TO_ROUTING[topic] ?? 'general';
 }
 
-const BACKFILL_KEYWORDS = /missing|backfill|log/i;
-
 function isBackfillQuestion(q: TriageQuestion): boolean {
-  return BACKFILL_KEYWORDS.test(q.topic) || BACKFILL_KEYWORDS.test(q.question);
+  return q.topic === 'missing_logs';
 }
 
 // ── Chat bubble components ────────────────────────────────────────────────────
