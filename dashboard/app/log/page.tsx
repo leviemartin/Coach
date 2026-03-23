@@ -116,6 +116,7 @@ export default function DailyLogPage() {
   const [dailyNotes, setDailyNotes] = useState<DailyNote[]>([]);
   const [plannedSession, setPlannedSession] = useState<PlannedSession | null>(null);
   const [uncompletedSessions, setUncompletedSessions] = useState<UncompletedSession[]>([]);
+  const [totalTrainingSessions, setTotalTrainingSessions] = useState<number>(0);
   const [streak, setStreak] = useState<{ current: number; best: number }>({ current: 0, best: 0 });
   const [weekLogs, setWeekLogs] = useState<WeekLog[]>([]);
   const [complianceTrend, setComplianceTrend] = useState<TrendPoint[]>([]);
@@ -143,6 +144,7 @@ export default function DailyLogPage() {
         setDailyNotes(data.daily_notes || []);
         setPlannedSession(data.planned_session || null);
         setUncompletedSessions(data.uncompleted_sessions || []);
+        setTotalTrainingSessions(data.total_training_sessions ?? 0);
         setStreak(data.streak || { current: 0, best: 0 });
       }
     } catch {
@@ -346,6 +348,7 @@ export default function DailyLogPage() {
           log={log}
           plannedSession={plannedSession}
           uncompletedSessions={uncompletedSessions}
+          totalTrainingSessions={totalTrainingSessions}
           weekLogs={weekLogs}
           streak={streak}
           complianceTrend={complianceTrend}

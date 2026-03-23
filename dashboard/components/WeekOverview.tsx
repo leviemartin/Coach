@@ -57,7 +57,7 @@ export default function WeekOverview({
       >
         {days.map((day) => {
           const styles = STATUS_STYLES[day.status];
-          const isClickable = day.status !== 'family';
+          const isClickable = true; // all days are clickable, including family/rest
           const isActive = day.date === currentDate;
 
           return (
@@ -109,6 +109,24 @@ export default function WeekOverview({
                   title={day.sessionFocus ?? day.sessionType}
                 >
                   {day.sessionType}
+                </Typography>
+              )}
+
+              {/* Session focus */}
+              {day.sessionFocus && (
+                <Typography
+                  sx={{
+                    fontSize: '0.5rem',
+                    color: 'text.secondary',
+                    lineHeight: 1.2,
+                    mt: 0.15,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                  title={day.sessionFocus}
+                >
+                  {day.sessionFocus}
                 </Typography>
               )}
 

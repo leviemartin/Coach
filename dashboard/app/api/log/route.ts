@@ -23,6 +23,9 @@ export async function GET(request: Request) {
   ) || null;
 
   const uncompletedSessions = getUncompletedSessionsForWeek(weekNumber);
+  const totalTrainingSessions = planItems.filter(
+    (item) => !/rest|family/i.test(item.sessionType ?? '')
+  ).length;
 
   const allLogs = getAllDailyLogs();
   const datesWithSessions = allLogs
@@ -67,6 +70,7 @@ export async function GET(request: Request) {
     daily_notes: dailyNotes,
     planned_session: plannedSession,
     uncompleted_sessions: uncompletedSessions,
+    total_training_sessions: totalTrainingSessions,
     streak,
   });
 }

@@ -82,6 +82,7 @@ export interface DailyLogProps {
   log: LogData;
   plannedSession: PlannedSession | null;
   uncompletedSessions: UncompletedSession[];
+  totalTrainingSessions: number;
   weekLogs: WeekLog[];
   streak: { current: number; best: number };
   complianceTrend: TrendPoint[];
@@ -153,8 +154,11 @@ function buildWeekDays(
       }
     }
 
-    if (isSaturday) {
-      return { date: d, dayName, sessionType: null, sessionFocus: null, status: 'family' };
+    // Determine family/rest status from plan data, not hardcoded day
+    const isRestOrFamily = sessionType != null && /rest|family/i.test(sessionType);
+    if (isRestOrFamily && sessionType) {
+      const isFamily = /family/i.test(sessionType);
+      return { date: d, dayName, sessionType, sessionFocus, status: isFamily ? 'family' : 'rest' };
     }
 
     const wl = weekLogs.find((l) => l.date === d);
@@ -181,6 +185,7 @@ export default function DailyLog({
   log,
   plannedSession,
   uncompletedSessions,
+  totalTrainingSessions,
   weekLogs,
   streak,
   complianceTrend,
@@ -262,7 +267,7 @@ export default function DailyLog({
 
   // ── Sessions completed/planned ──────────────────────────────────────────
   const sessionsCompleted = weekLogs.filter((l) => l.workout_completed === 1).length;
-  const sessionsPlanned = uncompletedSessions.length + sessionsCompleted;
+  const sessionsPlanned = totalTrainingSessions || (uncompletedSessions.length + sessionsCompleted);
 
   // ── Week overview days ───────────────────────────────────────────────────
   const weekDays = buildWeekDays(date, weekLogs, plannedSession, uncompletedSessions);
