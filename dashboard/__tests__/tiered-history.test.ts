@@ -69,6 +69,26 @@ function makeDeps(
   };
 }
 
+/**
+ * Like makeDeps but the metrics mock filters by weekNumber when an argument is provided.
+ * This more faithfully represents the production DB behaviour.
+ */
+function makeDepsFiltered(
+  db: Database.Database,
+  metricsOverride?: WeeklyMetrics[],
+  ceilingsOverride?: CeilingEntry[]
+): TieredHistoryDeps {
+  return {
+    getDailyLogsByWeek: (wn) => getDailyLogsByWeek(wn, db),
+    getWeekNotes: (wn) => getWeekNotes(wn, db),
+    getWeeklyMetrics: (wn?: number) => {
+      const all = metricsOverride ?? [];
+      return wn != null ? all.filter((m) => m.weekNumber === wn) : all;
+    },
+    getCeilingHistory: () => ceilingsOverride ?? [],
+  };
+}
+
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
 const EMPTY_METRICS: WeeklyMetrics[] = [];
@@ -259,6 +279,52 @@ describe('tiered history', () => {
       expect(week2.weightKg).toBe(99.5);
     });
 
+    it('computes week-over-week weight delta when previous week data exists', () => {
+      const db = createTestDb();
+      const currentWeek = 6;
+      // week 3 = offset 3, week 2 = previous week for delta
+      insertLog(db, '2026-01-12', 3, {});
+      insertLog(db, '2026-01-05', 2, {});
+
+      const metrics = [
+        makeMetric(2, { weightKg: 100.0 }),
+        makeMetric(3, { weightKg: 99.5 }),
+      ];
+      const result = buildTieredHistory(currentWeek, makeDepsFiltered(db, metrics));
+
+      const week3 = result.weeklySummaries.find((s) => s.weekNumber === 3)!;
+      expect(week3.weightKg).toBe(99.5);
+      expect(week3.weightDeltaKg).toBe(-0.5);
+    });
+
+    it('sets weightDeltaKg to null when previous week has no weight data', () => {
+      const db = createTestDb();
+      const currentWeek = 6;
+      insertLog(db, '2026-01-12', 3, {});
+
+      // Only week 3 has weight, week 2 has no entry at all
+      const metrics = [makeMetric(3, { weightKg: 99.5 })];
+      const result = buildTieredHistory(currentWeek, makeDepsFiltered(db, metrics));
+
+      const week3 = result.weeklySummaries.find((s) => s.weekNumber === 3)!;
+      expect(week3.weightKg).toBe(99.5);
+      expect(week3.weightDeltaKg).toBeNull();
+    });
+
+    it('sets weightDeltaKg to null when current week has no weight data', () => {
+      const db = createTestDb();
+      const currentWeek = 6;
+      insertLog(db, '2026-01-12', 3, {});
+
+      // Week 2 has weight but week 3 does not
+      const metrics = [makeMetric(2, { weightKg: 100.0 }), makeMetric(3, { weightKg: null })];
+      const result = buildTieredHistory(currentWeek, makeDepsFiltered(db, metrics));
+
+      const week3 = result.weeklySummaries.find((s) => s.weekNumber === 3)!;
+      expect(week3.weightKg).toBeNull();
+      expect(week3.weightDeltaKg).toBeNull();
+    });
+
     it('captures pain flags with body areas', () => {
       const db = createTestDb();
       const currentWeek = 5;
@@ -362,6 +428,75 @@ describe('tiered history', () => {
       expect(flags[0].weekNumber).toBe(1);
       expect(flags[0].area).toBe('knee/baker-cyst');
       expect(flags[0].level).toBe(2);
+      expect(flags[0].source).toBe('baker-cyst');
+    });
+
+    it('detects recurring pain areas from daily logs (2+ weeks)', () => {
+      const db = createTestDb();
+      const currentWeek = 12;
+
+      // Weeks 1-3 are in trend window (currentWeek - 9 = 3)
+      const metrics = [makeMetric(1), makeMetric(2), makeMetric(3)];
+
+      // Lower back pain in weeks 1 and 3 → recurring
+      insertLog(db, '2026-01-05', 1, { pain_level: 2, pain_area: 'lower back' });
+      insertLog(db, '2026-01-06', 1, { pain_level: 1, pain_area: 'shoulder' }); // only once
+      insertLog(db, '2026-01-19', 3, { pain_level: 3, pain_area: 'lower back' });
+
+      const result = buildTieredHistory(currentWeek, makeDeps(db, metrics));
+
+      const flags = result.trends.recurringInjuryFlags;
+      const lowerBack = flags.find((f) => f.area === 'lower back');
+      expect(lowerBack).toBeDefined();
+      expect(lowerBack!.source).toBe('daily-log');
+      expect(lowerBack!.occurrenceCount).toBe(2);
+      expect(lowerBack!.weekNumber).toBe(1); // first week it appeared
+      expect(lowerBack!.level).toBe(3); // max level seen
+
+      // Shoulder only appeared once — should NOT be in flags
+      const shoulder = flags.find((f) => f.area === 'shoulder');
+      expect(shoulder).toBeUndefined();
+    });
+
+    it('does not flag pain areas that only appear in 1 week', () => {
+      const db = createTestDb();
+      const currentWeek = 12;
+
+      const metrics = [makeMetric(1), makeMetric(2), makeMetric(3)];
+
+      // Knee pain in only 1 week
+      insertLog(db, '2026-01-05', 1, { pain_level: 2, pain_area: 'knee' });
+      insertLog(db, '2026-01-06', 1, { pain_level: 1, pain_area: 'knee' }); // same week — still only 1 week
+
+      const result = buildTieredHistory(currentWeek, makeDeps(db, metrics));
+      const flags = result.trends.recurringInjuryFlags;
+      const knee = flags.find((f) => f.area === 'knee' && f.source === 'daily-log');
+      expect(knee).toBeUndefined();
+    });
+
+    it('combines baker-cyst flags and daily-log recurring flags', () => {
+      const db = createTestDb();
+      const currentWeek = 12;
+
+      const metrics = [
+        makeMetric(1, { bakerCystPain: 2 }),
+        makeMetric(2),
+        makeMetric(3),
+      ];
+
+      // Shoulder pain in weeks 1 and 2 → recurring daily-log flag
+      insertLog(db, '2026-01-05', 1, { pain_level: 1, pain_area: 'shoulder' });
+      insertLog(db, '2026-01-12', 2, { pain_level: 2, pain_area: 'shoulder' });
+
+      const result = buildTieredHistory(currentWeek, makeDeps(db, metrics));
+      const flags = result.trends.recurringInjuryFlags;
+
+      const bakerCyst = flags.find((f) => f.source === 'baker-cyst');
+      const shoulder = flags.find((f) => f.area === 'shoulder');
+
+      expect(bakerCyst).toBeDefined();
+      expect(shoulder).toBeDefined();
+      expect(shoulder!.source).toBe('daily-log');
     });
   });
 
@@ -493,6 +628,54 @@ describe('tiered history', () => {
 
       expect(md).toContain('Week 3');
       expect(md).toContain('%'); // compliance percentages present
+    });
+
+    it('weekly summary shows weight delta in markdown', () => {
+      const db = createTestDb();
+      const currentWeek = 6;
+      insertLog(db, '2026-01-12', 3, {});
+      insertLog(db, '2026-01-05', 2, {});
+
+      const metrics = [
+        makeMetric(2, { weightKg: 100.0 }),
+        makeMetric(3, { weightKg: 99.5 }),
+      ];
+      const result = buildTieredHistory(currentWeek, makeDepsFiltered(db, metrics));
+      const md = result.format();
+
+      // Should show weight with delta like "99.5kg (-0.5kg)"
+      expect(md).toContain('99.5kg');
+      expect(md).toContain('-0.5kg');
+    });
+
+    it('weekly summary shows weight without delta when no previous week data', () => {
+      const db = createTestDb();
+      const currentWeek = 6;
+      insertLog(db, '2026-01-12', 3, {});
+
+      const metrics = [makeMetric(3, { weightKg: 99.5 })];
+      const result = buildTieredHistory(currentWeek, makeDepsFiltered(db, metrics));
+      const md = result.format();
+
+      expect(md).toContain('99.5kg');
+      // No delta parenthetical
+      expect(md).not.toContain('(-');
+    });
+
+    it('recurring daily-log injury flags appear in trends markdown', () => {
+      const db = createTestDb();
+      const currentWeek = 12;
+
+      const metrics = [makeMetric(1), makeMetric(2), makeMetric(3)];
+      insertLog(db, '2026-01-05', 1, { pain_level: 2, pain_area: 'lower back' });
+      insertLog(db, '2026-01-12', 2, { pain_level: 1, pain_area: 'lower back' });
+
+      const result = buildTieredHistory(currentWeek, makeDeps(db, metrics));
+      const md = result.format();
+
+      expect(md).toContain('lower back');
+      expect(md).toContain('recurring');
+      expect(md).toContain('2 weeks');
     });
 
     it('trends section includes weight curve', () => {

@@ -48,6 +48,7 @@ export interface WeekSummaryTier {
   sessionsCompleted: number;
   sessionsPlanned: number;
   weightKg: number | null;
+  weightDeltaKg: number | null;         // week-over-week weight change
   avgEnergy: number | null;
   painFlags: { count: number; areas: string[] };
   keyNotes: string[];
@@ -67,6 +68,10 @@ export interface InjuryFlag {
   weekNumber: number;
   area: string;
   level: number;
+  /** 'baker-cyst' = from weekly_metrics.bakerCystPain; 'daily-log' = recurring pain area from daily logs */
+  source: 'baker-cyst' | 'daily-log';
+  /** For 'daily-log' source: number of distinct weeks this area appeared with pain_level > 0 */
+  occurrenceCount?: number;
 }
 
 export interface TrendData {
@@ -158,7 +163,11 @@ function buildWeekDetail(weekNumber: number, deps: TieredHistoryDeps): WeekDetai
 
 // ── Tier 2: Weekly Summaries ──────────────────────────────────────────────────
 
-function buildWeekSummary(weekNumber: number, deps: TieredHistoryDeps): WeekSummaryTier {
+function buildWeekSummary(
+  weekNumber: number,
+  deps: TieredHistoryDeps,
+  prevWeightKg: number | null = null,
+): WeekSummaryTier {
   const logs = deps.getDailyLogsByWeek(weekNumber);
   const notes = deps.getWeekNotes(weekNumber);
   const metrics = deps.getWeeklyMetrics(weekNumber);
@@ -182,8 +191,11 @@ function buildWeekSummary(weekNumber: number, deps: TieredHistoryDeps): WeekSumm
   const sessionsPlanned = metric?.sessionsPlanned ?? workoutsCompleted;
   const sessionsCompleted = metric?.sessionsCompleted ?? workoutsCompleted;
 
-  // Weight from metric
+  // Weight from metric and week-over-week delta
   const weightKg = metric?.weightKg ?? null;
+  const weightDeltaKg = (weightKg != null && prevWeightKg != null)
+    ? Math.round((weightKg - prevWeightKg) * 10) / 10
+    : null;
 
   // Average energy
   const energyLogs = logs.filter((l) => l.energy_level != null);
@@ -209,6 +221,7 @@ function buildWeekSummary(weekNumber: number, deps: TieredHistoryDeps): WeekSumm
     sessionsCompleted,
     sessionsPlanned,
     weightKg,
+    weightDeltaKg,
     avgEnergy,
     painFlags: { count: painLogs.length, areas: painAreas },
     keyNotes,
@@ -239,15 +252,53 @@ function buildTrends(upToWeek: number, deps: TieredHistoryDeps): TrendData {
   }
   const ceilingProgression = Array.from(exerciseMap.values());
 
-  // Recurring injury flags — from daily logs across all trend weeks
+  // Recurring injury flags — baker's cyst from weekly_metrics + general pain areas from daily logs
   const injuryFlags: InjuryFlag[] = [];
+
+  // Baker's cyst flags (predates daily pain tracking)
   for (const m of trendWeeks) {
-    // We don't re-fetch logs for trends — we use the weekly_metrics pain_days + baker_cyst_pain
-    // as a proxy to avoid N+1 queries for potentially many weeks
     if (m.bakerCystPain != null && m.bakerCystPain > 0) {
-      injuryFlags.push({ weekNumber: m.weekNumber, area: 'knee/baker-cyst', level: m.bakerCystPain });
+      injuryFlags.push({ weekNumber: m.weekNumber, area: 'knee/baker-cyst', level: m.bakerCystPain, source: 'baker-cyst' });
     }
   }
+
+  // General pain areas from daily logs — count occurrences per body area across trend weeks
+  // An area is "recurring" if it appears with pain_level > 0 in 2+ distinct weeks
+  const areaWeekSet = new Map<string, Set<number>>(); // area → set of week numbers
+  const areaMaxLevel = new Map<string, number>();      // area → highest pain level seen
+  for (const m of trendWeeks) {
+    const logs = deps.getDailyLogsByWeek(m.weekNumber);
+    for (const log of logs) {
+      if (log.pain_level != null && log.pain_level > 0 && log.pain_area) {
+        const area = log.pain_area;
+        const weekSet = areaWeekSet.get(area) ?? new Set<number>();
+        weekSet.add(m.weekNumber);
+        areaWeekSet.set(area, weekSet);
+        const prev = areaMaxLevel.get(area) ?? 0;
+        if (log.pain_level > prev) areaMaxLevel.set(area, log.pain_level);
+      }
+    }
+  }
+  for (const [area, weekSet] of areaWeekSet.entries()) {
+    if (weekSet.size >= 2) {
+      // Skip if this is already covered by the baker-cyst flag from metrics
+      const isBakerCystArea = area === 'knee/baker-cyst';
+      if (!isBakerCystArea) {
+        // Report the first week this area appeared
+        const firstWeek = Math.min(...weekSet);
+        injuryFlags.push({
+          weekNumber: firstWeek,
+          area,
+          level: areaMaxLevel.get(area) ?? 1,
+          source: 'daily-log',
+          occurrenceCount: weekSet.size,
+        });
+      }
+    }
+  }
+
+  // Sort all flags by week number
+  injuryFlags.sort((a, b) => a.weekNumber - b.weekNumber);
 
   // Phase milestones — weeks where body weight crossed key thresholds
   const phaseMilestones: Array<{ weekNumber: number; checkInDate: string; note: string }> = [];
@@ -333,7 +384,11 @@ function formatWeeklySummaries(summaries: WeekSummaryTier[]): string {
       ? `${s.sessionsCompleted}/${s.sessionsPlanned} (${s.workoutCompliancePct}%)`
       : `${s.sessionsCompleted} completed`;
     const bedtimeStr = s.bedtimeCompliancePct != null ? `${s.bedtimeCompliancePct}%` : 'no data';
-    const weightStr = s.weightKg != null ? `${s.weightKg}kg` : 'no data';
+    let weightStr = s.weightKg != null ? `${s.weightKg}kg` : 'no data';
+    if (s.weightKg != null && s.weightDeltaKg != null) {
+      const sign = s.weightDeltaKg > 0 ? '+' : '';
+      weightStr += ` (${sign}${s.weightDeltaKg}kg)`;
+    }
     const energyStr = s.avgEnergy != null ? String(s.avgEnergy) : 'no data';
     const painStr = s.painFlags.count > 0
       ? `${s.painFlags.count} days${s.painFlags.areas.length > 0 ? ` (${s.painFlags.areas.join(', ')})` : ''}`
@@ -383,7 +438,11 @@ function formatTrends(trends: TrendData, upToWeek: number): string {
   if (trends.recurringInjuryFlags.length > 0) {
     md += `**Injury Flags**\n`;
     for (const flag of trends.recurringInjuryFlags) {
-      md += `- W${flag.weekNumber}: ${flag.area} (level ${flag.level})\n`;
+      if (flag.source === 'daily-log') {
+        md += `- W${flag.weekNumber}: ${flag.area} (level ${flag.level}, recurring — ${flag.occurrenceCount} weeks)\n`;
+      } else {
+        md += `- W${flag.weekNumber}: ${flag.area} (level ${flag.level})\n`;
+      }
     }
     md += '\n';
   }
@@ -430,11 +489,19 @@ export function buildTieredHistory(
   }
 
   // Tier 2: weeks 3-8 back
+  // We need previous-week weight for delta computation. Fetch all metrics once.
+  const allMetricsForSummary = deps.getWeeklyMetrics();
+  const metricsMap = new Map<number, WeeklyMetrics>();
+  for (const m of allMetricsForSummary) {
+    metricsMap.set(m.weekNumber, m);
+  }
+
   const weeklySummaries: WeekSummaryTier[] = [];
   for (let offset = 3; offset <= 8; offset++) {
     const w = currentWeek - offset;
     if (w >= 1) {
-      weeklySummaries.push(buildWeekSummary(w, deps));
+      const prevWeightKg = metricsMap.get(w - 1)?.weightKg ?? null;
+      weeklySummaries.push(buildWeekSummary(w, deps, prevWeightKg));
     }
   }
 
