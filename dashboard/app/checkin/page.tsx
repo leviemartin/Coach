@@ -38,12 +38,6 @@ export default function CheckInPage() {
 
   // Step 1 data passed forward — annotation is the key output
   const handleNext = () => {
-    if (activeStep === 0) {
-      // Moving from Weekly Review — nothing to persist yet, annotation
-      // will be bundled into CheckInFormData in Step 2
-      setActiveStep(1);
-      return;
-    }
     // Steps 2–3: placeholders for C2/C3 — skip to results for now
     if (activeStep >= 2) {
       // Build minimal form data and hand off to results page (legacy path)

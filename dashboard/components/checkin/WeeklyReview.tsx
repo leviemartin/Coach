@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Box,
   Card,
@@ -187,7 +187,7 @@ export default function WeeklyReview({
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -200,12 +200,11 @@ export default function WeeklyReview({
     } finally {
       setLoading(false);
     }
-  };
+  }, [weekNumber]);
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weekNumber]);
+  }, [load]);
 
   const handleSync = async () => {
     setSyncing(true);
@@ -240,7 +239,8 @@ export default function WeeklyReview({
     );
   }
 
-  const { compliance, sessions, taggedNotes, garmin } = data;
+  const { compliance, sessions, garmin } = data;
+  const taggedNotes = compliance.tagged_notes;
 
   // Build day-indexed energy + pain arrays for sparklines (7 values, null-filled)
   const energyValues = compliance.energy_levels.map((e) => e.level);
@@ -320,7 +320,7 @@ export default function WeeklyReview({
             <ComplianceRow
               label="Workouts"
               done={compliance.workouts.completed}
-              total={compliance.workouts.planned || 5}
+              total={compliance.workouts.planned}
             />
             <ComplianceRow label="Core Work (3/wk target)" done={compliance.core.done} total={compliance.core.target} />
             <ComplianceRow label="Rug Protocol" done={compliance.rug_protocol.done} total={7} />

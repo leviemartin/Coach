@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDailyLogsByWeek, getWeekNotes } from '@/lib/db';
+import { getDailyLogsByWeek } from '@/lib/db';
 import { computeWeekSummary } from '@/lib/daily-log';
 import { getWeekSessions } from '@/lib/session-db';
 import { readGarminData } from '@/lib/garmin';
@@ -12,7 +12,6 @@ import type { SessionSetState, SessionCardioState } from '@/lib/types';
 export interface WeeklyReviewData {
   weekNumber: number;
   dailyLogs: DailyLog[];
-  taggedNotes: Array<{ date: string; category: string; text: string }>;
   sessions: Array<{
     date: string;
     sessionTitle: string;
@@ -40,11 +39,6 @@ export async function GET(request: Request) {
   }
 
   const dailyLogs = getDailyLogsByWeek(weekNumber);
-  const taggedNotes = getWeekNotes(weekNumber).map((n) => ({
-    date: n.date,
-    category: n.category,
-    text: n.text,
-  }));
   const sessions = getWeekSessions(weekNumber);
   const compliance = computeWeekSummary(weekNumber);
 
@@ -59,7 +53,6 @@ export async function GET(request: Request) {
   const payload: WeeklyReviewData = {
     weekNumber,
     dailyLogs,
-    taggedNotes,
     sessions,
     garmin,
     compliance,
