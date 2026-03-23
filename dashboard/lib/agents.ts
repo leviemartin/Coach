@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { readAgentPersona, readAthleteProfile, readTrainingHistory, readCeilings, readPeriodization, readDecisionsLog, readDexaScans } from './state';
+import { buildTieredHistory } from './tiered-history';
 import { SPECIALIST_IDS, AGENT_LABELS, DEFAULT_MODEL, OPUS_MODEL } from './constants';
 import type { GarminData, CheckInFormData, CheckinSubjectiveData, AgentOutput } from './types';
 import { formatHevySummary, parseHevyCsv } from './parse-hevy';
@@ -137,11 +138,11 @@ function buildSharedContextStructured(
   annotation?: string
 ): string {
   const profile = readAthleteProfile();
-  const history = readTrainingHistory(4);
   const ceilings = readCeilings();
   const periodization = readPeriodization();
   const decisions = readDecisionsLog();
   const currentWeek = getTrainingWeek();
+  const tieredHistory = buildTieredHistory(currentWeek);
 
   let context = `# Weekly Check-In Data\n\n`;
 
@@ -156,7 +157,7 @@ function buildSharedContextStructured(
   context += `## Current Phase & Periodization\n${periodization}\n\n`;
   context += `## Active Decisions & Gates\n${decisions}\n\n`;
   context += `## Current Working Ceilings\n\`\`\`json\n${JSON.stringify(ceilings, null, 2)}\n\`\`\`\n\n`;
-  context += `## Training History (Last 4 Weeks)\n${history}\n\n`;
+  context += `## Historical Context\n${tieredHistory.format()}\n`;
 
   // ── Garmin Data ───────────────────────────────────────────────────────────
   if (garminData) {
