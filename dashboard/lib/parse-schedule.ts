@@ -186,6 +186,7 @@ export function parseScheduleTable(markdown: string, weekNumber: number): PlanIt
       completed: false,
       completedAt: null,
       subTasks: [],
+      status: 'pending',
     });
   }
 

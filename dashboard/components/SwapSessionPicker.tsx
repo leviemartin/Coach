@@ -42,7 +42,7 @@ export default function SwapSessionPicker({
   const [swapping, setSwapping] = useState<number | null>(null);
 
   const handleSelect = async (item: PlanItem) => {
-    if (!item.id || item.completed || item.status === 'completed') return;
+    if (!item.id || item.status === 'completed') return;
     setSwapping(item.id);
     try {
       await onSwap(item.id);
@@ -75,7 +75,7 @@ export default function SwapSessionPicker({
       {weekItems.map((item) => {
         if (!item.id) return null;
 
-        const isCompleted = item.completed || item.status === 'completed';
+        const isCompleted = item.status === 'completed';
         const isSuggested = item.id === suggestedItemId;
         const isLoading = swapping === item.id;
         const seqNum = item.sequenceOrder ?? item.dayOrder;

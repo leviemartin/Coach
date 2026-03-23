@@ -536,7 +536,7 @@ function mapPlanRow(row: unknown): PlanItem {
     workoutPlan: (r.workout_plan as string) || '',
     coachCues: (r.coach_cues as string) || '',
     athleteNotes: (r.athlete_notes as string) || '',
-    completed: !!(r.completed),
+    completed: (r.status as string) === 'completed' || !!(r.completed),
     completedAt: r.completed_at as string | null,
     subTasks,
     sequenceOrder: r.day_order as number,

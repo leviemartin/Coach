@@ -300,6 +300,13 @@ export function completeSession(sessionId: number, notes: string, _db?: Database
         session_log_id: sessionId,
       }, db);
     }
+
+    // Update plan_items status to 'completed' if linked via daily_log
+    const latestLog = getDailyLog(sessionRow.date, db);
+    if (latestLog?.workout_plan_item_id) {
+      db.prepare("UPDATE plan_items SET status = 'completed', completed = 1, completed_at = ? WHERE id = ?")
+        .run(new Date().toISOString(), latestLog.workout_plan_item_id);
+    }
   }
 
   return { compliancePct, weightChanges };
