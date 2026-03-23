@@ -20,6 +20,7 @@ import BedtimeCard from './BedtimeCard';
 import TaggedNotes from './TaggedNotes';
 import type { DailyNote } from './TaggedNotes';
 import SessionPicker from './SessionPicker';
+import SwapSessionPicker from './SwapSessionPicker';
 import SessionSummaryCard from './SessionSummaryCard';
 import DailyChecklist from './DailyChecklist';
 import DayProgress from './DayProgress';
@@ -33,6 +34,7 @@ import { computeDayCompliance, computeWeekCompliancePct, isBedtimeCompliant } fr
 import { semanticColors } from '@/lib/design-tokens';
 import type { UncompletedSession } from './SessionPicker';
 import type { WeekTallies } from './DailyChecklist';
+import type { PlanItem } from '@/lib/types';
 
 interface LogData {
   workout_completed: number;
@@ -192,6 +194,8 @@ export default function DailyLog({
   const [formData, setFormData] = useState<LogData>(log);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [selectedPlanItemId, setSelectedPlanItemId] = useState<number | null>(null);
+  const [swapMode, setSwapMode] = useState(false);
+  const [weekPlanItems, setWeekPlanItems] = useState<PlanItem[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fadeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -200,6 +204,7 @@ export default function DailyLog({
     setFormData(log);
     setSaveStatus('idle');
     setSelectedPlanItemId(null);
+    setSwapMode(false);
   }, [date, log]);
 
   const triggerSave = useCallback(
@@ -300,6 +305,31 @@ export default function DailyLog({
     update({ [field]: value });
   };
 
+  // ── Swap mode handlers ──────────────────────────────────────────────────
+  const handleOpenSwap = async () => {
+    setSwapMode(true);
+    try {
+      const res = await fetch(`/api/plan?week=${currentWeek}`);
+      const data = await res.json();
+      setWeekPlanItems(data.items ?? []);
+    } catch {
+      // Keep empty list on error — user can cancel
+    }
+  };
+
+  const handleSwap = async (planItemId: number) => {
+    const res = await fetch('/api/plan/swap', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ planItemId, targetDate: date }),
+    });
+    const data = await res.json();
+    // data.warning is informational — swap still succeeds
+    void data;
+    setSwapMode(false);
+    await onSave({ ...formData, workout_plan_item_id: planItemId });
+  };
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       {/* 1. Save status indicator (top right) */}
@@ -377,8 +407,8 @@ export default function DailyLog({
         </CardContent>
       </Card>
 
-      {/* 4. SessionPicker (if not sick) */}
-      {!isSick && (
+      {/* 4. SessionPicker / SwapSessionPicker (if not sick) */}
+      {!isSick && !swapMode && (
         <SessionPicker
           date={date}
           plannedSession={plannedSession}
@@ -387,6 +417,30 @@ export default function DailyLog({
           sessionsCompleted={sessionsCompleted}
           sessionsPlanned={sessionsPlanned}
           onUpdate={handleSessionUpdate}
+        />
+      )}
+      {!isSick && !swapMode && (plannedSession || uncompletedSessions.length > 0) && (
+        <Box>
+          <Typography
+            variant="caption"
+            sx={{
+              color: semanticColors.body,
+              cursor: 'pointer',
+              '&:hover': { opacity: 0.7 },
+            }}
+            onClick={handleOpenSwap}
+          >
+            Swap session →
+          </Typography>
+        </Box>
+      )}
+      {!isSick && swapMode && (
+        <SwapSessionPicker
+          weekItems={weekPlanItems}
+          currentDate={date}
+          suggestedItemId={plannedSession?.id ?? null}
+          onSwap={handleSwap}
+          onCancel={() => setSwapMode(false)}
         />
       )}
 
