@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDailyLog, upsertDailyLog, getPlanItems, getAllDailyLogs, getUncompletedSessionsForWeek } from '@/lib/db';
+import { getDailyLog, upsertDailyLog, getPlanItems, getAllDailyLogs, getUncompletedSessionsForWeek, getDailyNotes } from '@/lib/db';
 import { getWeekForDate, getDayName, getDayAbbrev, findPlanItemForDate, computeStreak } from '@/lib/daily-log';
 
 export async function GET(request: Request) {
@@ -35,6 +35,8 @@ export async function GET(request: Request) {
 
   const streak = computeStreak(allLogs, date, datesWithSessions);
 
+  const dailyNotes = log ? getDailyNotes(log.id) : [];
+
   return NextResponse.json({
     log: log || {
       date,
@@ -47,7 +49,14 @@ export async function GET(request: Request) {
       kitchen_cutoff_hit: 0,
       is_sick_day: 0,
       notes: '',
+      energy_level: null,
+      pain_level: null,
+      pain_area: null,
+      sleep_disruption: null,
+      session_summary: null,
+      session_log_id: null,
     },
+    daily_notes: dailyNotes,
     planned_session: plannedSession,
     uncompleted_sessions: uncompletedSessions,
     streak,
@@ -66,6 +75,24 @@ export async function PUT(request: Request) {
     ? body.workout_plan_item_id
     : (findPlanItemForDate(body.date)?.id || null);
 
+  const energyLevel: number | null = body.energy_level ?? null;
+  if (energyLevel !== null) {
+    if (!Number.isInteger(energyLevel) || energyLevel < 1 || energyLevel > 5) {
+      return NextResponse.json({ error: 'energy_level must be an integer between 1 and 5' }, { status: 400 });
+    }
+  }
+
+  const painLevel: number | null = body.pain_level ?? null;
+  if (painLevel !== null) {
+    if (!Number.isInteger(painLevel) || painLevel < 0 || painLevel > 3) {
+      return NextResponse.json({ error: 'pain_level must be an integer between 0 and 3 (0=none, 1=mild, 2=moderate, 3=stop)' }, { status: 400 });
+    }
+  }
+
+  // Preserve fields that are set by other handlers (sleep disruption = Task A4,
+  // session_summary / session_log_id = Task A9 session tracker writeback)
+  const existing = getDailyLog(body.date);
+
   const saved = upsertDailyLog({
     date: body.date,
     week_number: weekNumber,
@@ -78,6 +105,13 @@ export async function PUT(request: Request) {
     kitchen_cutoff_hit: body.kitchen_cutoff_hit ? 1 : 0,
     is_sick_day: body.is_sick_day ? 1 : 0,
     notes: body.notes || null,
+    energy_level: energyLevel,
+    pain_level: painLevel,
+    pain_area: painLevel != null && painLevel > 0 ? (body.pain_area || null) : null,
+    // Preserve fields owned by other handlers — do not overwrite
+    sleep_disruption: existing?.sleep_disruption ?? null,
+    session_summary: existing?.session_summary ?? null,
+    session_log_id: existing?.session_log_id ?? null,
   });
 
   return NextResponse.json({ log: saved });

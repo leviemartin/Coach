@@ -681,14 +681,12 @@ export interface DailyLog {
   updated_at: string;
 }
 
-export function getDailyLog(date: string): DailyLog | null {
-  const db = getDb();
-  return db.prepare('SELECT * FROM daily_logs WHERE date = ?').get(date) as DailyLog | null;
+export function getDailyLog(date: string, _db = getDb()): DailyLog | null {
+  return _db.prepare('SELECT * FROM daily_logs WHERE date = ?').get(date) as DailyLog | null;
 }
 
-export function getDailyLogsByWeek(weekNumber: number): DailyLog[] {
-  const db = getDb();
-  return db.prepare('SELECT * FROM daily_logs WHERE week_number = ? ORDER BY date').all(weekNumber) as DailyLog[];
+export function getDailyLogsByWeek(weekNumber: number, _db = getDb()): DailyLog[] {
+  return _db.prepare('SELECT * FROM daily_logs WHERE week_number = ? ORDER BY date').all(weekNumber) as DailyLog[];
 }
 
 export function getAllDailyLogs(): DailyLog[] {
@@ -752,13 +750,12 @@ export function deleteDailyNote(id: number, _db = getDb()): void {
   _db.prepare('DELETE FROM daily_notes WHERE id = ?').run(id);
 }
 
-export function upsertDailyLog(log: Omit<DailyLog, 'id' | 'created_at' | 'updated_at'>): DailyLog {
-  const db = getDb();
+export function upsertDailyLog(log: Omit<DailyLog, 'id' | 'created_at' | 'updated_at'>, _db = getDb()): DailyLog {
   const now = new Date().toISOString();
-  const existing = getDailyLog(log.date);
+  const existing = getDailyLog(log.date, _db);
 
   if (existing) {
-    db.prepare(`
+    _db.prepare(`
       UPDATE daily_logs SET
         week_number = ?, workout_completed = ?, workout_plan_item_id = ?,
         core_work_done = ?, rug_protocol_done = ?, vampire_bedtime = ?,
@@ -776,7 +773,7 @@ export function upsertDailyLog(log: Omit<DailyLog, 'id' | 'created_at' | 'update
       now, log.date
     );
   } else {
-    db.prepare(`
+    _db.prepare(`
       INSERT INTO daily_logs (
         date, week_number, workout_completed, workout_plan_item_id,
         core_work_done, rug_protocol_done, vampire_bedtime,
@@ -795,5 +792,5 @@ export function upsertDailyLog(log: Omit<DailyLog, 'id' | 'created_at' | 'update
     );
   }
 
-  return getDailyLog(log.date)!;
+  return getDailyLog(log.date, _db)!;
 }
