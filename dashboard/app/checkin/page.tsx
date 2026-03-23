@@ -37,8 +37,8 @@ export default function CheckInPage() {
   const [activeStep, setActiveStep] = useState(0);
   const [annotation, setAnnotation] = useState('');
   const [subjectiveData, setSubjectiveData] = useState<CheckinSubjectiveData>({
-    perceivedReadiness: 3,
-    planSatisfaction: 3,
+    perceivedReadiness: 0,
+    planSatisfaction: 0,
     weekReflection: '',
     nextWeekConflicts: '',
     questionsForCoaches: '',
@@ -49,6 +49,7 @@ export default function CheckInPage() {
   const handleNext = () => {
     // Steps 2–3: placeholders for C2/C3 — skip to results for now
     if (activeStep >= 2) {
+      // TODO(C4): Remove legacy bridge — checkin API will consume CheckinSubjectiveData directly
       // Build minimal form data and hand off to results page (legacy path)
       const formData: Partial<CheckInFormData> = {
         hevyCsv: '',
@@ -68,6 +69,7 @@ export default function CheckInPage() {
         perceivedReadiness: subjectiveData.perceivedReadiness,
         planSatisfaction: subjectiveData.planSatisfaction,
         planFeedback: '',
+        // TODO(C4): 'mixed' will be handled natively by the new checkin API; this coercion loses Smart Mix behavior
         model: subjectiveData.model === 'mixed' ? 'sonnet' : subjectiveData.model,
       };
       sessionStorage.setItem('checkin_form_data', JSON.stringify(formData));
