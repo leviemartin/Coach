@@ -55,25 +55,12 @@ function insertLog(
   );
 }
 
-/** Build deps from an in-memory DB, with optional override for metrics/ceilings. */
-function makeDeps(
-  db: Database.Database,
-  metricsOverride?: WeeklyMetrics[],
-  ceilingsOverride?: CeilingEntry[]
-): TieredHistoryDeps {
-  return {
-    getDailyLogsByWeek: (wn) => getDailyLogsByWeek(wn, db),
-    getWeekNotes: (wn) => getWeekNotes(wn, db),
-    getWeeklyMetrics: () => metricsOverride ?? [],
-    getCeilingHistory: () => ceilingsOverride ?? [],
-  };
-}
-
 /**
- * Like makeDeps but the metrics mock filters by weekNumber when an argument is provided.
- * This more faithfully represents the production DB behaviour.
+ * Build deps from an in-memory DB, with optional override for metrics/ceilings.
+ * The metrics mock filters by weekNumber when an argument is provided, faithfully
+ * representing the production DB behaviour.
  */
-function makeDepsFiltered(
+function makeDeps(
   db: Database.Database,
   metricsOverride?: WeeklyMetrics[],
   ceilingsOverride?: CeilingEntry[]
@@ -290,7 +277,7 @@ describe('tiered history', () => {
         makeMetric(2, { weightKg: 100.0 }),
         makeMetric(3, { weightKg: 99.5 }),
       ];
-      const result = buildTieredHistory(currentWeek, makeDepsFiltered(db, metrics));
+      const result = buildTieredHistory(currentWeek, makeDeps(db, metrics));
 
       const week3 = result.weeklySummaries.find((s) => s.weekNumber === 3)!;
       expect(week3.weightKg).toBe(99.5);
@@ -304,7 +291,7 @@ describe('tiered history', () => {
 
       // Only week 3 has weight, week 2 has no entry at all
       const metrics = [makeMetric(3, { weightKg: 99.5 })];
-      const result = buildTieredHistory(currentWeek, makeDepsFiltered(db, metrics));
+      const result = buildTieredHistory(currentWeek, makeDeps(db, metrics));
 
       const week3 = result.weeklySummaries.find((s) => s.weekNumber === 3)!;
       expect(week3.weightKg).toBe(99.5);
@@ -318,7 +305,7 @@ describe('tiered history', () => {
 
       // Week 2 has weight but week 3 does not
       const metrics = [makeMetric(2, { weightKg: 100.0 }), makeMetric(3, { weightKg: null })];
-      const result = buildTieredHistory(currentWeek, makeDepsFiltered(db, metrics));
+      const result = buildTieredHistory(currentWeek, makeDeps(db, metrics));
 
       const week3 = result.weeklySummaries.find((s) => s.weekNumber === 3)!;
       expect(week3.weightKg).toBeNull();
@@ -640,7 +627,7 @@ describe('tiered history', () => {
         makeMetric(2, { weightKg: 100.0 }),
         makeMetric(3, { weightKg: 99.5 }),
       ];
-      const result = buildTieredHistory(currentWeek, makeDepsFiltered(db, metrics));
+      const result = buildTieredHistory(currentWeek, makeDeps(db, metrics));
       const md = result.format();
 
       // Should show weight with delta like "99.5kg (-0.5kg)"
@@ -654,7 +641,7 @@ describe('tiered history', () => {
       insertLog(db, '2026-01-12', 3, {});
 
       const metrics = [makeMetric(3, { weightKg: 99.5 })];
-      const result = buildTieredHistory(currentWeek, makeDepsFiltered(db, metrics));
+      const result = buildTieredHistory(currentWeek, makeDeps(db, metrics));
       const md = result.format();
 
       expect(md).toContain('99.5kg');

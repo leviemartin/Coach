@@ -46,7 +46,7 @@ export interface WeekSummaryTier {
   hydrationPct: number;                 // tracked / 7
   bedtimeCompliancePct: number | null;  // compliant / days-with-bedtime
   sessionsCompleted: number;
-  sessionsPlanned: number;
+  sessionsPlanned: number | null;
   weightKg: number | null;
   weightDeltaKg: number | null;         // week-over-week weight change
   avgEnergy: number | null;
@@ -186,9 +186,8 @@ function buildWeekSummary(
     ? Math.round((bedtimeCompliant / bedtimeLogs.length) * 100)
     : null;
 
-  // Sessions planned — prefer metric, fall back to counting distinct plan items would require plan query
-  // Use metric if available, else use logs count as proxy
-  const sessionsPlanned = metric?.sessionsPlanned ?? workoutsCompleted;
+  // Sessions planned — use metric if available; null when unknown (avoids misleading 100% compliance)
+  const sessionsPlanned = metric?.sessionsPlanned ?? null;
   const sessionsCompleted = metric?.sessionsCompleted ?? workoutsCompleted;
 
   // Weight from metric and week-over-week delta
@@ -212,7 +211,7 @@ function buildWeekSummary(
 
   return {
     weekNumber,
-    workoutCompliancePct: sessionsPlanned > 0 ? pct(workoutsCompleted, sessionsPlanned) : null,
+    workoutCompliancePct: sessionsPlanned != null && sessionsPlanned > 0 ? pct(workoutsCompleted, sessionsPlanned) : null,
     coreCompliancePct: pct(coreDone, 7),
     rugCompliancePct: pct(rugDone, 7),
     kitchenCutoffPct: pct(kitchenHit, 7),
@@ -234,7 +233,7 @@ function buildTrends(upToWeek: number, deps: TieredHistoryDeps): TrendData {
   const allMetrics = deps.getWeeklyMetrics();
   const allCeilings = deps.getCeilingHistory();
 
-  // Filter to weeks before the recent/summary window (< upToWeek - 8)
+  // Filter to all weeks up to and including upToWeek (which is currentWeek - 9)
   const trendWeeks = allMetrics.filter((m) => m.weekNumber <= upToWeek);
 
   // Weight curve
