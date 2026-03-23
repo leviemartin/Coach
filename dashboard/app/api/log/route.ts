@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDailyLog, upsertDailyLog, getPlanItems, getAllDailyLogs, getUncompletedSessionsForWeek, getDailyNotes } from '@/lib/db';
-import { getWeekForDate, getDayName, getDayAbbrev, findPlanItemForDate, computeStreak } from '@/lib/daily-log';
+import { getWeekForDate, getDayName, getDayAbbrev, findPlanItemForDate, computeStreak, getPreviousDate } from '@/lib/daily-log';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -87,6 +87,34 @@ export async function PUT(request: Request) {
     if (!Number.isInteger(painLevel) || painLevel < 0 || painLevel > 3) {
       return NextResponse.json({ error: 'pain_level must be an integer between 0 and 3 (0=none, 1=mild, 2=moderate, 3=stop)' }, { status: 400 });
     }
+  }
+
+  // sleep_disruption — write to the PREVIOUS day's record (the disruption affected
+  // last night's sleep, not tonight's). Do NOT include in the current day's upsert.
+  if (body.sleep_disruption !== undefined) {
+    const prevDate = getPreviousDate(body.date);
+    const prevWeek = getWeekForDate(prevDate);
+    const existingPrev = getDailyLog(prevDate);
+
+    upsertDailyLog({
+      date: prevDate,
+      week_number: prevWeek,
+      workout_completed: existingPrev?.workout_completed ?? 0,
+      workout_plan_item_id: existingPrev?.workout_plan_item_id ?? null,
+      core_work_done: existingPrev?.core_work_done ?? 0,
+      rug_protocol_done: existingPrev?.rug_protocol_done ?? 0,
+      vampire_bedtime: existingPrev?.vampire_bedtime ?? null,
+      hydration_tracked: existingPrev?.hydration_tracked ?? 0,
+      kitchen_cutoff_hit: existingPrev?.kitchen_cutoff_hit ?? 0,
+      is_sick_day: existingPrev?.is_sick_day ?? 0,
+      notes: existingPrev?.notes ?? null,
+      energy_level: existingPrev?.energy_level ?? null,
+      pain_level: existingPrev?.pain_level ?? null,
+      pain_area: existingPrev?.pain_area ?? null,
+      sleep_disruption: body.sleep_disruption || null,
+      session_summary: existingPrev?.session_summary ?? null,
+      session_log_id: existingPrev?.session_log_id ?? null,
+    });
   }
 
   // Preserve fields that are set by other handlers (sleep disruption = Task A4,

@@ -30,6 +30,14 @@ export function getWeekForDate(dateStr: string): number {
   return getTrainingWeek(new Date(dateStr + 'T12:00:00'));
 }
 
+/** Return the calendar date one day before dateStr (YYYY-MM-DD).
+ *  Uses noon to avoid DST boundary issues. */
+export function getPreviousDate(dateStr: string): string {
+  const d = new Date(dateStr + 'T12:00:00');
+  d.setDate(d.getDate() - 1);
+  return d.toISOString().split('T')[0];
+}
+
 /** Find the plan_item matching a date (by week_number + day).
  *  Handles both day formats: "Monday" and "Mon Mar 17" */
 export function findPlanItemForDate(dateStr: string): { id: number } | null {
