@@ -147,6 +147,7 @@ export interface ExtendedGarminSummary {
   readinessDelta: number | null;
 }
 
+/** @deprecated Legacy checkin form shape — replaced by CheckinSubjectiveData + auto-assembled daily log data. */
 export interface CheckInFormData {
   // Hevy
   hevyCsv: string;

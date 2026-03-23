@@ -1,3 +1,9 @@
+/**
+ * @deprecated This module is no longer used in the new checkin flow.
+ * Session tracker data now provides exercise/set data directly from the database.
+ * Preserved for backward compatibility with the legacy checkin API path.
+ * See: dashboard/lib/agents.ts buildSharedContextLegacy()
+ */
 import Papa from 'papaparse';
 
 export interface HevyExercise {

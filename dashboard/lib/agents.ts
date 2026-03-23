@@ -61,6 +61,7 @@ export function buildSharedContext(
 }
 
 // ── Legacy path (unchanged logic from before) ───────────────────────────────
+/** @deprecated Use buildSharedContextStructured() instead. Preserved for backward compatibility with legacy checkin API. */
 function buildSharedContextLegacy(
   garminData: GarminData | null,
   formData: CheckInFormData
