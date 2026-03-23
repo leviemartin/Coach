@@ -197,10 +197,10 @@ export type StreakLogEntry = DayComplianceInput & { date: string };
  *
  * Rules:
  * - Walk every calendar date from first log date to currentDate (inclusive)
- * - Skip Saturdays (getDay() === 6) — family day, never breaks a streak
  * - A missing log counts as non-compliant (breaks the streak)
  * - A day is compliant if computeDayCompliance(log, hasSession).pct >= 80
  * - datesWithSessions is the set of dates that have a planned training session
+ * - All days are treated equally (no hardcoded family day skip)
  */
 export function computeStreak(
   allLogs: StreakLogEntry[],
@@ -226,9 +226,6 @@ export function computeStreak(
   let streak = 0;
 
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    const dayOfWeek = d.getDay(); // 0=Sun, 6=Sat
-    if (dayOfWeek === 6) continue; // skip Saturdays
-
     const dateStr = d.toISOString().slice(0, 10);
     const log = logMap.get(dateStr);
 

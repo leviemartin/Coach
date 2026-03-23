@@ -131,7 +131,6 @@ function buildWeekDays(
   return weekDates.map((d, i) => {
     const dayName = DAY_ABBR[i];
     const dayOfWeek = parseLocalDate(d).getDay(); // 0=Sun, 6=Sat
-    const isSaturday = dayOfWeek === 6;
     const isToday = d === date;
 
     // Determine session info: check planned session for this date
@@ -254,9 +253,7 @@ export default function DailyLog({
   const isSick = !!formData.is_sick_day;
 
   // Determine day type
-  const dateObj = new Date(date + 'T12:00:00');
-  const dayIndex = dateObj.getDay(); // 0=Sun, 6=Sat
-  const isSaturday = dayIndex === 6;
+
 
   // ── Compute week tallies from weekLogs ──────────────────────────────────
   const weekTallies: WeekTallies = {
@@ -386,8 +383,8 @@ export default function DailyLog({
         </AccordionDetails>
       </Accordion>
 
-      {/* 3. DayProgress (if not Saturday) */}
-      {!isSaturday && (
+      {/* 3. DayProgress */}
+      {(
         <DayProgress
           checked={dayCompliance.checked}
           total={dayCompliance.total}
