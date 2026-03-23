@@ -77,7 +77,7 @@ export function initTablesOn(db: Database.Database) {
       sequence_notes TEXT,
       sequence_group TEXT,
       assigned_date TEXT,
-      status TEXT DEFAULT 'pending'
+      status TEXT DEFAULT 'pending' CHECK(status IN ('pending','scheduled','completed','skipped'))
     );
 
     CREATE TABLE IF NOT EXISTS settings (
@@ -388,7 +388,7 @@ export function initTablesOn(db: Database.Database) {
   try { db.exec(`ALTER TABLE plan_items ADD COLUMN sequence_notes TEXT`); } catch {}
   try { db.exec(`ALTER TABLE plan_items ADD COLUMN sequence_group TEXT`); } catch {}
   try { db.exec(`ALTER TABLE plan_items ADD COLUMN assigned_date TEXT`); } catch {}
-  try { db.exec(`ALTER TABLE plan_items ADD COLUMN status TEXT DEFAULT 'pending'`); } catch {}
+  try { db.exec(`ALTER TABLE plan_items ADD COLUMN status TEXT DEFAULT 'pending' CHECK(status IN ('pending','scheduled','completed','skipped'))`); } catch {}
 
   // Migration v8 backfill: populate status from completed boolean (run once)
   try {
@@ -543,7 +543,7 @@ function mapPlanRow(row: unknown): PlanItem {
     sequenceNotes: (r.sequence_notes as string) || null,
     sequenceGroup: (r.sequence_group as string) || null,
     assignedDate: (r.assigned_date as string) || null,
-    status: (r.status as string || 'pending') as 'pending' | 'scheduled' | 'completed' | 'skipped',
+    status: ((r.status as string) ?? 'pending') as 'pending' | 'scheduled' | 'completed' | 'skipped',
   };
 }
 

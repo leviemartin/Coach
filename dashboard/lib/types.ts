@@ -200,7 +200,7 @@ export interface PlanItem {
   completed: boolean;
   completedAt: string | null;
   subTasks: SubTask[];
-  // Flexible scheduling fields (v8)
+  // Flexible scheduling fields (v8) — sequenceOrder aliases dayOrder until full rename migration
   sequenceOrder?: number;
   sequenceNotes?: string | null;
   sequenceGroup?: string | null;
