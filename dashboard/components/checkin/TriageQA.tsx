@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import {
   Alert,
   Box,
@@ -41,6 +42,12 @@ const TOPIC_TO_ROUTING: Record<string, TriageAnswer['routing_hint']> = {
 
 function inferRoutingHint(topic: string): TriageAnswer['routing_hint'] {
   return TOPIC_TO_ROUTING[topic] ?? 'general';
+}
+
+const BACKFILL_KEYWORDS = /missing|backfill|log/i;
+
+function isBackfillQuestion(q: TriageQuestion): boolean {
+  return BACKFILL_KEYWORDS.test(q.topic) || BACKFILL_KEYWORDS.test(q.question);
 }
 
 // ── Chat bubble components ────────────────────────────────────────────────────
@@ -239,6 +246,20 @@ export default function TriageQA({ reviewData, subjectiveData, onComplete }: Tri
           {!allAnswered && questions[currentIndex] && (
             <>
               <AgentBubble text={questions[currentIndex].question} />
+
+              {/* Backfill link — shown when question relates to missing/backfill/log */}
+              {isBackfillQuestion(questions[currentIndex]) && (
+                <Box sx={{ mb: 1.5, pl: 0.5 }}>
+                  <Link
+                    href="/log"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ fontSize: '0.8125rem', color: '#2563eb' }}
+                  >
+                    Go to Daily Log →
+                  </Link>
+                </Box>
+              )}
 
               {/* Progress indicator */}
               <Typography
