@@ -4,6 +4,10 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Typography, Box, Button, Alert } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import AgentBriefing from '@/components/AgentBriefing';
+import PlanPreview from '@/components/checkin/PlanPreview';
+import { parseScheduleTable } from '@/lib/parse-schedule';
+import { getPlanWeekNumber } from '@/lib/week';
+import type { PlanItem } from '@/lib/types';
 interface SpecialistOutput {
   agentId: string;
   label: string;
@@ -17,6 +21,7 @@ export default function CheckInResultsPage() {
   const [synthesis, setSynthesis] = useState('');
   const [phase, setPhase] = useState<string>('init');
   const [error, setError] = useState<string | null>(null);
+  const [planItems, setPlanItems] = useState<PlanItem[]>([]);
   const startedRef = useRef(false);
 
   useEffect(() => {
@@ -116,6 +121,16 @@ export default function CheckInResultsPage() {
                   } catch {
                     // ignore storage errors
                   }
+                  // Parse plan items from synthesis output
+                  try {
+                    const weekNum = getPlanWeekNumber();
+                    const parsed = parseScheduleTable(data.fullText || '', weekNum);
+                    if (parsed.length > 0) {
+                      setPlanItems(parsed);
+                    }
+                  } catch {
+                    // Non-fatal — plan preview simply won't render
+                  }
                   break;
                 case 'error':
                   setError(data.message);
@@ -157,7 +172,15 @@ export default function CheckInResultsPage() {
         synthesisStreaming={phase === 'synthesis'}
       />
 
-      {phase === 'done' && (
+      {phase === 'done' && planItems.length > 0 && (
+        <PlanPreview
+          items={planItems}
+          weekNumber={getPlanWeekNumber()}
+          onLockIn={handleLockIn}
+        />
+      )}
+
+      {phase === 'done' && planItems.length === 0 && (
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
           <Button
             variant="contained"
