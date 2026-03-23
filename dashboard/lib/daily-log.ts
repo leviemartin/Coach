@@ -1,5 +1,5 @@
 import { getTrainingWeek } from './week';
-import { getDailyLogsByWeek, getPlanItems } from './db';
+import { getDailyLogsByWeek, getPlanItems, getWeekNotes } from './db';
 import type { DailyLog } from './db';
 import {
   computeDayCompliance,
@@ -87,6 +87,10 @@ export interface WeekSummary {
   kitchen_cutoff: { hit: number; total: number };
   sick_days: number;
   notes: Array<{ date: string; text: string }>;
+  energy_levels: Array<{ date: string; level: number }>;
+  pain_days: Array<{ date: string; level: number; area: string | null }>;
+  sleep_disruptions: Array<{ date: string; type: string }>;
+  tagged_notes: Array<{ date: string; category: string; text: string }>;
 }
 
 /** Compute the weekly summary from daily logs. Denominator is always 7. */
@@ -126,6 +130,28 @@ export function computeWeekSummary(weekNumber: number): WeekSummary {
     .filter((l: DailyLog) => l.notes && l.notes.trim())
     .map((l: DailyLog) => ({ date: l.date, text: l.notes!.trim() }));
 
+  // Energy levels
+  const energy_levels = logs
+    .filter((l: DailyLog) => l.energy_level != null)
+    .map((l: DailyLog) => ({ date: l.date, level: l.energy_level! }));
+
+  // Pain days
+  const pain_days = logs
+    .filter((l: DailyLog) => l.pain_level != null && l.pain_level > 0)
+    .map((l: DailyLog) => ({ date: l.date, level: l.pain_level!, area: l.pain_area }));
+
+  // Sleep disruptions
+  const sleep_disruptions = logs
+    .filter((l: DailyLog) => l.sleep_disruption != null)
+    .map((l: DailyLog) => ({ date: l.date, type: l.sleep_disruption! }));
+
+  // Tagged notes (from daily_notes table)
+  const tagged_notes = getWeekNotes(weekNumber).map(n => ({
+    date: n.date,
+    category: n.category,
+    text: n.text,
+  }));
+
   return {
     week_number: weekNumber,
     days_logged: logs.length,
@@ -137,6 +163,10 @@ export function computeWeekSummary(weekNumber: number): WeekSummary {
     kitchen_cutoff: { hit: kitchenHit, total: 7 },
     sick_days: sickDays,
     notes,
+    energy_levels,
+    pain_days,
+    sleep_disruptions,
+    tagged_notes,
   };
 }
 
@@ -275,7 +305,42 @@ export function formatWeekSummaryForAgents(summary: WeekSummary): string {
   md += `- Kitchen Cutoff: ${summary.kitchen_cutoff.hit}/7\n`;
   md += `- Sick days: ${summary.sick_days}\n`;
 
-  if (summary.notes.length > 0) {
+  // Energy levels
+  if (summary.energy_levels.length > 0) {
+    const entries = summary.energy_levels.map(e => {
+      const dayName = getDayName(e.date).slice(0, 3);
+      return `${dayName}:${e.level}`;
+    });
+    md += `- Energy levels: ${entries.join(', ')}\n`;
+  }
+
+  // Pain flags
+  if (summary.pain_days.length > 0) {
+    md += `- Pain flags:\n`;
+    for (const p of summary.pain_days) {
+      const dayName = getDayName(p.date).slice(0, 3);
+      const painLabel = ['none', 'mild', 'moderate', 'stop'][p.level] || `${p.level}`;
+      md += `  - ${dayName}: ${painLabel}${p.area ? ` (${p.area})` : ''}\n`;
+    }
+  }
+
+  // Sleep disruptions
+  if (summary.sleep_disruptions.length > 0) {
+    const entries = summary.sleep_disruptions.map(d => {
+      const dayName = getDayName(d.date).slice(0, 3);
+      return `${dayName}: ${d.type}`;
+    });
+    md += `- Sleep disruptions: ${entries.join(', ')}\n`;
+  }
+
+  // Tagged notes (preferred over old free-text notes)
+  if (summary.tagged_notes.length > 0) {
+    md += `- Notes:\n`;
+    for (const n of summary.tagged_notes) {
+      const dayName = getDayName(n.date).slice(0, 3);
+      md += `  - ${dayName} (${n.category}): ${n.text}\n`;
+    }
+  } else if (summary.notes.length > 0) {
     md += `- Notes:\n`;
     for (const n of summary.notes) {
       const dayName = getDayName(n.date).slice(0, 3);

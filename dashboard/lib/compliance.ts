@@ -15,6 +15,8 @@ export interface DayComplianceInput {
   hydration_tracked: number;
   kitchen_cutoff_hit: number;
   is_sick_day: number;
+  energy_level?: number | null;  // optional, not in compliance calc
+  pain_level?: number | null;    // optional, not in compliance calc
 }
 
 export interface ComplianceResult {
