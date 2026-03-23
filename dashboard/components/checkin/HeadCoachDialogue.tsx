@@ -12,7 +12,6 @@ import {
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import LockIcon from '@mui/icons-material/Lock';
-import type { PlanItem } from '@/lib/types';
 import type { DialogueMessage } from '@/lib/dialogue';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -27,7 +26,6 @@ interface SpecialistOutput {
 interface HeadCoachDialogueProps {
   specialistOutputs: SpecialistOutput[];
   synthesis: string;
-  planItems: PlanItem[];
   weekNumber: number;
   onLockIn: () => void;
 }
@@ -37,7 +35,6 @@ interface HeadCoachDialogueProps {
 export default function HeadCoachDialogue({
   specialistOutputs,
   synthesis,
-  planItems,
   weekNumber,
   onLockIn,
 }: HeadCoachDialogueProps) {
@@ -160,7 +157,7 @@ export default function HeadCoachDialogue({
       }
 
       // If stream ended without dialogue_complete, commit whatever we have
-      if (streaming && fullCoachText) {
+      if (fullCoachText) {
         setMessages((prev) => [
           ...prev,
           { role: 'assistant', content: fullCoachText },

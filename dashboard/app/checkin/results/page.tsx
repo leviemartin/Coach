@@ -204,7 +204,6 @@ export default function CheckInResultsPage() {
         <HeadCoachDialogue
           specialistOutputs={specialists}
           synthesis={synthesis}
-          planItems={planItems}
           weekNumber={getPlanWeekNumber()}
           onLockIn={handleLockIn}
         />
