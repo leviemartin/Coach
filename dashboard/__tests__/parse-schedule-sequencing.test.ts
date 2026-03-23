@@ -24,6 +24,14 @@ const SCHEDULE_WITHOUT_SEQUENCING = `
 `;
 
 describe('parse-schedule sequencing metadata', () => {
+  it('extracts sequenceOrder from Seq # field', () => {
+    const items = parseScheduleTable(SCHEDULE_WITH_SEQUENCING, 13);
+    expect(items[0].sequenceOrder).toBe(1);
+    expect(items[1].sequenceOrder).toBe(2);
+    expect(items[2].sequenceOrder).toBe(3);
+    expect(items[3].sequenceOrder).toBe(4);
+  });
+
   it('extracts sequenceGroup from Group: field', () => {
     const items = parseScheduleTable(SCHEDULE_WITH_SEQUENCING, 13);
     expect(items[0].sequenceGroup).toBe('upper_compound');

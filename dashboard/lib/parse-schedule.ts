@@ -198,6 +198,7 @@ export function parseScheduleTable(markdown: string, weekNumber: number): PlanIt
         rule.focus.toLowerCase().includes(i.focus.toLowerCase()),
     );
     if (item) {
+      item.sequenceOrder = rule.seqOrder;
       if (rule.note !== null) item.sequenceNotes = rule.note;
       if (rule.group !== null) item.sequenceGroup = rule.group;
     }
