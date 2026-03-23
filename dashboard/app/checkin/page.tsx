@@ -130,7 +130,7 @@ export default function CheckInPage() {
             Step 4: Coach Synthesis
           </Typography>
           <Typography variant="body2">
-            Coming in Task C4 — streaming coach analysis.
+            Press Next to start the coaching analysis. Your 7 specialist coaches will analyze your week, then the Head Coach will synthesize their findings.
           </Typography>
         </Box>
       )}
@@ -149,7 +149,7 @@ export default function CheckInPage() {
             Step 5: Head Coach Dialogue
           </Typography>
           <Typography variant="body2">
-            Coming in Task C5 — conversational follow-up with the Head Coach.
+            Coming in Phase D — conversational follow-up with the Head Coach.
           </Typography>
         </Box>
       )}
