@@ -110,7 +110,7 @@ When presenting resolved conflicts to the athlete:
 5. **Head Coach dialogue** — Interactive discussion with athlete → Plan lock-in
 
 ## Scheduling Constraints
-1. **Weekend Rule** — Exactly 1 weekend day is a training day, the other is family time. **Saturday is the default training day; Sunday is family day.** The athlete will indicate when a swap is needed. Never schedule training on both weekend days.
+1. **Weekend Rule** — Exactly 1 weekend day is a training day, the other is family time. **Sunday is the default training day; Saturday is family day.** The athlete will indicate when a swap is needed. Never schedule training on both weekend days.
 2. **Minimum Session Length** — 40 minutes including warm-up and mobility.
 3. **Evening sessions are the norm** — Plan accordingly.
 4. **Sunday Ruck = Outdoor Only** — Sunday ruck sessions happen in nature with the Vizsla. No gym visits, no gym equipment. Gym-dependent exercises go on weekday sessions. Bodyweight during the outdoor ruck is fine.
