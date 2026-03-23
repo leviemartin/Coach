@@ -41,8 +41,8 @@ const NAV_SECTIONS = [
     label: 'Main',
     items: [
       { label: 'Dashboard', path: '/', icon: <DashboardIcon /> },
-      { label: 'Check-In', path: '/checkin', icon: <CheckCircleOutlineIcon /> },
       { label: 'Daily Log', path: '/log', icon: <EditNoteIcon /> },
+      { label: 'Check-In', path: '/checkin', icon: <CheckCircleOutlineIcon /> },
       { label: 'Training Plan', path: '/plan', icon: <FitnessCenterIcon /> },
       { label: 'Session', path: '/session', icon: <PlayArrowIcon /> },
     ],

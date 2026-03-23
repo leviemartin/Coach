@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Box, Chip, IconButton, Typography } from '@mui/material';
+import { Alert, Box, Button, Chip, IconButton, Typography } from '@mui/material';
+import { useRouter } from 'next/navigation';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import DailyLog from '@/components/DailyLog';
@@ -108,6 +109,7 @@ const DEFAULT_LOG: LogData = {
 };
 
 export default function DailyLogPage() {
+  const router = useRouter();
   const [currentDate, setCurrentDate] = useState(getTodayStr);
   const [log, setLog] = useState<LogData>(DEFAULT_LOG);
   const [dailyLogId, setDailyLogId] = useState<number | null>(null);
@@ -265,8 +267,34 @@ export default function DailyLogPage() {
     sessionLabel = 'Rest Day';
   }
 
+  // Sunday nudge banner logic
+  const now = new Date();
+  const isSunday = now.getDay() === 0;
+  const isAfter20 = now.getHours() >= 20;
+  const viewingToday = currentDate === todayStr;
+
   return (
     <Box sx={{ maxWidth: 600, mx: 'auto' }}>
+      {/* Sunday nudge banner */}
+      {isSunday && viewingToday && isAfter20 && (
+        <Alert
+          severity="info"
+          sx={{ mb: 2 }}
+          action={
+            <Button color="inherit" size="small" onClick={() => router.push('/checkin')}>
+              Start Check-In
+            </Button>
+          }
+        >
+          Your week is ready for review. Start check-in.
+        </Alert>
+      )}
+      {isSunday && viewingToday && !isAfter20 && (
+        <Alert severity="info" variant="outlined" sx={{ mb: 2, opacity: 0.7 }}>
+          Sunday&apos;s data isn&apos;t complete yet. Best results after 20:00.
+        </Alert>
+      )}
+
       {/* Date Navigation */}
       <Box
         sx={{

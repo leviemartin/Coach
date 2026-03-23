@@ -111,6 +111,9 @@ export default function PlanPage() {
           </IconButton>
         </Tooltip>
       </Box>
+      <Typography variant="body2" color="text.secondary" sx={{ mt: -2, mb: 3 }}>
+        Full plan also available in Daily Log → Week Overview.
+      </Typography>
 
       {synthesis && (
         <Card sx={{ mb: 3 }}>

@@ -241,7 +241,7 @@ export default function SessionPage() {
         console.error('Failed to complete session:', err);
       }
       // Navigate away or show a done state regardless
-      window.location.href = '/';
+      window.location.href = '/log';
     },
     [session],
   );

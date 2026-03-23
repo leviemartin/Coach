@@ -112,6 +112,9 @@ export default function DashboardHome() {
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4, flexWrap: 'wrap' }}>
         <Typography variant="h3">Dashboard</Typography>
         <Chip label={`Week ${getTrainingWeek()}`} size="small" />
+        <Button variant="text" size="small" onClick={() => router.push('/log')} sx={{ ml: 'auto' }}>
+          Go to today&apos;s log
+        </Button>
         <Tooltip title={syncing ? 'Syncing...' : 'Sync Garmin data'}>
           <IconButton onClick={handleSync} disabled={syncing} size="small">
             <SyncIcon sx={{
