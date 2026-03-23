@@ -6,7 +6,7 @@ import { normalizeWorkoutText } from './parse-schedule';
 import { DB_PATH } from './constants';
 
 // Schema version — bump this when adding tables or columns to force re-init on cached connections
-const SCHEMA_VERSION = 5; // v5: added session_logs, session_sets, session_cardio tables
+const SCHEMA_VERSION = 6; // v6: added energy_level, pain_level, pain_area, sleep_disruption, session_summary, session_log_id to daily_logs
 
 // Use globalThis to persist across hot reloads in dev
 const globalForDb = globalThis as unknown as { _coachDb?: Database.Database; _coachDbSchema?: number };
@@ -23,13 +23,13 @@ export function getDb(): Database.Database {
       globalForDb._coachDb.pragma('busy_timeout = 5000');
       globalForDb._coachDb.pragma('foreign_keys = ON');
     }
-    initTables(globalForDb._coachDb);
+    initTablesOn(globalForDb._coachDb);
     globalForDb._coachDbSchema = SCHEMA_VERSION;
   }
   return globalForDb._coachDb;
 }
 
-function initTables(db: Database.Database) {
+export function initTablesOn(db: Database.Database) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS weekly_metrics (
       week_number INTEGER PRIMARY KEY,
@@ -135,6 +135,12 @@ function initTables(db: Database.Database) {
       kitchen_cutoff_hit INTEGER DEFAULT 0,
       is_sick_day INTEGER DEFAULT 0,
       notes TEXT,
+      energy_level INTEGER,
+      pain_level INTEGER,
+      pain_area TEXT,
+      sleep_disruption TEXT,
+      session_summary TEXT,
+      session_log_id INTEGER REFERENCES session_logs(id),
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       FOREIGN KEY (workout_plan_item_id) REFERENCES plan_items(id)
@@ -184,6 +190,38 @@ function initTables(db: Database.Database) {
       completed INTEGER DEFAULT 0
     );
   `);
+
+  // Migration v6: add new daily_logs columns if they don't exist
+  try {
+    db.exec(`ALTER TABLE daily_logs ADD COLUMN energy_level INTEGER`);
+  } catch {
+    // Column already exists — ignore
+  }
+  try {
+    db.exec(`ALTER TABLE daily_logs ADD COLUMN pain_level INTEGER`);
+  } catch {
+    // Column already exists — ignore
+  }
+  try {
+    db.exec(`ALTER TABLE daily_logs ADD COLUMN pain_area TEXT`);
+  } catch {
+    // Column already exists — ignore
+  }
+  try {
+    db.exec(`ALTER TABLE daily_logs ADD COLUMN sleep_disruption TEXT`);
+  } catch {
+    // Column already exists — ignore
+  }
+  try {
+    db.exec(`ALTER TABLE daily_logs ADD COLUMN session_summary TEXT`);
+  } catch {
+    // Column already exists — ignore
+  }
+  try {
+    db.exec(`ALTER TABLE daily_logs ADD COLUMN session_log_id INTEGER REFERENCES session_logs(id)`);
+  } catch {
+    // Column already exists — ignore
+  }
 
   // Migration: add sub_tasks column if it doesn't exist
   try {
@@ -597,6 +635,12 @@ export interface DailyLog {
   kitchen_cutoff_hit: number;
   is_sick_day: number;
   notes: string | null;
+  energy_level: number | null;
+  pain_level: number | null;
+  pain_area: string | null;
+  sleep_disruption: string | null;
+  session_summary: string | null;
+  session_log_id: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -646,13 +690,17 @@ export function upsertDailyLog(log: Omit<DailyLog, 'id' | 'created_at' | 'update
         week_number = ?, workout_completed = ?, workout_plan_item_id = ?,
         core_work_done = ?, rug_protocol_done = ?, vampire_bedtime = ?,
         hydration_tracked = ?, kitchen_cutoff_hit = ?, is_sick_day = ?,
-        notes = ?, updated_at = ?
+        notes = ?, energy_level = ?, pain_level = ?, pain_area = ?,
+        sleep_disruption = ?, session_summary = ?, session_log_id = ?,
+        updated_at = ?
       WHERE date = ?
     `).run(
       log.week_number, log.workout_completed, log.workout_plan_item_id,
       log.core_work_done, log.rug_protocol_done, log.vampire_bedtime,
       log.hydration_tracked, log.kitchen_cutoff_hit, log.is_sick_day,
-      log.notes, now, log.date
+      log.notes, log.energy_level, log.pain_level, log.pain_area,
+      log.sleep_disruption, log.session_summary, log.session_log_id,
+      now, log.date
     );
   } else {
     db.prepare(`
@@ -660,13 +708,17 @@ export function upsertDailyLog(log: Omit<DailyLog, 'id' | 'created_at' | 'update
         date, week_number, workout_completed, workout_plan_item_id,
         core_work_done, rug_protocol_done, vampire_bedtime,
         hydration_tracked, kitchen_cutoff_hit, is_sick_day,
-        notes, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        notes, energy_level, pain_level, pain_area,
+        sleep_disruption, session_summary, session_log_id,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       log.date, log.week_number, log.workout_completed, log.workout_plan_item_id,
       log.core_work_done, log.rug_protocol_done, log.vampire_bedtime,
       log.hydration_tracked, log.kitchen_cutoff_hit, log.is_sick_day,
-      log.notes, now, now
+      log.notes, log.energy_level, log.pain_level, log.pain_area,
+      log.sleep_disruption, log.session_summary, log.session_log_id,
+      now, now
     );
   }
 
