@@ -22,7 +22,7 @@ export function parseSequencingRules(markdown: string): SequencingRule[] {
   const rules: SequencingRule[] = [];
 
   // Find the "## Sequencing Rules" section
-  const sectionMatch = markdown.match(/##\s+Sequencing Rules\s*\n([\s\S]*?)(?:\n##|\s*$)/);
+  const sectionMatch = markdown.match(/##\s+Sequencing Rules\s*\n([\s\S]*?)(?=\n##|$)/);
   if (!sectionMatch) return rules;
 
   const sectionBody = sectionMatch[1];
@@ -192,11 +192,14 @@ export function parseScheduleTable(markdown: string, weekNumber: number): PlanIt
   // Merge sequencing metadata if a "## Sequencing Rules" section exists
   const rules = parseSequencingRules(markdown);
   for (const rule of rules) {
-    const item = items.find(
-      (i) =>
-        i.focus.toLowerCase().includes(rule.focus.toLowerCase()) ||
-        rule.focus.toLowerCase().includes(i.focus.toLowerCase()),
-    );
+    // Primary: positional match (Session 1 = first table row)
+    // Fallback: focus-text substring match
+    const item = items[rule.sessionNum - 1] ??
+      items.find(
+        (i) =>
+          i.focus.toLowerCase().includes(rule.focus.toLowerCase()) ||
+          rule.focus.toLowerCase().includes(i.focus.toLowerCase()),
+      );
     if (item) {
       item.sequenceOrder = rule.seqOrder;
       if (rule.note !== null) item.sequenceNotes = rule.note;
