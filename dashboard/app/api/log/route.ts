@@ -15,8 +15,11 @@ export async function GET(request: Request) {
   const dayName = getDayName(date);
   const planItems = getPlanItems(weekNumber);
   const dayAbbrev = getDayAbbrev(date);
-  const plannedSession = planItems.find((item: { day: string }) =>
-    item.day === dayName || item.day.startsWith(dayAbbrev)
+  // Check assigned_date first (set by swap), then fall back to day name matching
+  const plannedSession = planItems.find((item) =>
+    item.assignedDate === date
+  ) || planItems.find((item) =>
+    !item.assignedDate && (item.day === dayName || item.day.startsWith(dayAbbrev))
   ) || null;
 
   const uncompletedSessions = getUncompletedSessionsForWeek(weekNumber);

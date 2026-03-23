@@ -45,8 +45,10 @@ export function findPlanItemForDate(dateStr: string): { id: number } | null {
   const dayName = getDayName(dateStr);
   const dayAbbrev = getDayAbbrev(dateStr);
   const items = getPlanItems(weekNumber);
-  const match = items.find((item: { day: string }) =>
-    item.day === dayName || item.day.startsWith(dayAbbrev)
+  const match = items.find((item) =>
+    item.assignedDate === dateStr
+  ) || items.find((item) =>
+    !item.assignedDate && (item.day === dayName || item.day.startsWith(dayAbbrev))
   );
   if (!match || match.id == null) return null;
   return { id: match.id };
