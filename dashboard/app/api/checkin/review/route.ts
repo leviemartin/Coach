@@ -4,8 +4,10 @@ import { computeWeekSummary } from '@/lib/daily-log';
 import { getWeekSessions } from '@/lib/session-db';
 import { readGarminData } from '@/lib/garmin';
 import { getTrainingWeek } from '@/lib/week';
+import { suggestModel } from '@/lib/model-suggestion';
 import type { DailyLog } from '@/lib/db';
 import type { WeekSummary } from '@/lib/daily-log';
+import type { ModelSuggestion } from '@/lib/model-suggestion';
 import type { GarminFreshness } from '@/lib/types';
 import type { SessionSetState, SessionCardioState } from '@/lib/types';
 
@@ -27,6 +29,7 @@ export interface WeeklyReviewData {
     hasData: boolean;
   };
   compliance: WeekSummary;
+  modelSuggestion: ModelSuggestion;
 }
 
 export async function GET(request: Request) {
@@ -50,12 +53,15 @@ export async function GET(request: Request) {
     hasData: garminFreshness.data !== null,
   };
 
+  const modelSuggestion = suggestModel(compliance, weekNumber);
+
   const payload: WeeklyReviewData = {
     weekNumber,
     dailyLogs,
     sessions,
     garmin,
     compliance,
+    modelSuggestion,
   };
 
   return NextResponse.json(payload);

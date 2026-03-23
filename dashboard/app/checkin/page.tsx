@@ -105,6 +105,7 @@ export default function CheckInPage() {
         <SubjectiveInputs
           data={subjectiveData}
           onChange={setSubjectiveData}
+          modelSuggestion={reviewData?.modelSuggestion}
         />
       )}
 

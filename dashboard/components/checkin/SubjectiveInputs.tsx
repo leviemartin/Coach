@@ -1,21 +1,15 @@
 'use client';
 
-import {
-  Box,
-  Card,
-  CardContent,
-  FormControlLabel,
-  Radio,
-  RadioGroup,
-  TextField,
-  Typography,
-} from '@mui/material';
+import { Box, Card, CardContent, TextField, Typography } from '@mui/material';
 import type { CheckinSubjectiveData } from '@/lib/types';
+import type { ModelSuggestion } from '@/lib/model-suggestion';
 import { cardContentSx } from '@/lib/theme';
+import ModelSelector from './ModelSelector';
 
 interface SubjectiveInputsProps {
   data: CheckinSubjectiveData;
   onChange: (data: CheckinSubjectiveData) => void;
+  modelSuggestion?: ModelSuggestion;
 }
 
 const buttonBase = {
@@ -58,30 +52,6 @@ const SATISFACTION_LABELS: Record<number, string> = {
   5: 'Too much',
 };
 
-const MODEL_OPTIONS: Array<{
-  value: CheckinSubjectiveData['model'];
-  label: string;
-  description: string;
-}> = [
-  {
-    value: 'mixed',
-    label: 'Smart Mix',
-    description:
-      'Recommended for most weeks. Specialists use Sonnet for speed, Recovery and Head Coach use Opus for deeper reasoning.',
-  },
-  {
-    value: 'opus',
-    label: 'All Opus',
-    description:
-      'Use when this week involves complex decisions needing maximum depth.',
-  },
-  {
-    value: 'sonnet',
-    label: 'All Sonnet',
-    description: 'Use for routine maintenance weeks. Fastest results.',
-  },
-];
-
 function TapButtons({
   value,
   onChange,
@@ -114,7 +84,7 @@ function TapButtons({
   );
 }
 
-export default function SubjectiveInputs({ data, onChange }: SubjectiveInputsProps) {
+export default function SubjectiveInputs({ data, onChange, modelSuggestion }: SubjectiveInputsProps) {
   const set = <K extends keyof CheckinSubjectiveData>(key: K, value: CheckinSubjectiveData[K]) =>
     onChange({ ...data, [key]: value });
 
@@ -209,70 +179,11 @@ export default function SubjectiveInputs({ data, onChange }: SubjectiveInputsPro
       </Card>
 
       {/* ── Model Selection ─────────────────────────────────────── */}
-      <Card variant="outlined">
-        <CardContent sx={cardContentSx}>
-          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-            AI model
-          </Typography>
-
-          <RadioGroup
-            value={data.model}
-            onChange={(e) => set('model', e.target.value as CheckinSubjectiveData['model'])}
-          >
-            {MODEL_OPTIONS.map(({ value, label, description }) => (
-              <Box
-                key={value}
-                sx={{
-                  border: '1px solid',
-                  borderColor: data.model === value ? '#3b82f6' : '#e2e8f0',
-                  borderRadius: 1,
-                  px: 1.5,
-                  py: 1,
-                  mb: 1,
-                  cursor: 'pointer',
-                  bgcolor: data.model === value ? '#eff6ff' : 'transparent',
-                  transition: 'border-color 0.1s, background 0.1s',
-                  '&:last-child': { mb: 0 },
-                }}
-                onClick={() => set('model', value)}
-              >
-                <FormControlLabel
-                  value={value}
-                  control={<Radio size="small" />}
-                  label={
-                    <Box>
-                      <Typography variant="body2" fontWeight={600}>
-                        {label}
-                        {value === 'mixed' && (
-                          <Typography
-                            component="span"
-                            variant="caption"
-                            sx={{
-                              ml: 1,
-                              px: 0.75,
-                              py: 0.25,
-                              bgcolor: '#dcfce7',
-                              color: '#15803d',
-                              borderRadius: '4px',
-                              fontWeight: 600,
-                            }}
-                          >
-                            recommended
-                          </Typography>
-                        )}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {description}
-                      </Typography>
-                    </Box>
-                  }
-                  sx={{ m: 0, width: '100%' }}
-                />
-              </Box>
-            ))}
-          </RadioGroup>
-        </CardContent>
-      </Card>
+      <ModelSelector
+        value={data.model}
+        onChange={(v) => set('model', v)}
+        suggestion={modelSuggestion}
+      />
     </Box>
   );
 }
