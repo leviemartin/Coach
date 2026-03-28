@@ -1,6 +1,7 @@
 'use client';
 
-import { Box, Button, Card, CardContent, Typography } from '@mui/material';
+import { useState } from 'react';
+import { Box, Button, Card, CardContent, TextField, Typography } from '@mui/material';
 import { semanticColors, typography } from '@/lib/design-tokens';
 import type { SessionCardioState } from '@/lib/types';
 
@@ -9,7 +10,7 @@ interface CardioSteadyProps {
   cardio: SessionCardioState;
   coachCue: string | null;
   workoutDescription?: string | null;
-  onUpdateCardio: (cardioId: number, completedRounds: number, completed: boolean) => void;
+  onUpdateCardio: (cardioId: number, completedRounds: number, completed: boolean, actualDurationMin?: number | null) => void;
 }
 
 function formatDuration(minutes: number): string {
@@ -28,11 +29,16 @@ export default function CardioSteady({
   workoutDescription,
   onUpdateCardio,
 }: CardioSteadyProps) {
+  const [editDuration, setEditDuration] = useState(
+    cardio.actualDurationMin?.toString() ?? cardio.prescribedDurationMin?.toString() ?? ''
+  );
+
   const handleToggle = () => {
+    const dur = editDuration ? parseFloat(editDuration) : null;
     if (cardio.completed) {
-      onUpdateCardio(cardio.id!, 0, false);
+      onUpdateCardio(cardio.id!, 0, false, dur);
     } else {
-      onUpdateCardio(cardio.id!, 1, true);
+      onUpdateCardio(cardio.id!, 1, true, dur);
     }
   };
 
@@ -57,10 +63,21 @@ export default function CardioSteady({
         {durationMin != null && (
           <Box sx={{ mt: 1, mb: 1.5 }}>
             <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
-              <Typography sx={{ ...typography.heroNumber, lineHeight: 1 }}>
-                {formatDuration(durationMin)}
-              </Typography>
-              {durationMin < 60 && (
+              {cardio.completed ? (
+                <Typography sx={{ ...typography.heroNumber, lineHeight: 1 }}>
+                  {editDuration || formatDuration(durationMin)}
+                </Typography>
+              ) : (
+                <TextField
+                  size="small"
+                  value={editDuration}
+                  onChange={(e) => setEditDuration(e.target.value)}
+                  placeholder={durationMin.toString()}
+                  inputProps={{ inputMode: 'decimal', style: { textAlign: 'center', padding: '8px 12px', fontSize: '2rem', fontWeight: 800 } }}
+                  sx={{ width: 100, '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
+                />
+              )}
+              {(cardio.completed ? parseFloat(editDuration || '0') : durationMin) < 60 && (
                 <Typography sx={{ fontSize: '1.25rem', fontWeight: 600, color: 'text.secondary' }}>
                   min
                 </Typography>

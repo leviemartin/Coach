@@ -8,7 +8,7 @@ interface CardioIntervalsProps {
   exerciseName: string;
   cardio: SessionCardioState;
   coachCue: string | null;
-  onUpdateCardio: (cardioId: number, completedRounds: number, completed: boolean) => void;
+  onUpdateCardio: (cardioId: number, completedRounds: number, completed: boolean, actualDurationMin?: number | null) => void;
 }
 
 export default function CardioIntervals({ exerciseName, cardio, coachCue, onUpdateCardio }: CardioIntervalsProps) {

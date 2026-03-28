@@ -235,7 +235,7 @@ export default function SessionPage() {
 
   // ── Update a cardio block (optimistic + POST) ──────────────────────────────
   const handleUpdateCardio = useCallback(
-    async (cardioId: number, completedRounds: number, completed: boolean) => {
+    async (cardioId: number, completedRounds: number, completed: boolean, actualDurationMin?: number | null) => {
       if (!session) return;
 
       // Optimistic update
@@ -244,7 +244,9 @@ export default function SessionPage() {
         return {
           ...prev,
           cardio: prev.cardio.map((c) =>
-            c.id === cardioId ? { ...c, completedRounds, completed } : c,
+            c.id === cardioId
+              ? { ...c, completedRounds, completed, actualDurationMin: actualDurationMin ?? c.actualDurationMin }
+              : c,
           ),
         };
       });
@@ -253,7 +255,7 @@ export default function SessionPage() {
         await fetch('/api/session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: 'cardio', cardioId, completedRounds, completed }),
+          body: JSON.stringify({ type: 'cardio', cardioId, completedRounds, completed, actualDurationMin }),
         });
       } catch (err) {
         console.error('Failed to persist cardio update:', err);
