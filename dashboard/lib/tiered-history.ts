@@ -52,6 +52,12 @@ export interface WeekSummaryTier {
   avgEnergy: number | null;
   painFlags: { count: number; areas: string[] };
   keyNotes: string[];
+  avgRpe: number | null;
+  hardExerciseCount: number | null;
+  sickDays: number | null;
+  painAreasSummary: string | null;
+  sleepDisruptionBreakdown: string | null;
+  weekReflection: string | null;
 }
 
 export interface WeightDataPoint {
@@ -178,6 +184,7 @@ function buildWeekSummary(
   const rugDone = logs.filter((l) => l.rug_protocol_done).length;
   const hydrationTracked = logs.filter((l) => l.hydration_tracked).length;
   const kitchenHit = logs.filter((l) => l.kitchen_cutoff_hit).length;
+  const sickDays = logs.filter((l) => l.is_sick_day).length;
 
   // Bedtime compliance
   const bedtimeLogs = logs.filter((l) => l.vampire_bedtime != null);
@@ -224,6 +231,12 @@ function buildWeekSummary(
     avgEnergy,
     painFlags: { count: painLogs.length, areas: painAreas },
     keyNotes,
+    avgRpe: metric?.avgRpe ?? null,
+    hardExerciseCount: metric?.hardExerciseCount ?? null,
+    sickDays: metric?.sickDays ?? sickDays,
+    painAreasSummary: metric?.painAreasSummary ?? null,
+    sleepDisruptionBreakdown: metric?.sleepDisruptionBreakdown ?? null,
+    weekReflection: metric?.weekReflection ?? null,
   };
 }
 
@@ -399,6 +412,34 @@ function formatWeeklySummaries(summaries: WeekSummaryTier[]): string {
     md += `- Bedtime compliance: ${bedtimeStr}\n`;
     md += `- Weight: ${weightStr} | Avg energy: ${energyStr}\n`;
     md += `- Pain flags: ${painStr}\n`;
+    if (s.avgRpe != null) {
+      md += `- Avg RPE: ${s.avgRpe}/5${s.hardExerciseCount ? `, Hard exercises (RPE≥4): ${s.hardExerciseCount}` : ''}\n`;
+    }
+    if (s.sickDays != null && s.sickDays > 0) {
+      md += `- Sick days: ${s.sickDays}\n`;
+    }
+    if (s.painAreasSummary) {
+      try {
+        const areas = JSON.parse(s.painAreasSummary) as Array<{ area: string; days: number; maxLevel: number }>;
+        if (areas.length > 0) {
+          const areaStr = areas.map(a => `${a.area} (${a.days}d, max ${a.maxLevel})`).join(', ');
+          md += `- Pain areas: ${areaStr}\n`;
+        }
+      } catch { /* invalid JSON, skip */ }
+    }
+    if (s.sleepDisruptionBreakdown) {
+      try {
+        const breakdown = JSON.parse(s.sleepDisruptionBreakdown) as Record<string, number>;
+        const parts = Object.entries(breakdown).map(([cause, count]) => `${cause} ×${count}`);
+        if (parts.length > 0) {
+          md += `- Sleep disruptions: ${parts.join(', ')}\n`;
+        }
+      } catch { /* invalid JSON, skip */ }
+    }
+    if (s.weekReflection) {
+      const truncated = s.weekReflection.length > 200 ? s.weekReflection.slice(0, 200) + '...' : s.weekReflection;
+      md += `- Reflection: "${truncated}"\n`;
+    }
     if (s.keyNotes.length > 0) {
       md += `- Notes:\n`;
       for (const note of s.keyNotes) {
