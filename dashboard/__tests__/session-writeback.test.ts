@@ -71,7 +71,7 @@ describe('session writeback to daily log', () => {
 
     // Complete all sets
     for (const s of sets) {
-      updateSet(s.id!, s.prescribedWeightKg, s.prescribedReps, true, db);
+      updateSet(s.id!, s.prescribedWeightKg, s.prescribedReps, true, undefined, db);
     }
 
     completeSession(sessionId, 'Felt strong', db);
@@ -105,11 +105,11 @@ describe('session writeback to daily log', () => {
 
     // Complete all Bench Press sets at prescribed weight
     for (const s of sets.filter(s => s.exerciseName === 'Bench Press')) {
-      updateSet(s.id!, s.prescribedWeightKg, s.prescribedReps, true, db);
+      updateSet(s.id!, s.prescribedWeightKg, s.prescribedReps, true, undefined, db);
     }
     // Complete Incline DB Press sets with a weight increase (20 -> 22.5)
     for (const s of sets.filter(s => s.exerciseName === 'Incline DB Press')) {
-      updateSet(s.id!, 22.5, s.prescribedReps, true, db);
+      updateSet(s.id!, 22.5, s.prescribedReps, true, undefined, db);
     }
 
     const result = completeSession(sessionId, '', db);
@@ -175,7 +175,7 @@ describe('session writeback to daily log', () => {
     // Complete the cardio round
     const rows = db.prepare('SELECT id FROM session_cardio WHERE session_log_id = ?').all(session2) as { id: number }[];
     for (const r of rows) {
-      updateCardioRound(r.id, 4, true, db);
+      updateCardioRound(r.id, 4, true, undefined, db);
     }
 
     completeSession(session2, 'Evening session', db);

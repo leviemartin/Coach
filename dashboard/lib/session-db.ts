@@ -183,6 +183,8 @@ export function generateSessionSummary(
     exerciseMap.set(s.exerciseName, group);
   }
 
+  const rpeLabels = ['', 'Too Easy', 'Easy', 'Right', 'Hard', 'Too Hard'];
+
   for (const [name, exSets] of exerciseMap) {
     const totalSets = exSets.length;
     const completedSets = exSets.filter((s) => s.completed).length;
@@ -193,20 +195,6 @@ export function generateSessionSummary(
       lines.push(`- ${name}: 0/${totalSets} sets done`);
     } else if (completedSets < totalSets) {
       lines.push(`- ${name}: ${completedSets}/${totalSets} sets done`);
-
-      // Add RPE if recorded
-      const rpe = feedback?.find((f) => f.exerciseName === name);
-      if (rpe) {
-        const rpeLabels = ['', 'Too Easy', 'Easy', 'Right', 'Hard', 'Too Hard'];
-        lines.push(`  RPE: ${rpe.rpe}/5 (${rpeLabels[rpe.rpe]})`);
-      }
-
-      // Duration changes for timed exercises
-      const timedSets = exSets.filter((s) => s.prescribedDurationS != null && s.actualDurationS != null && s.actualDurationS !== s.prescribedDurationS);
-      if (timedSets.length > 0) {
-        const first = timedSets[0];
-        lines.push(`  Duration: ${first.prescribedDurationS}s → ${first.actualDurationS}s`);
-      }
     } else {
       // All sets completed — show representative set
       const reps = firstCompleted?.actualReps ?? prescribed.prescribedReps;
@@ -223,15 +211,15 @@ export function generateSessionSummary(
           : '';
 
       lines.push(`- ${name}: ${repsStr}${weightStr} ✓${weightNote}`);
+    }
 
-      // Add RPE if recorded
+    // RPE and duration annotations (for any exercise with at least one completed set)
+    if (completedSets > 0) {
       const rpe = feedback?.find((f) => f.exerciseName === name);
       if (rpe) {
-        const rpeLabels = ['', 'Too Easy', 'Easy', 'Right', 'Hard', 'Too Hard'];
         lines.push(`  RPE: ${rpe.rpe}/5 (${rpeLabels[rpe.rpe]})`);
       }
 
-      // Duration changes for timed exercises
       const timedSets = exSets.filter((s) => s.prescribedDurationS != null && s.actualDurationS != null && s.actualDurationS !== s.prescribedDurationS);
       if (timedSets.length > 0) {
         const first = timedSets[0];
@@ -246,6 +234,15 @@ export function generateSessionSummary(
       lines.push(`- ${c.exerciseName}: ${c.completedRounds}/${c.prescribedRounds ?? '?'} rounds ✓`);
     } else {
       lines.push(`- ${c.exerciseName}: ${c.completedRounds}/${c.prescribedRounds ?? '?'} rounds done`);
+    }
+    // Duration change for cardio
+    if (c.actualDurationMin != null && c.prescribedDurationMin != null && c.actualDurationMin !== c.prescribedDurationMin) {
+      lines.push(`  Duration: ${c.prescribedDurationMin}min → ${c.actualDurationMin}min`);
+    }
+    // RPE for cardio
+    const cardioRpe = feedback?.find((f) => f.exerciseName === c.exerciseName);
+    if (cardioRpe) {
+      lines.push(`  RPE: ${cardioRpe.rpe}/5 (${rpeLabels[cardioRpe.rpe]})`);
     }
   }
 
