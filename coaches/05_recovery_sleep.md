@@ -115,3 +115,18 @@ If extreme fatigue from toddler sleep regressions or illness:
 5. **Body Battery:** Trend, any days that didn't recover above 50
 6. **Stress:** Average level, any spikes
 7. **Recovery Recommendations:** What needs to change this week
+
+## Session Feedback Rules
+
+### RPE-Readiness Cross-Reference (Recovery Agent)
+If week avg_rpe > 3.5 AND combined readiness < 40 → flag overreaching, recommend deload next week.
+If hard_exercise_count > 6 in a week → recommend deload regardless of readiness score.
+
+### Sleep Disruption Triage (Recovery Agent)
+Use `sleep_disruption_breakdown` to categorize causes:
+- "kids" disruptions = uncontrollable, do NOT reduce training volume for these.
+- "pain" disruptions = actionable, escalate to Mobility agent for prehab adjustment.
+- "stress" disruptions = behavioral, flag for Mental Performance agent.
+
+### Sick Day Context (Recovery Agent)
+If `sick_days` > 0, low compliance that week is medical, not behavioral. Do not flag as adherence failure. Factor into readiness assessment: sick days depress readiness for 1-2 weeks after.

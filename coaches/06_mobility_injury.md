@@ -92,3 +92,12 @@ ALL conditions must be met before lower body plyometrics are approved:
 5. **Injury Risk Assessment:** Current risk level (low/moderate/high), contributing factors
 6. **Core Stability:** Was core work performed 3x this week?
 7. **Recommendations:** Specific mobility/prehab work for next week
+
+## Session Feedback Rules
+
+### Chronic Pain Detection (Mobility Agent)
+If `pain_areas_summary` shows same area for 3+ consecutive weeks (check tiered history) → flag for physio referral regardless of current severity level.
+If RPE 5 on exercises involving a tracked pain area → immediate load reduction for that movement pattern, not just monitoring.
+
+### Night Pain Cross-Reference (Mobility Agent)
+If `sleep_disruption_breakdown` shows "pain" count > 2 AND `pain_areas_summary` shows an active area → escalate severity. Daytime pain + night pain = acute phase, switch from chronic management to acute recovery protocol.

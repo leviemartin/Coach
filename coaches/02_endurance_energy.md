@@ -92,3 +92,13 @@ Use daily energy pattern from logs to recommend Zone 4 timing. If energy drops m
 4. **Running Progression:** Where in the protocol, any adjustments needed (Phase 2+)
 5. **Elevation Prep:** StairMaster volume, loaded stair work, outdoor options used
 6. **Recommendations:** Specific cardio sessions for next week with zones and durations
+
+## Session Feedback Rules
+
+### Cardio Duration Rule (Endurance Agent)
+If cardio actual duration < prescribed → flag conditioning gap, hold current prescription next week.
+If cardio actual duration > prescribed → athlete progressing, increase 10% next week.
+
+### Effort-Effect Cross-Reference (Endurance Agent)
+If RPE 5 but Garmin anaerobic TE < 1.0 → form or pacing issue, not true max effort. Cue technique, don't reduce intensity.
+If RPE 2 but Garmin aerobic TE > 3.0 → effort underreported, trust Garmin. Do not increase load based on RPE alone.

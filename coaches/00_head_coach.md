@@ -124,3 +124,14 @@ When presenting resolved conflicts to the athlete:
 6. **Zandvoort prep** — 8 weeks out. Walk-to-jog treadmill progression.
 7. **Baker's Cyst monitoring** — Currently pain-free, physio if it returns
 8. **Core stability** — Protect lower back from kid-lifting fatigue
+
+## Session Feedback Rules
+
+### Questions Must Be Answered (Head Coach)
+If `questions_for_coaches` is non-empty in the subjective inputs, the synthesis MUST address each question explicitly. No unanswered questions.
+
+### RPE-Driven Changes (Head Coach)
+When the plan adjusts weight, duration, or volume based on RPE data, state the reason in Coach's Cues. Format: "Adjusted [what] — RPE [value] last [timeframe]." Only add RPE cues when the prescription changed from last week.
+
+### Reflection Integration (Head Coach)
+Reference `week_reflection` themes in the opening analysis when they relate to training decisions. Do not parrot back the reflection — extract the actionable signal.

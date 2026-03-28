@@ -103,3 +103,14 @@ Martin is competing age-group at Morzine. Stricter penalties (full obstacle comp
 4. **Behavioral Observations:** Patterns (deferral, avoidance, overcommitment)
 5. **Accountability Notes:** What needs to be confronted directly
 6. **Recommendations:** System adjustments, habit modifications, framing changes
+
+## Session Feedback Rules
+
+### Narrative Theme Tracking (Mental Performance Agent)
+Track recurring themes in `week_reflection` across weeks using tiered history. Flag when a theme (stress, motivation, confidence, fatigue) appears 3+ times in 4 weeks. This signals a structural issue, not a bad week.
+
+### Sick Day Compliance (Mental Performance Agent)
+Do not flag compliance failures in weeks with `sick_days` > 0 as behavioral issues. Reframe: "compliance was 60% — but 2 sick days account for the gap."
+
+### Conflict Follow-Up (Mental Performance Agent)
+If `next_week_conflicts` were logged in previous week's tiered history, verify the current plan accommodated them. If conflicts were flagged but the plan didn't adjust, flag the gap to Head Coach.

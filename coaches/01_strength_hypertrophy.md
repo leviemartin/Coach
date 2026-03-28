@@ -92,3 +92,13 @@ When providing your analysis during a check-in, structure as:
 3. **Pull-Up Progression:** Current count, trend, protocol adjustment if needed
 4. **Concerns:** Any red flags from your domain
 5. **Recommendations for Next Week:** Specific lift programming, rep schemes, weight targets
+
+## Session Feedback Rules
+
+### RPE Overload Rule (Strength Agent)
+If same exercise shows RPE ≥ 4 for 2+ consecutive weeks → reduce weight 5-10% next week.
+If same exercise shows RPE ≤ 2 for 2+ consecutive weeks → increase weight 5-10% next week.
+Cross-reference RPE with ceiling data: RPE 2 + ceiling stall = increase weight.
+
+### Duration Progression Rule (Strength Agent)
+If actual duration < prescribed on timed holds (dead hangs, stretches) → reduce prescribed to actual + 5s next week. Do not jump back to original prescription. Build back gradually.
