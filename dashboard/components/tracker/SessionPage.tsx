@@ -22,6 +22,7 @@ interface SessionData {
   exercises: ParsedExercise[];
   sets: SessionSetState[];
   cardio: SessionCardioState[];
+  feedback: Array<{ exerciseName: string; exerciseOrder: number; rpe: number }>;
   coachCues: string | null;
   workoutDescription: string | null;
   resumed: boolean;
@@ -117,6 +118,7 @@ export default function SessionPage() {
   const [currentBlockIndex, setCurrentBlockIndex] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
   const [completeResult, setCompleteResult] = useState<CompleteResult | null>(null);
+  const [rpeFeedback, setRpeFeedback] = useState<Record<string, number>>({});
 
   // ── Load session on mount ──────────────────────────────────────────────────
   useEffect(() => {
@@ -147,6 +149,14 @@ export default function SessionPage() {
           return;
         }
         setSession(data);
+        // Restore saved RPE feedback
+        if (data.feedback?.length) {
+          const rpeMap: Record<string, number> = {};
+          for (const f of data.feedback) {
+            rpeMap[f.exerciseName] = f.rpe;
+          }
+          setRpeFeedback(rpeMap);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load session');
       } finally {
@@ -166,6 +176,7 @@ export default function SessionPage() {
       actualWeightKg: number | null,
       actualReps: number | null,
       completed: boolean,
+      actualDurationS?: number | null,
     ) => {
       if (!session) return;
 
@@ -175,7 +186,9 @@ export default function SessionPage() {
         return {
           ...prev,
           sets: prev.sets.map((s) =>
-            s.id === setId ? { ...s, actualWeightKg, actualReps, completed } : s,
+            s.id === setId
+              ? { ...s, actualWeightKg, actualReps, completed, actualDurationS: actualDurationS ?? s.actualDurationS }
+              : s,
           ),
         };
       });
@@ -184,10 +197,37 @@ export default function SessionPage() {
         await fetch('/api/session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: 'set', setId, actualWeightKg, actualReps, completed }),
+          body: JSON.stringify({ type: 'set', setId, actualWeightKg, actualReps, completed, actualDurationS }),
         });
       } catch (err) {
         console.error('Failed to persist set update:', err);
+      }
+    },
+    [session],
+  );
+
+  // ── Submit RPE feedback for an exercise ──────────────────────────────────
+  const handleRpeSelect = useCallback(
+    async (exerciseName: string, rpe: number) => {
+      if (!session?.sessionId) return;
+
+      setRpeFeedback((prev) => ({ ...prev, [exerciseName]: rpe }));
+
+      const exercise = session.exercises.find((e) => e.canonicalName === exerciseName || e.name === exerciseName);
+
+      try {
+        await fetch('/api/session/feedback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionLogId: session.sessionId,
+            exerciseName,
+            exerciseOrder: exercise?.order ?? 0,
+            rpe,
+          }),
+        });
+      } catch (err) {
+        console.error('Failed to save RPE:', err);
       }
     },
     [session],
@@ -322,6 +362,8 @@ export default function SessionPage() {
           durationSeconds={ex.durationSeconds}
           isCurrent
           onUpdateSet={handleUpdateSet}
+          rpe={rpeFeedback[ex.canonicalName] ?? null}
+          onRpeSelect={(name, rpe) => handleRpeSelect(ex.canonicalName, rpe)}
         />
       );
     }
@@ -332,6 +374,7 @@ export default function SessionPage() {
       name: ex.name,
       sets: session.sets.filter((s) => s.exerciseName === ex.canonicalName),
       durationSeconds: ex.durationSeconds,
+      rpe: rpeFeedback[ex.canonicalName] ?? null,
     }));
 
     return (
@@ -341,6 +384,10 @@ export default function SessionPage() {
         exercises={supersetExercises}
         restSeconds={restSeconds}
         onUpdateSet={handleUpdateSet}
+        onRpeSelect={(name, rpe) => {
+          const ex = block.exercises.find((e) => e.name === name);
+          handleRpeSelect(ex?.canonicalName ?? name, rpe);
+        }}
       />
     );
   }
