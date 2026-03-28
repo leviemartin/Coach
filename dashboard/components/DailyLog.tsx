@@ -50,6 +50,7 @@ interface LogData {
   pain_area: string | null;
   sleep_disruption: string | null;
   session_summary: string | null;
+  session_log_id: number | null;
 }
 
 interface PlannedSession {
@@ -487,7 +488,10 @@ export default function DailyLog({
 
       {/* 4c. SessionSummaryCard (after session completed) */}
       {!isSick && formData.session_summary && (
-        <SessionSummaryCard sessionSummary={formData.session_summary} />
+        <SessionSummaryCard
+          sessionSummary={formData.session_summary}
+          sessionLogId={formData.session_log_id}
+        />
       )}
 
       {/* 5. SleepDisruptionCard (always visible) */}

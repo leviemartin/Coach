@@ -12,6 +12,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 export interface SessionSummaryCardProps {
   sessionSummary: string;
+  sessionLogId?: number | null;
 }
 
 function parseCompliance(firstLine: string): number | null {
@@ -26,7 +27,7 @@ function complianceColor(pct: number): 'success' | 'warning' | 'error' {
   return 'error';
 }
 
-export default function SessionSummaryCard({ sessionSummary }: SessionSummaryCardProps) {
+export default function SessionSummaryCard({ sessionSummary, sessionLogId }: SessionSummaryCardProps) {
   const [expanded, setExpanded] = useState(false);
 
   const lines = sessionSummary.split('\n');
@@ -123,6 +124,23 @@ export default function SessionSummaryCard({ sessionSummary }: SessionSummaryCar
             </Typography>
           </Box>
         </Collapse>
+      )}
+      {sessionLogId && (
+        <Box sx={{ px: 2, pb: 1.5, borderTop: '1px solid #f1f5f9' }}>
+          <Typography
+            component="a"
+            href={`/session?edit=true&sessionLogId=${sessionLogId}`}
+            sx={{
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              color: '#3b82f6',
+              textDecoration: 'none',
+              '&:hover': { textDecoration: 'underline' },
+            }}
+          >
+            Edit Session →
+          </Typography>
+        </Box>
       )}
     </Box>
   );

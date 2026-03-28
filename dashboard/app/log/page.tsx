@@ -65,6 +65,7 @@ interface LogData {
   pain_area: string | null;
   sleep_disruption: string | null;
   session_summary: string | null;
+  session_log_id: number | null;
 }
 
 interface PlannedSession {
@@ -106,6 +107,7 @@ const DEFAULT_LOG: LogData = {
   pain_area: null,
   sleep_disruption: null,
   session_summary: null,
+  session_log_id: null,
 };
 
 export default function DailyLogPage() {
