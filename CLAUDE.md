@@ -114,6 +114,31 @@ Posterior knee tightness → limit deep flexion, feet high on Leg Press. Any sym
 ### Superset Rest Times (Strength Agent)
 Heavy compounds: 90-120s rest. Non-negotiable for ATP replenishment.
 
+### Session Feedback Data (All Coaches)
+Coaches receive per-exercise RPE and actual duration data in the session details section.
+
+**RPE Scale (1-5):**
+| RPE | Label | Meaning |
+|-----|-------|---------|
+| 1 | Too Easy | Could double the sets. Load needs to go up. |
+| 2 | Easy | Comfortable throughout. 3+ reps in reserve. |
+| 3 | Right | Challenging but manageable. 1-2 reps in reserve. Target zone. |
+| 4 | Hard | Last set was a grind. 0-1 reps in reserve. |
+| 5 | Too Hard | Form broke down or failed. Load needs to come down. |
+
+RPE 1 and 5 are signals to adjust programming. RPE 2-4 is the working range.
+
+**Duration Actuals:** For timed exercises (holds, hangs, cardio), actual duration appears alongside prescribed when the athlete logged a different value. Format: "Duration: 40s → 30s".
+
+**Weekly Metrics (available in tiered history):**
+- `avg_rpe` — mean RPE across all exercises that week
+- `hard_exercise_count` — exercises rated RPE >= 4
+- `sick_days` — days marked sick (context for low compliance)
+- `pain_areas_summary` — which body areas, how many days, max severity
+- `sleep_disruption_breakdown` — cause counts (kids, stress, pain, other)
+- `week_reflection` — athlete's own narrative summary
+- `questions_for_coaches` — must be addressed in synthesis
+
 ## 7. Garmin Data Interpretation
 
 Connector: `/Users/martinlevie/garmin-coach/garmin_connector.py` (manual sync, automation pending)
