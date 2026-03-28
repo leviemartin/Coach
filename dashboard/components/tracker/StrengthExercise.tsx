@@ -11,22 +11,23 @@ interface StrengthExerciseProps {
   sets: SessionSetState[];
   durationSeconds?: number | null;
   isCurrent?: boolean;
-  onUpdateSet: (setId: number, actualWeightKg: number | null, actualReps: number | null, completed: boolean) => void;
+  onUpdateSet: (setId: number, actualWeightKg: number | null, actualReps: number | null, completed: boolean, actualDurationS?: number | null) => void;
 }
 
 export default function StrengthExercise({ exerciseName, sets, durationSeconds, isCurrent = false, onUpdateSet }: StrengthExerciseProps) {
   // Track local edits before completing
-  const [edits, setEdits] = useState<Record<number, { weight: string; reps: string }>>({});
+  const [edits, setEdits] = useState<Record<number, { weight: string; reps: string; duration: string }>>({});
 
   const getEdit = (set: SessionSetState) => {
     if (edits[set.id!]) return edits[set.id!];
     return {
       weight: set.actualWeightKg?.toString() ?? set.prescribedWeightKg?.toString() ?? '',
       reps: set.actualReps?.toString() ?? set.prescribedReps?.toString() ?? '',
+      duration: set.actualDurationS?.toString() ?? set.prescribedDurationS?.toString() ?? durationSeconds?.toString() ?? '',
     };
   };
 
-  const updateEdit = (setId: number, field: 'weight' | 'reps', value: string) => {
+  const updateEdit = (setId: number, field: 'weight' | 'reps' | 'duration', value: string) => {
     setEdits((prev) => ({
       ...prev,
       [setId]: { ...getEditById(setId), [field]: value },
@@ -35,7 +36,7 @@ export default function StrengthExercise({ exerciseName, sets, durationSeconds, 
 
   const getEditById = (setId: number) => {
     const set = sets.find((s) => s.id === setId);
-    if (!set) return { weight: '', reps: '' };
+    if (!set) return { weight: '', reps: '', duration: '' };
     return getEdit(set);
   };
 
@@ -43,7 +44,9 @@ export default function StrengthExercise({ exerciseName, sets, durationSeconds, 
     const edit = getEdit(set);
     const weight = edit.weight ? parseFloat(edit.weight) : null;
     const reps = edit.reps ? parseInt(edit.reps) : null;
-    onUpdateSet(set.id!, weight, reps, !set.completed);
+    const dur = edit.duration ? parseInt(edit.duration) : null;
+    const hasDuration = durationSeconds != null || set.prescribedDurationS != null;
+    onUpdateSet(set.id!, weight, reps, !set.completed, hasDuration ? dur : undefined);
   };
 
   const isModified = (set: SessionSetState) => {
@@ -98,24 +101,35 @@ export default function StrengthExercise({ exerciseName, sets, durationSeconds, 
                 </Typography>
 
                 {set.completed ? (
-                  // Completed: read-only with green checkmark
-                  <>
+                  // Completed: tappable to undo
+                  <Box
+                    onClick={() => handleComplete(set)}
+                    sx={{ display: 'flex', alignItems: 'center', flex: 1, cursor: 'pointer' }}
+                  >
                     <Typography variant="body2" sx={{ flex: 1, fontWeight: 600 }}>
                       {set.actualWeightKg != null && `${set.actualWeightKg}kg`}
                       {set.actualWeightKg != null && set.actualReps != null && ' × '}
                       {set.actualReps != null && `${set.actualReps} reps`}
-                      {set.actualWeightKg == null && set.actualReps == null && durationSeconds != null && `${durationSeconds}s ✓`}
-                      {set.actualWeightKg == null && set.actualReps == null && durationSeconds == null && '✓'}
+                      {set.actualWeightKg == null && set.actualReps == null && (set.actualDurationS ?? durationSeconds) != null && `${set.actualDurationS ?? durationSeconds}s ✓`}
+                      {set.actualWeightKg == null && set.actualReps == null && (set.actualDurationS ?? durationSeconds) == null && '✓'}
                     </Typography>
                     <CheckCircleIcon sx={{ color: semanticColors.recovery.good, fontSize: 20 }} />
-                  </>
+                  </Box>
                 ) : (
                   // Active: editable fields — only show what's relevant
                   <>
-                    {!hasWeight && !hasReps && durationSeconds != null && (
-                      <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
-                        {durationSeconds}s hold
-                      </Typography>
+                    {!hasWeight && !hasReps && (durationSeconds != null || set.prescribedDurationS != null) && (
+                      <>
+                        <TextField
+                          size="small"
+                          value={edit.duration}
+                          onChange={(e) => updateEdit(set.id!, 'duration', e.target.value)}
+                          placeholder={set.prescribedDurationS?.toString() ?? durationSeconds?.toString() ?? '—'}
+                          inputProps={{ inputMode: 'numeric', style: { textAlign: 'center', padding: '6px 8px' } }}
+                          sx={{ width: 56, '& .MuiOutlinedInput-root': { borderRadius: '6px' } }}
+                        />
+                        <Typography variant="caption" color="text.secondary">s</Typography>
+                      </>
                     )}
                     {hasWeight && (
                       <>
