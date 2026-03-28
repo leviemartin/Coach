@@ -8,7 +8,7 @@ import { computeWeekSummary, getDayAbbrev, formatWeekSummaryForAgents } from './
 import { getTrainingWeek } from './week';
 import { getDailyLogsByWeek, getWeekNotes } from './db';
 import type { DailyLog, DailyNote } from './db';
-import { getWeekSessions } from './session-db';
+import { getWeekSessions, getExerciseFeedback } from './session-db';
 import { isBedtimeCompliant, fromBedtimeStorage } from './daily-log';
 import type { TriageAnswer } from './triage-agent';
 
@@ -279,10 +279,16 @@ function buildSessionDetailsSection(sessions: ReturnType<typeof getWeekSessions>
     return `### Session Details\nNo completed sessions recorded this week.\n\n`;
   }
 
+  const rpeLabels = ['', 'Too Easy', 'Easy', 'Right', 'Hard', 'Too Hard'];
+
   let section = `### Session Details\n`;
   for (const s of sessions) {
     const complianceStr = s.compliancePct != null ? `${s.compliancePct}%` : 'N/A';
     section += `**${getDayAbbrev(s.date)} — ${s.sessionTitle}** (${s.sessionType}, compliance: ${complianceStr})\n`;
+
+    // Get RPE feedback for this session
+    const feedback = getExerciseFeedback(s.sessionLogId);
+    const feedbackMap = new Map(feedback.map(f => [f.exerciseName, f]));
 
     // Summarize sets: group by exercise
     if (s.sets.length > 0) {
@@ -301,7 +307,25 @@ function buildSessionDetailsSection(sessions: ReturnType<typeof getWeekSessions>
             ? `${sets[0].prescribedWeightKg}kg (prescribed)`
             : 'BW';
         const modified = sets.some(st => st.isModified) ? ' [modified]' : '';
-        section += `- ${name}: ${completedSets.length}/${totalSets} sets @ ${weightStr}${modified}\n`;
+
+        let line = `- ${name}: ${completedSets.length}/${totalSets} sets @ ${weightStr}${modified}`;
+
+        // RPE annotation
+        const rpe = feedbackMap.get(name);
+        if (rpe) {
+          line += ` | RPE: ${rpe.rpe}/5 (${rpeLabels[rpe.rpe]})`;
+        }
+
+        // Duration annotation (for timed exercises where actual differs from prescribed)
+        const durationChanges = sets.filter(st =>
+          st.prescribedDurationS != null && st.actualDurationS != null && st.actualDurationS !== st.prescribedDurationS
+        );
+        if (durationChanges.length > 0) {
+          const first = durationChanges[0];
+          line += ` | Duration: ${first.prescribedDurationS}s → ${first.actualDurationS}s`;
+        }
+
+        section += line + '\n';
       }
     }
 
@@ -309,7 +333,20 @@ function buildSessionDetailsSection(sessions: ReturnType<typeof getWeekSessions>
     if (s.cardio.length > 0) {
       for (const c of s.cardio) {
         const doneStr = c.completed ? 'done' : `${c.completedRounds}/${c.prescribedRounds ?? '?'} rounds`;
-        section += `- ${c.exerciseName}: ${doneStr}\n`;
+        let line = `- ${c.exerciseName}: ${doneStr}`;
+
+        // RPE for cardio
+        const rpe = feedbackMap.get(c.exerciseName);
+        if (rpe) {
+          line += ` | RPE: ${rpe.rpe}/5 (${rpeLabels[rpe.rpe]})`;
+        }
+
+        // Duration annotation for cardio
+        if (c.actualDurationMin != null && c.prescribedDurationMin != null && c.actualDurationMin !== c.prescribedDurationMin) {
+          line += ` | Duration: ${c.prescribedDurationMin}min → ${c.actualDurationMin}min`;
+        }
+
+        section += line + '\n';
       }
     }
     section += `\n`;

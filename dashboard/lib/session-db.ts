@@ -432,6 +432,7 @@ export function getWeekSessionIds(weekNumber: number, _db?: Database.Database): 
 }
 
 export function getWeekSessions(weekNumber: number): Array<{
+  sessionLogId: number;
   date: string;
   sessionTitle: string;
   sessionType: string;
@@ -447,6 +448,7 @@ export function getWeekSessions(weekNumber: number): Array<{
   `).all(weekNumber) as Array<Record<string, unknown>>;
 
   return sessions.map((s) => ({
+    sessionLogId: s.id as number,
     date: s.date as string,
     sessionTitle: s.session_title as string,
     sessionType: s.session_type as string,
