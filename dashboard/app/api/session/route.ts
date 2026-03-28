@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getPlanItems, getPlanItemById } from '@/lib/db';
 import { getTrainingWeek } from '@/lib/week';
 import { parseWorkoutPlan } from '@/lib/workout-parser';
-import { createSession, getActiveSession, getSessionSets, getSessionCardio, updateSet, updateCardioRound, deleteSession } from '@/lib/session-db';
+import { createSession, getActiveSession, getSessionSets, getSessionCardio, updateSet, updateCardioRound, deleteSession, getExerciseFeedback } from '@/lib/session-db';
 import type { PlanItem } from '@/lib/types';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -31,6 +31,8 @@ function buildSessionResponse(
     ? parseWorkoutPlan(planItem.workoutPlan, sessionType)
     : [];
 
+  const feedback = getExerciseFeedback(sessionId);
+
   return NextResponse.json({
     sessionId,
     sessionTitle: planItem.focus || planItem.sessionType,
@@ -38,6 +40,7 @@ function buildSessionResponse(
     exercises,
     sets,
     cardio,
+    feedback,
     coachCues: planItem.coachCues || null,
     workoutDescription: planItem.workoutPlan || null,
     resumed,
@@ -156,12 +159,12 @@ export async function POST(request: Request) {
   const body = await request.json();
 
   if (body.type === 'set') {
-    updateSet(body.setId, body.actualWeightKg, body.actualReps, body.completed);
+    updateSet(body.setId, body.actualWeightKg, body.actualReps, body.completed, body.actualDurationS);
     return NextResponse.json({ success: true });
   }
 
   if (body.type === 'cardio') {
-    updateCardioRound(body.cardioId, body.completedRounds, body.completed);
+    updateCardioRound(body.cardioId, body.completedRounds, body.completed, body.actualDurationMin);
     return NextResponse.json({ success: true });
   }
 
