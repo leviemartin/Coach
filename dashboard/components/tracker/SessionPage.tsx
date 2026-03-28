@@ -276,17 +276,19 @@ export default function SessionPage() {
           body: JSON.stringify({ sessionId: session.sessionId, notes }),
         });
         if (res.ok) {
-          const result: CompleteResult = await res.json();
-          setCompleteResult(result);
+          window.location.href = '/log';
         }
       } catch (err) {
         console.error('Failed to complete session:', err);
       }
-      // Navigate away or show a done state regardless
-      window.location.href = '/log';
     },
     [session],
   );
+
+  const handleUndoComplete = useCallback(() => {
+    setIsComplete(false);
+    setCompleteResult(null);
+  }, []);
 
   // ── Derived: overall progress counts ──────────────────────────────────────
   const totalSets = session?.sets.length ?? 0;
@@ -422,17 +424,18 @@ export default function SessionPage() {
     );
   }
 
-  if (isComplete && completeResult) {
+  if (isComplete) {
     return (
       <SessionComplete
-        compliancePct={completeResult.compliancePct}
-        weightChanges={completeResult.weightChanges}
-        ceilingCheck={completeResult.ceilingCheck}
+        compliancePct={completeResult?.compliancePct ?? null}
+        weightChanges={completeResult?.weightChanges ?? []}
+        ceilingCheck={completeResult?.ceilingCheck ?? null}
         setsCompleted={completedSets}
         exercisesCompleted={blocks.filter((b) =>
           blockCompletion(b, session.sets, session.cardio).completed,
         ).length}
         onClose={handleComplete}
+        onUndo={handleUndoComplete}
       />
     );
   }

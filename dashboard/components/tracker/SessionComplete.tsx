@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Box,
   Button,
   Card,
   CardContent,
+  Snackbar,
   Stack,
   TextField,
   Typography,
@@ -27,6 +28,7 @@ interface SessionCompleteProps {
   setsCompleted: number;
   exercisesCompleted: number;
   onClose: (notes: string) => void;
+  onUndo?: () => void;
 }
 
 export default function SessionComplete({
@@ -36,8 +38,34 @@ export default function SessionComplete({
   setsCompleted,
   exercisesCompleted,
   onClose,
+  onUndo,
 }: SessionCompleteProps) {
   const [notes, setNotes] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showUndoToast, setShowUndoToast] = useState(false);
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    };
+  }, []);
+
+  const handleSubmit = () => {
+    setIsSubmitting(true);
+    setShowUndoToast(true);
+    undoTimerRef.current = setTimeout(() => {
+      setShowUndoToast(false);
+      onClose(notes);
+    }, 10000);
+  };
+
+  const handleUndo = () => {
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    setShowUndoToast(false);
+    setIsSubmitting(false);
+    onUndo?.();
+  };
 
   return (
     <Box sx={{ maxWidth: 480, mx: 'auto', px: 2, py: 3 }}>
@@ -157,18 +185,37 @@ export default function SessionComplete({
       <Button
         variant="contained"
         fullWidth
-        onClick={() => onClose(notes)}
+        disabled={isSubmitting}
+        onClick={handleSubmit}
         sx={{
           minHeight: 52,
           borderRadius: '10px',
           fontWeight: 700,
           fontSize: '1rem',
-          backgroundColor: '#22c55e',
-          '&:hover': { backgroundColor: '#16a34a' },
+          backgroundColor: isSubmitting ? '#94a3b8' : '#22c55e',
+          '&:hover': { backgroundColor: isSubmitting ? '#94a3b8' : '#16a34a' },
         }}
       >
-        Done — Log &amp; Close
+        {isSubmitting ? 'Logging session...' : 'Done — Log & Close'}
       </Button>
+
+      <Snackbar
+        open={showUndoToast}
+        autoHideDuration={10000}
+        onClose={() => {}}
+        message="Session logged."
+        action={
+          <Button color="inherit" size="small" onClick={handleUndo} sx={{ fontWeight: 700 }}>
+            Undo
+          </Button>
+        }
+        sx={{
+          '& .MuiSnackbarContent-root': {
+            borderRadius: '10px',
+            fontWeight: 600,
+          },
+        }}
+      />
     </Box>
   );
 }
