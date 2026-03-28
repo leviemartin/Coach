@@ -1,7 +1,7 @@
 import { getDb, getDailyLog, upsertDailyLog } from './db';
 import { getTrainingWeek } from './week';
 import { getWeekForDate, getDayName, getDayAbbrev } from './daily-log';
-import type { ParsedExercise, SessionSetState, SessionCardioState } from './types';
+import type { ParsedExercise, SessionSetState, SessionCardioState, ExerciseFeedback } from './types';
 import type Database from 'better-sqlite3';
 
 export function createSession(
@@ -37,8 +37,8 @@ export function createSession(
   const insertSet = db.prepare(`
     INSERT INTO session_sets
     (session_log_id, exercise_name, exercise_order, superset_group, set_number,
-     prescribed_weight_kg, prescribed_reps, completed, is_modified)
-    VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0)
+     prescribed_weight_kg, prescribed_reps, prescribed_duration_s, completed, is_modified)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0)
   `);
 
   const insertCardio = db.prepare(`
@@ -68,6 +68,7 @@ export function createSession(
           s,
           ex.weightKg,
           ex.reps,
+          ex.durationSeconds,
         );
       }
     }
@@ -81,6 +82,7 @@ export function updateSet(
   actualWeightKg: number | null,
   actualReps: number | null,
   completed: boolean,
+  actualDurationS?: number | null,
   _db?: Database.Database,
 ): void {
   const db = _db ?? getDb();
@@ -95,16 +97,22 @@ export function updateSet(
 
   db.prepare(`
     UPDATE session_sets
-    SET actual_weight_kg = ?, actual_reps = ?, completed = ?, is_modified = ?
+    SET actual_weight_kg = ?, actual_reps = ?, completed = ?, is_modified = ?, actual_duration_s = ?
     WHERE id = ?
-  `).run(actualWeightKg, actualReps, completed ? 1 : 0, isModified ? 1 : 0, setId);
+  `).run(actualWeightKg, actualReps, completed ? 1 : 0, isModified ? 1 : 0, actualDurationS ?? null, setId);
 }
 
-export function updateCardioRound(cardioId: number, completedRounds: number, completed: boolean, _db?: Database.Database): void {
+export function updateCardioRound(
+  cardioId: number,
+  completedRounds: number,
+  completed: boolean,
+  actualDurationMin?: number | null,
+  _db?: Database.Database,
+): void {
   const db = _db ?? getDb();
   db.prepare(`
-    UPDATE session_cardio SET completed_rounds = ?, completed = ? WHERE id = ?
-  `).run(completedRounds, completed ? 1 : 0, cardioId);
+    UPDATE session_cardio SET completed_rounds = ?, completed = ?, actual_duration_min = ? WHERE id = ?
+  `).run(completedRounds, completed ? 1 : 0, actualDurationMin ?? null, cardioId);
 }
 
 export function getSessionSets(sessionId: number, _db?: Database.Database): SessionSetState[] {
@@ -328,9 +336,42 @@ export function completeSession(sessionId: number, notes: string, _db?: Database
 
 export function deleteSession(sessionId: number): void {
   const db = getDb();
+  db.prepare('DELETE FROM session_exercise_feedback WHERE session_log_id = ?').run(sessionId);
   db.prepare('DELETE FROM session_sets WHERE session_log_id = ?').run(sessionId);
   db.prepare('DELETE FROM session_cardio WHERE session_log_id = ?').run(sessionId);
   db.prepare('DELETE FROM session_logs WHERE id = ?').run(sessionId);
+}
+
+export function upsertExerciseFeedback(
+  sessionLogId: number,
+  exerciseName: string,
+  exerciseOrder: number,
+  rpe: number,
+  _db?: Database.Database,
+): void {
+  const db = _db ?? getDb();
+  db.prepare(`
+    INSERT INTO session_exercise_feedback (session_log_id, exercise_name, exercise_order, rpe, created_at)
+    VALUES (?, ?, ?, ?, datetime('now'))
+    ON CONFLICT(session_log_id, exercise_name) DO UPDATE SET rpe = ?, created_at = datetime('now')
+  `).run(sessionLogId, exerciseName, exerciseOrder, rpe, rpe);
+}
+
+export function getExerciseFeedback(sessionLogId: number, _db?: Database.Database): ExerciseFeedback[] {
+  const db = _db ?? getDb();
+  const rows = db.prepare(`
+    SELECT id, session_log_id, exercise_name, exercise_order, rpe, created_at
+    FROM session_exercise_feedback WHERE session_log_id = ? ORDER BY exercise_order
+  `).all(sessionLogId) as Array<Record<string, unknown>>;
+
+  return rows.map((r) => ({
+    id: r.id as number,
+    sessionLogId: r.session_log_id as number,
+    exerciseName: r.exercise_name as string,
+    exerciseOrder: r.exercise_order as number,
+    rpe: r.rpe as number,
+    createdAt: r.created_at as string,
+  }));
 }
 
 export function getActiveSession(date: string, sessionTitle?: string): { id: number; sessionTitle: string } | null {
