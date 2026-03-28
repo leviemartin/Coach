@@ -613,6 +613,17 @@ function mapPlanRow(row: unknown): PlanItem {
   };
 }
 
+export function getSessionLogIdForPlanItem(planItemId: number): number | null {
+  const db = getDb();
+  const row = db.prepare(`
+    SELECT sl.id FROM session_logs sl
+    JOIN daily_logs dl ON dl.session_log_id = sl.id
+    WHERE dl.workout_plan_item_id = ?
+    LIMIT 1
+  `).get(planItemId) as { id: number } | undefined;
+  return row?.id ?? null;
+}
+
 // Ceiling History
 export function insertCeilingHistory(entries: CeilingEntry[]): void {
   const db = getDb();

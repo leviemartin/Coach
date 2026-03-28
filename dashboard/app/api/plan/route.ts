@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getPlanItems, getLatestWeekNumber } from '@/lib/db';
+import { getPlanItems, getLatestWeekNumber, getSessionLogIdForPlanItem } from '@/lib/db';
 import { getTrainingWeek } from '@/lib/week';
 
 export async function GET(request: Request) {
@@ -9,5 +9,11 @@ export async function GET(request: Request) {
   // Fall back to current training week if no data exists yet
   const weekNumber = week ? parseInt(week) : (latestWeek || getTrainingWeek());
   const items = getPlanItems(weekNumber);
-  return NextResponse.json({ items, weekNumber });
+
+  const enrichedItems = items.map(item => ({
+    ...item,
+    sessionLogId: item.status === 'completed' && item.id ? getSessionLogIdForPlanItem(item.id) : null,
+  }));
+
+  return NextResponse.json({ items: enrichedItems, weekNumber });
 }

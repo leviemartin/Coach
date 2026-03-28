@@ -106,6 +106,9 @@ export default function TrainingPlanTable({ items }: TrainingPlanTableProps) {
               variant="outlined"
               sx={{
                 transition: 'all 0.2s ease',
+                ...(item.status === 'completed' && {
+                  borderLeft: `4px solid ${semanticColors.recovery.good}`,
+                }),
                 '&:hover': {
                   borderColor: 'primary.main',
                   boxShadow: 1,
@@ -132,22 +135,40 @@ export default function TrainingPlanTable({ items }: TrainingPlanTableProps) {
                     }}
                   />
 
-                  {/* Start Session link — shown for all non-rest days */}
+                  {item.status === 'completed' && (
+                    <Chip
+                      label="Completed"
+                      size="small"
+                      sx={{
+                        bgcolor: `${semanticColors.recovery.good}22`,
+                        color: semanticColors.recovery.good,
+                        fontWeight: 600,
+                        fontSize: '0.6875rem',
+                        height: 22,
+                      }}
+                    />
+                  )}
+
+                  {/* Start/Review Session link — shown for all non-rest days */}
                   {!isSimpleDay && item.id != null && (
                     <Typography
                       component="a"
-                      href={`/session?planItemId=${item.id}`}
+                      href={
+                        item.status === 'completed' && (item as unknown as Record<string, unknown>).sessionLogId
+                          ? `/session?edit=true&sessionLogId=${(item as unknown as Record<string, unknown>).sessionLogId}`
+                          : `/session?planItemId=${item.id}`
+                      }
                       sx={{
                         ml: 'auto',
                         fontSize: '0.75rem',
                         fontWeight: 600,
-                        color: semanticColors.body,
+                        color: item.status === 'completed' ? semanticColors.recovery.good : semanticColors.body,
                         textDecoration: 'none',
                         whiteSpace: 'nowrap',
                         '&:hover': { textDecoration: 'underline' },
                       }}
                     >
-                      Start Session →
+                      {item.status === 'completed' ? 'Review Session →' : 'Start Session →'}
                     </Typography>
                   )}
 
