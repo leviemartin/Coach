@@ -118,6 +118,7 @@ export default function DailyLogPage() {
   const [uncompletedSessions, setUncompletedSessions] = useState<UncompletedSession[]>([]);
   const [totalTrainingSessions, setTotalTrainingSessions] = useState<number>(0);
   const [streak, setStreak] = useState<{ current: number; best: number }>({ current: 0, best: 0 });
+  const [familyDates, setFamilyDates] = useState<string[]>([]);
   const [weekLogs, setWeekLogs] = useState<WeekLog[]>([]);
   const [complianceTrend, setComplianceTrend] = useState<TrendPoint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -146,6 +147,7 @@ export default function DailyLogPage() {
         setUncompletedSessions(data.uncompleted_sessions || []);
         setTotalTrainingSessions(data.total_training_sessions ?? 0);
         setStreak(data.streak || { current: 0, best: 0 });
+        setFamilyDates(data.family_dates || []);
       }
     } catch {
       // keep existing state
@@ -215,12 +217,11 @@ export default function DailyLogPage() {
 
   // Build week dots data
   const weekDates = getWeekDates(weekNumber);
+  const familyDateSet = new Set(familyDates);
   const days = weekDates.map((date, i) => {
     const abbr = DAY_ABBR[i]; // Mon-Sun since weekDates starts on Monday
-    const dayOfWeek = parseLocalDate(date).getDay(); // 0=Sun, 6=Sat
-    const isSaturday = dayOfWeek === 6;
 
-    if (isSaturday) {
+    if (familyDateSet.has(date)) {
       return { date, day: abbr, status: 'family' as const };
     }
 
@@ -257,11 +258,11 @@ export default function DailyLogPage() {
 
   const dateObj = parseLocalDate(currentDate);
   const dayName = DAY_NAMES[dateObj.getDay()];
-  const isSaturday = dateObj.getDay() === 6;
+  const isFamilyDay = familyDateSet.has(currentDate);
 
   // Determine the workout label chip text
   let sessionLabel: string | null = null;
-  if (isSaturday) {
+  if (isFamilyDay) {
     sessionLabel = 'Family Day';
   } else if (plannedSession) {
     sessionLabel = plannedSession.focus;
@@ -323,7 +324,7 @@ export default function DailyLogPage() {
           <Chip
             label={sessionLabel}
             size="small"
-            color={isSaturday ? 'secondary' : plannedSession ? 'primary' : 'default'}
+            color={isFamilyDay ? 'secondary' : plannedSession ? 'primary' : 'default'}
             variant="outlined"
             sx={{ mt: 0.5 }}
           />
@@ -358,6 +359,7 @@ export default function DailyLogPage() {
           dailyNotes={dailyNotes}
           onNotesChange={handleNotesChange}
           onDayClick={setCurrentDate}
+          isFamilyDay={isFamilyDay}
         />
       </Box>
     </Box>

@@ -25,7 +25,6 @@ import * as dbMock from '@/lib/db';
 function makeLog(overrides: Partial<DayComplianceInput> = {}): DayComplianceInput {
   return {
     workout_completed: 0,
-    core_work_done: 0,
     rug_protocol_done: 0,
     vampire_bedtime: null,
     hydration_tracked: 0,
@@ -38,32 +37,30 @@ function makeLog(overrides: Partial<DayComplianceInput> = {}): DayComplianceInpu
 // ── computeDayCompliance ───────────────────────────────────────────────────
 
 describe('computeDayCompliance', () => {
-  it('returns 6/6 for a fully completed training day', () => {
+  it('returns 5/5 for a fully completed training day', () => {
     const log = makeLog({
       workout_completed: 1,
-      core_work_done: 1,
       rug_protocol_done: 1,
       vampire_bedtime: '22:30',
       hydration_tracked: 1,
       kitchen_cutoff_hit: 1,
     });
     const result: ComplianceResult = computeDayCompliance(log, true);
-    expect(result.checked).toBe(6);
-    expect(result.total).toBe(6);
+    expect(result.checked).toBe(5);
+    expect(result.total).toBe(5);
     expect(result.pct).toBe(100);
   });
 
-  it('returns 5/5 for a fully completed rest day (no planned session)', () => {
+  it('returns 4/4 for a fully completed rest day (no planned session)', () => {
     const log = makeLog({
-      core_work_done: 1,
       rug_protocol_done: 1,
       vampire_bedtime: '22:00',
       hydration_tracked: 1,
       kitchen_cutoff_hit: 1,
     });
     const result = computeDayCompliance(log, false);
-    expect(result.checked).toBe(5);
-    expect(result.total).toBe(5);
+    expect(result.checked).toBe(4);
+    expect(result.total).toBe(4);
     expect(result.pct).toBe(100);
   });
 
@@ -102,16 +99,16 @@ describe('computeDayCompliance', () => {
   it('counts bedtime when vampire_bedtime is set on a normal day', () => {
     const log = makeLog({ vampire_bedtime: '22:45' });
     const result = computeDayCompliance(log, false);
-    // bedtime checked, rest zero → 1/5
+    // bedtime checked, rest zero → 1/4
     expect(result.checked).toBe(1);
-    expect(result.total).toBe(5);
+    expect(result.total).toBe(4);
   });
 
   it('does not count workout on a rest day even if workout_completed=1', () => {
     const log = makeLog({ workout_completed: 1 });
     const result = computeDayCompliance(log, false);
     // workout_completed is set but no planned session → should NOT count
-    expect(result.total).toBe(5);
+    expect(result.total).toBe(4);
     // checked is 0 because only workout was done and it's ignored on rest day
     expect(result.checked).toBe(0);
   });
@@ -162,8 +159,8 @@ describe('computeWeekCompliancePct', () => {
   });
 
   it('adjusts total correctly for sick days in the week', () => {
-    // 4 normal rest days (5 items each) + 1 sick day (2 items)
-    // All complete → 4*5 + 2 = 22 total, 22 checked → 100%
+    // 4 normal rest days (4 items each) + 1 sick day (2 items)
+    // All complete → 4*4 + 2 = 18 total, 18 checked → 100%
     const normalLog = makeLog({
       core_work_done: 1,
       rug_protocol_done: 1,
@@ -182,16 +179,15 @@ describe('computeWeekCompliancePct', () => {
   });
 
   it('returns partial pct when some items missed', () => {
-    // 2 days, rest days, 5 items each = 10 total
-    // Day 1: 3/5, Day 2: 0/5 → 3/10 = 30%
+    // 2 rest days, 4 items each = 8 total
+    // Day 1: rug + bedtime = 2/4, Day 2: 0/4 → 2/8 = 25%
     const day1 = makeLog({
-      core_work_done: 1,
       rug_protocol_done: 1,
       vampire_bedtime: '22:00',
     });
     const day2 = makeLog();
     const result = computeWeekCompliancePct([day1, day2], [false, false]);
-    expect(result).toBe(30);
+    expect(result).toBe(25);
   });
 
   it('returns 0 for an empty week', () => {
@@ -471,16 +467,16 @@ describe('computeStreak', () => {
     expect(result.best).toBe(3);
   });
 
-  it('skips Saturday and continues streak across it (2026-03-21 is a Saturday)', () => {
-    // Fri 20th compliant, Sat 21st skipped, Sun 22nd compliant
+  it('treats Saturday like any other day — missing log breaks streak', () => {
+    // Fri 20th compliant, Sat 21st no log (breaks streak), Sun 22nd compliant
     const logs = [
       compliantLog('2026-03-20'), // Friday
       compliantLog('2026-03-22'), // Sunday
     ];
-    // currentDate = Sunday 22nd
+    // currentDate = Sunday 22nd — Saturday gap breaks the streak
     const result = computeStreak(logs, '2026-03-22', []);
-    expect(result.current).toBe(2);
-    expect(result.best).toBe(2);
+    expect(result.current).toBe(1);
+    expect(result.best).toBe(1);
   });
 
   it('maintains streak on a sick day when hydration + bedtime are both hit', () => {

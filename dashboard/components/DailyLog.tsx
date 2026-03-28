@@ -93,6 +93,8 @@ export interface DailyLogProps {
   onNotesChange: () => void;
   /** Optional: called when a day cell is clicked in the week overview */
   onDayClick?: (date: string) => void;
+  /** Whether this date is a family day according to the plan */
+  isFamilyDay?: boolean;
 }
 
 // ── Week date helpers ────────────────────────────────────────────────────────
@@ -194,6 +196,7 @@ export default function DailyLog({
   dailyNotes,
   onNotesChange,
   onDayClick,
+  isFamilyDay = false,
 }: DailyLogProps) {
   const [formData, setFormData] = useState<LogData>(log);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
@@ -421,6 +424,7 @@ export default function DailyLog({
           workoutCompleted={formData.workout_completed}
           sessionsCompleted={sessionsCompleted}
           sessionsPlanned={sessionsPlanned}
+          isFamilyDay={isFamilyDay}
           onUpdate={handleSessionUpdate}
         />
       )}

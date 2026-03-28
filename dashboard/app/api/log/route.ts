@@ -1,6 +1,35 @@
 import { NextResponse } from 'next/server';
 import { getDailyLog, upsertDailyLog, getPlanItems, getAllDailyLogs, getUncompletedSessionsForWeek, getDailyNotes } from '@/lib/db';
 import { getWeekForDate, getDayName, getDayAbbrev, findPlanItemForDate, computeStreak, getPreviousDate } from '@/lib/daily-log';
+import { PROGRAM_EPOCH } from '@/lib/week';
+import type { PlanItem } from '@/lib/types';
+
+const MS_PER_DAY = 86_400_000;
+const DAY_NAME_TO_OFFSET: Record<string, number> = {
+  Monday: 0, Tuesday: 1, Wednesday: 2, Thursday: 3,
+  Friday: 4, Saturday: 5, Sunday: 6,
+};
+
+/** Compute dates that are family days according to the plan. */
+function getFamilyDates(planItems: PlanItem[], weekNumber: number): string[] {
+  const epochLocal = new Date(PROGRAM_EPOCH.getFullYear(), PROGRAM_EPOCH.getMonth(), PROGRAM_EPOCH.getDate());
+  const monday = new Date(epochLocal.getTime() + (weekNumber - 1) * 7 * MS_PER_DAY);
+
+  const dates: string[] = [];
+  for (const item of planItems) {
+    if (!/family/i.test(item.sessionType ?? '')) continue;
+    if (item.assignedDate) {
+      dates.push(item.assignedDate);
+    } else {
+      const offset = DAY_NAME_TO_OFFSET[item.day];
+      if (offset != null) {
+        const d = new Date(monday.getTime() + offset * MS_PER_DAY);
+        dates.push(d.toISOString().split('T')[0]);
+      }
+    }
+  }
+  return dates;
+}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -40,6 +69,7 @@ export async function GET(request: Request) {
     .map(l => l.date);
 
   const streak = computeStreak(allLogs, date, datesWithSessions);
+  const familyDates = getFamilyDates(planItems, weekNumber);
 
   const dailyNotes = log ? getDailyNotes(log.id) : [];
 
@@ -72,6 +102,7 @@ export async function GET(request: Request) {
     uncompleted_sessions: uncompletedSessions,
     total_training_sessions: totalTrainingSessions,
     streak,
+    family_dates: familyDates,
   });
 }
 

@@ -41,6 +41,7 @@ export interface SessionPickerProps {
   workoutCompleted: number;
   sessionsCompleted: number;
   sessionsPlanned: number;
+  isFamilyDay?: boolean;
   onUpdate: (completed: number, planItemId: number | null) => void;
 }
 
@@ -51,6 +52,7 @@ export default function SessionPicker({
   workoutCompleted,
   sessionsCompleted,
   sessionsPlanned,
+  isFamilyDay = false,
   onUpdate,
 }: SessionPickerProps) {
   const router = useRouter();
@@ -60,9 +62,6 @@ export default function SessionPicker({
 
   // Which session is selected in the radio list (by id)
   const [selectedId, setSelectedId] = useState<number | null>(null);
-
-  const dateObj = new Date(date + 'T12:00:00');
-  const isSaturday = dateObj.getDay() === 6;
 
   const complianceColor = getComplianceColor(sessionsCompleted, sessionsPlanned);
 
@@ -101,9 +100,9 @@ export default function SessionPicker({
         <CardContent>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
             <Chip
-              label={isSaturday ? 'Family Day' : 'No plan this week'}
+              label={isFamilyDay ? 'Family Day' : 'No plan this week'}
               size="small"
-              color={isSaturday ? 'secondary' : 'default'}
+              color={isFamilyDay ? 'secondary' : 'default'}
               variant="outlined"
             />
             {sessionsPlanned === 0 && (
