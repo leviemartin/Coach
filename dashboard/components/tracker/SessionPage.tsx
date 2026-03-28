@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Box, Typography, CircularProgress, Alert, Container, IconButton, Tooltip } from '@mui/material';
+import { Box, Typography, CircularProgress, Alert, Container, IconButton, Tooltip, TextField, Button } from '@mui/material';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import type { SessionSetState, SessionCardioState, ParsedExercise } from '@/lib/types';
 import SessionProgress from './SessionProgress';
@@ -60,6 +60,92 @@ function groupExercises(exercises: ParsedExercise[]): ExerciseBlock[] {
   return blocks;
 }
 
+// ── Helper: build exercise blocks from set/cardio data (edit mode) ────────────
+
+function buildBlocksFromSets(
+  sets: SessionSetState[],
+  cardio: SessionCardioState[],
+): ExerciseBlock[] {
+  const blocks: ExerciseBlock[] = [];
+  const seenExercises = new Set<string>();
+  const seenGroups = new Set<number>();
+
+  for (const set of sets) {
+    if (seenExercises.has(set.exerciseName)) continue;
+    seenExercises.add(set.exerciseName);
+
+    if (set.supersetGroup != null) {
+      if (!seenGroups.has(set.supersetGroup)) {
+        seenGroups.add(set.supersetGroup);
+        const groupSets = sets.filter(s => s.supersetGroup === set.supersetGroup);
+        const exerciseNames = [...new Set(groupSets.map(s => s.exerciseName))];
+        blocks.push({
+          kind: 'superset',
+          groupId: set.supersetGroup,
+          exercises: exerciseNames.map(name => ({
+            name,
+            canonicalName: name,
+            type: 'strength' as const,
+            order: groupSets.find(s => s.exerciseName === name)!.exerciseOrder,
+            supersetGroup: set.supersetGroup,
+            sets: groupSets.filter(s => s.exerciseName === name).length,
+            reps: null,
+            weightKg: null,
+            durationSeconds: groupSets.find(s => s.exerciseName === name)?.prescribedDurationS ?? null,
+            restSeconds: null,
+            rounds: null,
+            targetIntensity: null,
+            coachCue: null,
+          })),
+        });
+      }
+    } else {
+      const exSets = sets.filter(s => s.exerciseName === set.exerciseName);
+      blocks.push({
+        kind: 'single',
+        exercise: {
+          name: set.exerciseName,
+          canonicalName: set.exerciseName,
+          type: 'strength' as const,
+          order: set.exerciseOrder,
+          supersetGroup: null,
+          sets: exSets.length,
+          reps: null,
+          weightKg: null,
+          durationSeconds: exSets[0]?.prescribedDurationS ?? null,
+          restSeconds: null,
+          rounds: null,
+          targetIntensity: null,
+          coachCue: null,
+        },
+      });
+    }
+  }
+
+  for (const c of cardio) {
+    blocks.push({
+      kind: 'single',
+      exercise: {
+        name: c.exerciseName,
+        canonicalName: c.exerciseName,
+        type: c.cardioType === 'intervals' ? 'cardio_intervals' as const : 'cardio_steady' as const,
+        order: blocks.length,
+        supersetGroup: null,
+        sets: 0,
+        reps: null,
+        weightKg: null,
+        durationSeconds: c.prescribedDurationMin ? c.prescribedDurationMin * 60 : null,
+        restSeconds: null,
+        rounds: c.prescribedRounds,
+        targetIntensity: c.targetIntensity,
+        coachCue: null,
+      },
+    });
+  }
+
+  return blocks;
+}
+
 // ── Helper: display name for a block ──────────────────────────────────────────
 
 function blockDisplayName(block: ExerciseBlock): string {
@@ -108,10 +194,18 @@ function blockCompletion(
   };
 }
 
+// ── Semantic colors ────────────────────────────────────────────────────────────
+
+const semanticColors = {
+  body: '#3b82f6',
+};
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function SessionPage() {
   const searchParams = useSearchParams();
+  const isEditMode = searchParams.get('edit') === 'true';
+  const editSessionLogId = searchParams.get('sessionLogId');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [session, setSession] = useState<SessionData | null>(null);
@@ -119,11 +213,48 @@ export default function SessionPage() {
   const [isComplete, setIsComplete] = useState(false);
   const [completeResult, setCompleteResult] = useState<CompleteResult | null>(null);
   const [rpeFeedback, setRpeFeedback] = useState<Record<string, number>>({});
+  const [editNotes, setEditNotes] = useState('');
 
   // ── Load session on mount ──────────────────────────────────────────────────
   useEffect(() => {
     async function loadSession() {
       try {
+        if (isEditMode && editSessionLogId) {
+          const res = await fetch(`/api/session/edit?sessionLogId=${editSessionLogId}`);
+          if (!res.ok) {
+            if (res.status === 403) {
+              setError('Can only edit current week sessions');
+            } else {
+              setError('Session not found');
+            }
+            setLoading(false);
+            return;
+          }
+          const data = await res.json();
+          setSession({
+            sessionId: data.sessionLogId,
+            sessionTitle: data.sessionTitle,
+            sessionType: data.sessionType,
+            exercises: [],
+            sets: data.sets,
+            cardio: data.cardio,
+            feedback: data.feedback || [],
+            coachCues: null,
+            workoutDescription: null,
+            resumed: false,
+          });
+          if (data.feedback?.length) {
+            const rpeMap: Record<string, number> = {};
+            for (const f of data.feedback) {
+              rpeMap[f.exerciseName] = f.rpe;
+            }
+            setRpeFeedback(rpeMap);
+          }
+          setEditNotes(data.notes || '');
+          setLoading(false);
+          return;
+        }
+
         const planItemId = searchParams.get('planItemId');
         const reset = searchParams.get('reset');
         const params = new URLSearchParams();
@@ -167,7 +298,9 @@ export default function SessionPage() {
   }, []);
 
   // ── Derive exercise blocks ─────────────────────────────────────────────────
-  const blocks = session ? groupExercises(session.exercises) : [];
+  const blocks = session
+    ? (isEditMode ? buildBlocksFromSets(session.sets, session.cardio) : groupExercises(session.exercises))
+    : [];
 
   // ── Update a strength set (optimistic + POST) ──────────────────────────────
   const handleUpdateSet = useCallback(
@@ -284,6 +417,49 @@ export default function SessionPage() {
     },
     [session],
   );
+
+  // ── Save edits (edit mode) ─────────────────────────────────────────────────
+  const handleSaveEdits = useCallback(async () => {
+    if (!session?.sessionId) return;
+
+    const setUpdates = session.sets.map((s) => ({
+      id: s.id!,
+      actualWeightKg: s.actualWeightKg,
+      actualReps: s.actualReps,
+      actualDurationS: s.actualDurationS ?? null,
+    }));
+
+    const cardioUpdates = session.cardio.map((c) => ({
+      id: c.id!,
+      completedRounds: c.completedRounds,
+      actualDurationMin: c.actualDurationMin ?? null,
+    }));
+
+    const feedbackUpdates = Object.entries(rpeFeedback).map(([exerciseName, rpe]) => ({
+      exerciseName,
+      exerciseOrder: 0,
+      rpe,
+    }));
+
+    try {
+      const res = await fetch('/api/session/edit', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionLogId: session.sessionId,
+          sets: setUpdates,
+          cardio: cardioUpdates,
+          feedback: feedbackUpdates,
+          notes: editNotes,
+        }),
+      });
+      if (res.ok) {
+        window.history.back();
+      }
+    } catch (err) {
+      console.error('Failed to save edits:', err);
+    }
+  }, [session, rpeFeedback, editNotes]);
 
   const handleUndoComplete = useCallback(() => {
     setIsComplete(false);
@@ -469,22 +645,29 @@ export default function SessionPage() {
               Resuming previous session
             </Typography>
           )}
+          {isEditMode && (
+            <Typography variant="caption" color="text.secondary">
+              Editing completed session
+            </Typography>
+          )}
         </Box>
-        <Tooltip title="Reset session — clears progress and reloads from plan">
-          <IconButton
-            size="small"
-            onClick={() => {
-              const planItemId = searchParams.get('planItemId');
-              const params = new URLSearchParams();
-              if (planItemId) params.set('planItemId', planItemId);
-              params.set('reset', 'true');
-              window.location.href = `/session?${params.toString()}`;
-            }}
-            sx={{ mt: 0.5, color: 'text.secondary', '&:hover': { color: 'error.main' } }}
-          >
-            <RestartAltIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
+        {!isEditMode && (
+          <Tooltip title="Reset session — clears progress and reloads from plan">
+            <IconButton
+              size="small"
+              onClick={() => {
+                const planItemId = searchParams.get('planItemId');
+                const params = new URLSearchParams();
+                if (planItemId) params.set('planItemId', planItemId);
+                params.set('reset', 'true');
+                window.location.href = `/session?${params.toString()}`;
+              }}
+              sx={{ mt: 0.5, color: 'text.secondary', '&:hover': { color: 'error.main' } }}
+            >
+              <RestartAltIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
       </Box>
 
       {/* Progress bar */}
@@ -512,13 +695,51 @@ export default function SessionPage() {
         </Box>
       )}
 
-      {/* Current exercise block */}
-      <Box sx={{ mb: 3 }}>
-        {blocks[currentBlockIndex] && renderBlock(blocks[currentBlockIndex])}
-      </Box>
+      {/* Exercise blocks */}
+      {isEditMode ? (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 3 }}>
+          {blocks.map((block, idx) => (
+            <Box key={idx}>{renderBlock(block)}</Box>
+          ))}
+        </Box>
+      ) : (
+        <Box sx={{ mb: 3 }}>
+          {blocks[currentBlockIndex] && renderBlock(blocks[currentBlockIndex])}
+        </Box>
+      )}
+
+      {/* Edit mode: Save Changes */}
+      {isEditMode && (
+        <Box sx={{ mb: 3 }}>
+          <TextField
+            label="Session Notes"
+            multiline
+            minRows={2}
+            fullWidth
+            value={editNotes}
+            onChange={(e) => setEditNotes(e.target.value)}
+            sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+          />
+          <Button
+            variant="contained"
+            fullWidth
+            onClick={handleSaveEdits}
+            sx={{
+              minHeight: 52,
+              borderRadius: '10px',
+              fontWeight: 700,
+              fontSize: '1rem',
+              backgroundColor: semanticColors.body,
+              '&:hover': { backgroundColor: '#2563eb' },
+            }}
+          >
+            Save Changes
+          </Button>
+        </Box>
+      )}
 
       {/* All done banner */}
-      {allDone && !isComplete && (
+      {allDone && !isComplete && !isEditMode && (
         <Box
           sx={{
             mb: 3,
@@ -555,7 +776,7 @@ export default function SessionPage() {
       )}
 
       {/* Exercise navigation list */}
-      <ExerciseList exercises={exerciseListItems} onSelect={setCurrentBlockIndex} />
+      {!isEditMode && <ExerciseList exercises={exerciseListItems} onSelect={setCurrentBlockIndex} />}
     </Container>
   );
 }
