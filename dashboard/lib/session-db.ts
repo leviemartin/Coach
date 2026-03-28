@@ -169,6 +169,7 @@ export function generateSessionSummary(
   sets: SessionSetState[],
   cardio: SessionCardioState[],
   weightChanges: Array<{ exercise: string; set: number; from: number | null; to: number | null }>,
+  feedback?: ExerciseFeedback[],
 ): string {
   const lines: string[] = [];
 
@@ -192,6 +193,20 @@ export function generateSessionSummary(
       lines.push(`- ${name}: 0/${totalSets} sets done`);
     } else if (completedSets < totalSets) {
       lines.push(`- ${name}: ${completedSets}/${totalSets} sets done`);
+
+      // Add RPE if recorded
+      const rpe = feedback?.find((f) => f.exerciseName === name);
+      if (rpe) {
+        const rpeLabels = ['', 'Too Easy', 'Easy', 'Right', 'Hard', 'Too Hard'];
+        lines.push(`  RPE: ${rpe.rpe}/5 (${rpeLabels[rpe.rpe]})`);
+      }
+
+      // Duration changes for timed exercises
+      const timedSets = exSets.filter((s) => s.prescribedDurationS != null && s.actualDurationS != null && s.actualDurationS !== s.prescribedDurationS);
+      if (timedSets.length > 0) {
+        const first = timedSets[0];
+        lines.push(`  Duration: ${first.prescribedDurationS}s → ${first.actualDurationS}s`);
+      }
     } else {
       // All sets completed — show representative set
       const reps = firstCompleted?.actualReps ?? prescribed.prescribedReps;
@@ -208,6 +223,20 @@ export function generateSessionSummary(
           : '';
 
       lines.push(`- ${name}: ${repsStr}${weightStr} ✓${weightNote}`);
+
+      // Add RPE if recorded
+      const rpe = feedback?.find((f) => f.exerciseName === name);
+      if (rpe) {
+        const rpeLabels = ['', 'Too Easy', 'Easy', 'Right', 'Hard', 'Too Hard'];
+        lines.push(`  RPE: ${rpe.rpe}/5 (${rpeLabels[rpe.rpe]})`);
+      }
+
+      // Duration changes for timed exercises
+      const timedSets = exSets.filter((s) => s.prescribedDurationS != null && s.actualDurationS != null && s.actualDurationS !== s.prescribedDurationS);
+      if (timedSets.length > 0) {
+        const first = timedSets[0];
+        lines.push(`  Duration: ${first.prescribedDurationS}s → ${first.actualDurationS}s`);
+      }
     }
   }
 
@@ -277,12 +306,14 @@ export function completeSession(sessionId: number, notes: string, _db?: Database
   } | undefined;
 
   if (sessionRow) {
+    const feedback = getExerciseFeedback(sessionId, db);
     const summaryText = generateSessionSummary(
       sessionRow.session_title,
       compliancePct,
       sets,
       cardio,
       weightChanges,
+      feedback,
     );
 
     const existingLog = getDailyLog(sessionRow.date, db);
