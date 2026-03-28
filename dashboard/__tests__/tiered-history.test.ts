@@ -108,6 +108,14 @@ function makeMetric(weekNumber: number, overrides: Partial<WeeklyMetrics> = {}):
     avgEnergy: null,
     painDays: null,
     sleepDisruptionCount: null,
+    avgRpe: null,
+    hardExerciseCount: null,
+    weekReflection: null,
+    nextWeekConflicts: null,
+    questionsForCoaches: null,
+    sickDays: null,
+    painAreasSummary: null,
+    sleepDisruptionBreakdown: null,
     ...overrides,
   };
 }

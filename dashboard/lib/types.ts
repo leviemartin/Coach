@@ -244,6 +244,14 @@ export interface WeeklyMetrics {
   avgEnergy: number | null;
   painDays: number | null;
   sleepDisruptionCount: number | null;
+  avgRpe: number | null;
+  hardExerciseCount: number | null;
+  weekReflection: string | null;
+  nextWeekConflicts: string | null;
+  questionsForCoaches: string | null;
+  sickDays: number | null;
+  painAreasSummary: string | null; // JSON: [{"area":"lower back","days":3,"maxLevel":2}]
+  sleepDisruptionBreakdown: string | null; // JSON: {"kids":4,"stress":1}
 }
 
 export function isNewFormatPayload(data: unknown): data is { subjectiveData: CheckinSubjectiveData } {

@@ -406,6 +406,16 @@ export function initTablesOn(db: Database.Database) {
   try { db.exec(`ALTER TABLE weekly_metrics ADD COLUMN pain_days INTEGER`); } catch {}
   try { db.exec(`ALTER TABLE weekly_metrics ADD COLUMN sleep_disruption_count INTEGER`); } catch {}
 
+  // Migration: weekly_metrics enrichment for coach data integration
+  try { db.exec(`ALTER TABLE weekly_metrics ADD COLUMN avg_rpe REAL`); } catch { /* exists */ }
+  try { db.exec(`ALTER TABLE weekly_metrics ADD COLUMN hard_exercise_count INTEGER`); } catch { /* exists */ }
+  try { db.exec(`ALTER TABLE weekly_metrics ADD COLUMN week_reflection TEXT`); } catch { /* exists */ }
+  try { db.exec(`ALTER TABLE weekly_metrics ADD COLUMN next_week_conflicts TEXT`); } catch { /* exists */ }
+  try { db.exec(`ALTER TABLE weekly_metrics ADD COLUMN questions_for_coaches TEXT`); } catch { /* exists */ }
+  try { db.exec(`ALTER TABLE weekly_metrics ADD COLUMN sick_days INTEGER`); } catch { /* exists */ }
+  try { db.exec(`ALTER TABLE weekly_metrics ADD COLUMN pain_areas_summary TEXT`); } catch { /* exists */ }
+  try { db.exec(`ALTER TABLE weekly_metrics ADD COLUMN sleep_disruption_breakdown TEXT`); } catch { /* exists */ }
+
   // Migration: session_exercise_feedback table
   db.exec(`
     CREATE TABLE IF NOT EXISTS session_exercise_feedback (
@@ -461,15 +471,19 @@ export function upsertWeeklyMetrics(m: WeeklyMetrics): void {
       calories_avg, protein_avg, hydration_tracked, vampire_compliance_pct,
       rug_protocol_days, sessions_planned, sessions_completed,
       baker_cyst_pain, pullup_count, perceived_readiness, plan_satisfaction, model_used,
-      kitchen_cutoff_compliance, avg_energy, pain_days, sleep_disruption_count
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      kitchen_cutoff_compliance, avg_energy, pain_days, sleep_disruption_count,
+      avg_rpe, hard_exercise_count, week_reflection, next_week_conflicts,
+      questions_for_coaches, sick_days, pain_areas_summary, sleep_disruption_breakdown
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     m.weekNumber, m.checkInDate, m.weightKg, m.bodyFatPct, m.muscleMassKg,
     m.avgSleepScore, m.avgTrainingReadiness, m.avgRhr, m.avgHrv,
     m.caloriesAvg, m.proteinAvg, m.hydrationTracked ? 1 : 0,
     m.vampireCompliancePct, m.rugProtocolDays, m.sessionsPlanned,
     m.sessionsCompleted, m.bakerCystPain, m.pullupCount, m.perceivedReadiness, m.planSatisfaction, m.modelUsed,
-    m.kitchenCutoffCompliance ?? null, m.avgEnergy ?? null, m.painDays ?? null, m.sleepDisruptionCount ?? null
+    m.kitchenCutoffCompliance ?? null, m.avgEnergy ?? null, m.painDays ?? null, m.sleepDisruptionCount ?? null,
+    m.avgRpe ?? null, m.hardExerciseCount ?? null, m.weekReflection ?? null, m.nextWeekConflicts ?? null,
+    m.questionsForCoaches ?? null, m.sickDays ?? null, m.painAreasSummary ?? null, m.sleepDisruptionBreakdown ?? null
   );
 }
 
@@ -517,6 +531,14 @@ function mapMetricsRow(row: unknown): WeeklyMetrics {
     avgEnergy: r.avg_energy as number | null,
     painDays: r.pain_days as number | null,
     sleepDisruptionCount: r.sleep_disruption_count as number | null,
+    avgRpe: r.avg_rpe as number | null,
+    hardExerciseCount: r.hard_exercise_count as number | null,
+    weekReflection: r.week_reflection as string | null,
+    nextWeekConflicts: r.next_week_conflicts as string | null,
+    questionsForCoaches: r.questions_for_coaches as string | null,
+    sickDays: r.sick_days as number | null,
+    painAreasSummary: r.pain_areas_summary as string | null,
+    sleepDisruptionBreakdown: r.sleep_disruption_breakdown as string | null,
   };
 }
 

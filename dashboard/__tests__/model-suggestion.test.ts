@@ -53,6 +53,8 @@ function makeMetrics(planSatisfaction: number) {
     perceivedReadiness: null, modelUsed: 'mixed',
     kitchenCutoffCompliance: null, avgEnergy: null, painDays: null,
     sleepDisruptionCount: null,
+    avgRpe: null, hardExerciseCount: null, weekReflection: null, nextWeekConflicts: null,
+    questionsForCoaches: null, sickDays: null, painAreasSummary: null, sleepDisruptionBreakdown: null,
   }];
 }
 

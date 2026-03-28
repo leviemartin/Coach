@@ -198,6 +198,14 @@ export async function POST(request: Request) {
             : null,
           painDays: hasLogData ? weekSummary.pain_days.length : null,
           sleepDisruptionCount: hasLogData ? weekSummary.sleep_disruptions.length : null,
+          avgRpe: null,
+          hardExerciseCount: null,
+          weekReflection: subjectiveData?.weekReflection ?? null,
+          nextWeekConflicts: subjectiveData?.nextWeekConflicts ?? null,
+          questionsForCoaches: subjectiveData?.questionsForCoaches ?? null,
+          sickDays: hasLogData ? weekSummary.sick_days : null,
+          painAreasSummary: null,
+          sleepDisruptionBreakdown: null,
         };
         upsertWeeklyMetrics(metrics);
 
