@@ -27,6 +27,9 @@ export async function POST(request: Request) {
     const result = checkSequencingConstraints(weekItems, planItemId, targetDate);
 
     const db = getDb();
+    // Clear any previous assigned_date for this target date (prevents stale first-match after double swap)
+    db.prepare('UPDATE plan_items SET assigned_date = NULL WHERE week_number = ? AND assigned_date = ? AND id != ?')
+      .run(item.weekNumber, targetDate, planItemId);
     db.prepare('UPDATE plan_items SET assigned_date = ? WHERE id = ?').run(targetDate, planItemId);
 
     return NextResponse.json({
