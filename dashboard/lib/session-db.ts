@@ -457,3 +457,110 @@ export function getWeekSessions(weekNumber: number): Array<{
     cardio: getSessionCardio(s.id as number),
   }));
 }
+
+export function getCompletedSession(sessionLogId: number, _db?: Database.Database): {
+  sessionLogId: number;
+  date: string;
+  weekNumber: number;
+  sessionType: string;
+  sessionTitle: string;
+  notes: string | null;
+  compliancePct: number | null;
+  sets: SessionSetState[];
+  cardio: SessionCardioState[];
+  feedback: ExerciseFeedback[];
+} | null {
+  const db = _db ?? getDb();
+  const row = db.prepare(`
+    SELECT id, date, week_number, session_type, session_title, notes, compliance_pct
+    FROM session_logs WHERE id = ? AND completed_at IS NOT NULL
+  `).get(sessionLogId) as Record<string, unknown> | undefined;
+
+  if (!row) return null;
+
+  return {
+    sessionLogId: row.id as number,
+    date: row.date as string,
+    weekNumber: row.week_number as number,
+    sessionType: row.session_type as string,
+    sessionTitle: row.session_title as string,
+    notes: row.notes as string | null,
+    compliancePct: row.compliance_pct as number | null,
+    sets: getSessionSets(sessionLogId, db),
+    cardio: getSessionCardio(sessionLogId, db),
+    feedback: getExerciseFeedback(sessionLogId, db),
+  };
+}
+
+export function batchUpdateSets(
+  updates: Array<{ id: number; actualWeightKg: number | null; actualReps: number | null; actualDurationS: number | null }>,
+  _db?: Database.Database,
+): void {
+  const db = _db ?? getDb();
+  const stmt = db.prepare(`
+    UPDATE session_sets
+    SET actual_weight_kg = ?, actual_reps = ?, actual_duration_s = ?,
+        is_modified = CASE WHEN (? != prescribed_weight_kg OR ? != prescribed_reps) THEN 1 ELSE 0 END
+    WHERE id = ?
+  `);
+  const updateAll = db.transaction((rows: typeof updates) => {
+    for (const r of rows) {
+      stmt.run(r.actualWeightKg, r.actualReps, r.actualDurationS, r.actualWeightKg, r.actualReps, r.id);
+    }
+  });
+  updateAll(updates);
+}
+
+export function batchUpdateCardio(
+  updates: Array<{ id: number; completedRounds: number; actualDurationMin: number | null }>,
+  _db?: Database.Database,
+): void {
+  const db = _db ?? getDb();
+  const stmt = db.prepare(`
+    UPDATE session_cardio SET completed_rounds = ?, actual_duration_min = ? WHERE id = ?
+  `);
+  const updateAll = db.transaction((rows: typeof updates) => {
+    for (const r of rows) {
+      stmt.run(r.completedRounds, r.actualDurationMin, r.id);
+    }
+  });
+  updateAll(updates);
+}
+
+export function regenerateSessionSummary(sessionLogId: number, notes: string, _db?: Database.Database): void {
+  const db = _db ?? getDb();
+  const sets = getSessionSets(sessionLogId, db);
+  const cardio = getSessionCardio(sessionLogId, db);
+  const feedback = getExerciseFeedback(sessionLogId, db);
+
+  const totalSets = sets.length;
+  const completedSets = sets.filter((s) => s.completed).length;
+  const totalCardio = cardio.length;
+  const completedCardio = cardio.filter((c) => c.completed).length;
+  const total = totalSets + totalCardio;
+  const done = completedSets + completedCardio;
+  const compliancePct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  const weightChanges = sets
+    .filter((s) => s.isModified && s.actualWeightKg !== s.prescribedWeightKg)
+    .map((s) => ({ exercise: s.exerciseName, set: s.setNumber, from: s.prescribedWeightKg, to: s.actualWeightKg }));
+
+  db.prepare(`UPDATE session_logs SET notes = ?, compliance_pct = ? WHERE id = ?`)
+    .run(notes, compliancePct, sessionLogId);
+
+  const sessionRow = db.prepare('SELECT session_title, date FROM session_logs WHERE id = ?')
+    .get(sessionLogId) as { session_title: string; date: string } | undefined;
+
+  if (sessionRow) {
+    const summaryText = generateSessionSummary(
+      sessionRow.session_title,
+      compliancePct,
+      sets,
+      cardio,
+      weightChanges,
+      feedback,
+    );
+    db.prepare(`UPDATE daily_logs SET session_summary = ? WHERE session_log_id = ?`)
+      .run(summaryText, sessionLogId);
+  }
+}
