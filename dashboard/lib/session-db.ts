@@ -112,7 +112,7 @@ export function getSessionSets(sessionId: number, _db?: Database.Database): Sess
   const rows = db.prepare(`
     SELECT id, exercise_name, exercise_order, superset_group, set_number,
            prescribed_weight_kg, prescribed_reps, actual_weight_kg, actual_reps,
-           completed, is_modified
+           completed, is_modified, prescribed_duration_s, actual_duration_s
     FROM session_sets WHERE session_log_id = ? ORDER BY exercise_order, set_number
   `).all(sessionId) as Array<Record<string, unknown>>;
 
@@ -128,6 +128,8 @@ export function getSessionSets(sessionId: number, _db?: Database.Database): Sess
     actualReps: r.actual_reps as number | null,
     completed: (r.completed as number) === 1,
     isModified: (r.is_modified as number) === 1,
+    prescribedDurationS: r.prescribed_duration_s as number | null,
+    actualDurationS: r.actual_duration_s as number | null,
   }));
 }
 
@@ -135,7 +137,7 @@ export function getSessionCardio(sessionId: number, _db?: Database.Database): Se
   const db = _db ?? getDb();
   const rows = db.prepare(`
     SELECT id, exercise_name, cardio_type, prescribed_rounds, completed_rounds,
-           prescribed_duration_min, target_intensity, completed
+           prescribed_duration_min, target_intensity, completed, actual_duration_min
     FROM session_cardio WHERE session_log_id = ? ORDER BY id
   `).all(sessionId) as Array<Record<string, unknown>>;
 
@@ -148,6 +150,7 @@ export function getSessionCardio(sessionId: number, _db?: Database.Database): Se
     prescribedDurationMin: r.prescribed_duration_min as number | null,
     targetIntensity: r.target_intensity as string | null,
     completed: (r.completed as number) === 1,
+    actualDurationMin: r.actual_duration_min as number | null,
   }));
 }
 

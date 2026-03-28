@@ -193,13 +193,16 @@ describe('generateSessionSummary', () => {
     const sets = [
       { id: 1, sessionLogId: 1, exerciseName: 'Pull-Up', exerciseOrder: 0, supersetGroup: null,
         setNumber: 1, prescribedReps: 5, prescribedWeightKg: null,
-        actualReps: 5, actualWeightKg: null, completed: true, isModified: false },
+        actualReps: 5, actualWeightKg: null, completed: true, isModified: false,
+        prescribedDurationS: null, actualDurationS: null },
       { id: 2, sessionLogId: 1, exerciseName: 'Pull-Up', exerciseOrder: 0, supersetGroup: null,
         setNumber: 2, prescribedReps: 5, prescribedWeightKg: null,
-        actualReps: 5, actualWeightKg: null, completed: true, isModified: false },
+        actualReps: 5, actualWeightKg: null, completed: true, isModified: false,
+        prescribedDurationS: null, actualDurationS: null },
       { id: 3, sessionLogId: 1, exerciseName: 'Pull-Up', exerciseOrder: 0, supersetGroup: null,
         setNumber: 3, prescribedReps: 5, prescribedWeightKg: null,
-        actualReps: 5, actualWeightKg: null, completed: true, isModified: false },
+        actualReps: 5, actualWeightKg: null, completed: true, isModified: false,
+        prescribedDurationS: null, actualDurationS: null },
     ];
 
     const summary = generateSessionSummary('Pull Day', 100, sets, [], []);
@@ -211,13 +214,16 @@ describe('generateSessionSummary', () => {
     const sets = [
       { id: 1, sessionLogId: 1, exerciseName: 'Cable Fly', exerciseOrder: 0, supersetGroup: null,
         setNumber: 1, prescribedReps: 12, prescribedWeightKg: 15,
-        actualReps: 12, actualWeightKg: 15, completed: true, isModified: false },
+        actualReps: 12, actualWeightKg: 15, completed: true, isModified: false,
+        prescribedDurationS: null, actualDurationS: null },
       { id: 2, sessionLogId: 1, exerciseName: 'Cable Fly', exerciseOrder: 0, supersetGroup: null,
         setNumber: 2, prescribedReps: 12, prescribedWeightKg: 15,
-        actualReps: 12, actualWeightKg: 15, completed: true, isModified: false },
+        actualReps: 12, actualWeightKg: 15, completed: true, isModified: false,
+        prescribedDurationS: null, actualDurationS: null },
       { id: 3, sessionLogId: 1, exerciseName: 'Cable Fly', exerciseOrder: 0, supersetGroup: null,
         setNumber: 3, prescribedReps: 12, prescribedWeightKg: 15,
-        actualReps: null, actualWeightKg: null, completed: false, isModified: false },
+        actualReps: null, actualWeightKg: null, completed: false, isModified: false,
+        prescribedDurationS: null, actualDurationS: null },
     ];
 
     const summary = generateSessionSummary('Upper Push', 67, sets, [], []);
@@ -228,7 +234,7 @@ describe('generateSessionSummary', () => {
     const cardio = [
       { id: 1, sessionLogId: 1, exerciseName: 'StairMaster', cardioType: 'intervals' as const,
         prescribedRounds: 4, completedRounds: 3, prescribedDurationMin: null,
-        targetIntensity: 'level 8', completed: false },
+        targetIntensity: 'level 8', completed: false, actualDurationMin: null },
     ];
 
     const summary = generateSessionSummary('Cardio Day', 75, [], cardio, []);
@@ -239,7 +245,8 @@ describe('generateSessionSummary', () => {
     const sets = [
       { id: 1, sessionLogId: 1, exerciseName: 'Incline DB Press', exerciseOrder: 0, supersetGroup: null,
         setNumber: 1, prescribedReps: 10, prescribedWeightKg: 20,
-        actualReps: 10, actualWeightKg: 22.5, completed: true, isModified: true },
+        actualReps: 10, actualWeightKg: 22.5, completed: true, isModified: true,
+        prescribedDurationS: null, actualDurationS: null },
     ];
     const weightChanges = [{ exercise: 'Incline DB Press', set: 1, from: 20, to: 22.5 }];
 

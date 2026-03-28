@@ -444,6 +444,8 @@ export interface SessionSetState {
   actualReps: number | null;
   completed: boolean;
   isModified: boolean;
+  prescribedDurationS: number | null;
+  actualDurationS: number | null;
 }
 
 export interface SessionCardioState {
@@ -455,6 +457,16 @@ export interface SessionCardioState {
   prescribedDurationMin: number | null;
   targetIntensity: string | null;
   completed: boolean;
+  actualDurationMin: number | null;
+}
+
+export interface ExerciseFeedback {
+  id?: number;
+  sessionLogId: number;
+  exerciseName: string;
+  exerciseOrder: number;
+  rpe: number; // 1-5
+  createdAt?: string;
 }
 
 export interface SessionState {

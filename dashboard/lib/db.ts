@@ -405,6 +405,38 @@ export function initTablesOn(db: Database.Database) {
   try { db.exec(`ALTER TABLE weekly_metrics ADD COLUMN avg_energy REAL`); } catch {}
   try { db.exec(`ALTER TABLE weekly_metrics ADD COLUMN pain_days INTEGER`); } catch {}
   try { db.exec(`ALTER TABLE weekly_metrics ADD COLUMN sleep_disruption_count INTEGER`); } catch {}
+
+  // Migration: session_exercise_feedback table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS session_exercise_feedback (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      session_log_id INTEGER NOT NULL REFERENCES session_logs(id),
+      exercise_name TEXT NOT NULL,
+      exercise_order INTEGER NOT NULL,
+      rpe INTEGER CHECK (rpe BETWEEN 1 AND 5),
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(session_log_id, exercise_name)
+    )
+  `);
+
+  // Migration: actual_duration_s on session_sets
+  try {
+    db.exec(`ALTER TABLE session_sets ADD COLUMN prescribed_duration_s INTEGER`);
+  } catch {
+    // Column already exists
+  }
+  try {
+    db.exec(`ALTER TABLE session_sets ADD COLUMN actual_duration_s INTEGER`);
+  } catch {
+    // Column already exists
+  }
+
+  // Migration: actual_duration_min on session_cardio
+  try {
+    db.exec(`ALTER TABLE session_cardio ADD COLUMN actual_duration_min REAL`);
+  } catch {
+    // Column already exists
+  }
 }
 
 // Settings
