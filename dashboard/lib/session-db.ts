@@ -423,6 +423,14 @@ export function getActiveSession(date: string, sessionTitle?: string): { id: num
   return row ? { id: row.id, sessionTitle: row.session_title } : null;
 }
 
+export function getWeekSessionIds(weekNumber: number, _db?: Database.Database): number[] {
+  const db = _db ?? getDb();
+  const rows = db.prepare(`
+    SELECT id FROM session_logs WHERE week_number = ? AND completed_at IS NOT NULL ORDER BY date
+  `).all(weekNumber) as Array<{ id: number }>;
+  return rows.map((r) => r.id);
+}
+
 export function getWeekSessions(weekNumber: number): Array<{
   date: string;
   sessionTitle: string;

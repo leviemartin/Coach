@@ -10,7 +10,9 @@ import {
   insertPlanItems,
   insertCeilingHistory,
   deletePlanItems,
+  getDailyLogsByWeek,
 } from '@/lib/db';
+import { getWeekSessionIds, getExerciseFeedback } from '@/lib/session-db';
 import type { CheckInFormData, CheckinSubjectiveData, WeeklyMetrics, CeilingEntry } from '@/lib/types';
 import { isNewFormatPayload } from '@/lib/types';
 import type { TriageAnswer } from '@/lib/triage-agent';
@@ -155,6 +157,60 @@ export async function POST(request: Request) {
         const planSatisfaction = subjectiveData?.planSatisfaction
           ?? legacyFormData?.planSatisfaction ?? null;
 
+        // Compute RPE aggregates from session feedback
+        const sessionIds = getWeekSessionIds(currentWeek);
+        let totalRpe = 0;
+        let rpeCount = 0;
+        let hardCount = 0;
+        for (const sessionId of sessionIds) {
+          const feedback = getExerciseFeedback(sessionId);
+          for (const f of feedback) {
+            totalRpe += f.rpe;
+            rpeCount++;
+            if (f.rpe >= 4) hardCount++;
+          }
+        }
+        const avgRpe = rpeCount > 0 ? Math.round((totalRpe / rpeCount) * 10) / 10 : null;
+
+        // Compute pain areas summary from daily logs
+        const dailyLogsForAgg = getDailyLogsByWeek(currentWeek);
+        let painAreasSummary: string | null = null;
+        if (hasLogData) {
+          const areaMap = new Map<string, { days: number; maxLevel: number }>();
+          for (const log of dailyLogsForAgg) {
+            if (log.pain_level != null && log.pain_level > 0 && log.pain_area) {
+              const existing = areaMap.get(log.pain_area) ?? { days: 0, maxLevel: 0 };
+              existing.days++;
+              existing.maxLevel = Math.max(existing.maxLevel, log.pain_level);
+              areaMap.set(log.pain_area, existing);
+            }
+          }
+          if (areaMap.size > 0) {
+            painAreasSummary = JSON.stringify(
+              Array.from(areaMap.entries()).map(([area, { days, maxLevel }]) => ({ area, days, maxLevel }))
+            );
+          }
+        }
+
+        // Compute sleep disruption breakdown
+        let sleepDisruptionBreakdown: string | null = null;
+        if (hasLogData) {
+          const causeCounts: Record<string, number> = {};
+          for (const log of dailyLogsForAgg) {
+            if (log.sleep_disruption) {
+              causeCounts[log.sleep_disruption] = (causeCounts[log.sleep_disruption] ?? 0) + 1;
+            }
+          }
+          if (Object.keys(causeCounts).length > 0) {
+            sleepDisruptionBreakdown = JSON.stringify(causeCounts);
+          }
+        }
+
+        // Compute sick days
+        const sickDayCount = hasLogData
+          ? dailyLogsForAgg.filter(l => l.is_sick_day).length
+          : null;
+
         const metrics: WeeklyMetrics = {
           weekNumber,
           checkInDate: today,
@@ -198,14 +254,14 @@ export async function POST(request: Request) {
             : null,
           painDays: hasLogData ? weekSummary.pain_days.length : null,
           sleepDisruptionCount: hasLogData ? weekSummary.sleep_disruptions.length : null,
-          avgRpe: null,
-          hardExerciseCount: null,
+          avgRpe,
+          hardExerciseCount: rpeCount > 0 ? hardCount : null,
           weekReflection: subjectiveData?.weekReflection ?? null,
           nextWeekConflicts: subjectiveData?.nextWeekConflicts ?? null,
           questionsForCoaches: subjectiveData?.questionsForCoaches ?? null,
-          sickDays: hasLogData ? weekSummary.sick_days : null,
-          painAreasSummary: null,
-          sleepDisruptionBreakdown: null,
+          sickDays: sickDayCount,
+          painAreasSummary,
+          sleepDisruptionBreakdown,
         };
         upsertWeeklyMetrics(metrics);
 
