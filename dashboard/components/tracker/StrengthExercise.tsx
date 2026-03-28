@@ -5,6 +5,7 @@ import { Box, Button, Card, CardContent, Stack, TextField, Typography } from '@m
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { semanticColors } from '@/lib/design-tokens';
 import type { SessionSetState } from '@/lib/types';
+import ExerciseRpe from './ExerciseRpe';
 
 interface StrengthExerciseProps {
   exerciseName: string;
@@ -12,9 +13,11 @@ interface StrengthExerciseProps {
   durationSeconds?: number | null;
   isCurrent?: boolean;
   onUpdateSet: (setId: number, actualWeightKg: number | null, actualReps: number | null, completed: boolean, actualDurationS?: number | null) => void;
+  rpe?: number | null;
+  onRpeSelect?: (exerciseName: string, rpe: number) => void;
 }
 
-export default function StrengthExercise({ exerciseName, sets, durationSeconds, isCurrent = false, onUpdateSet }: StrengthExerciseProps) {
+export default function StrengthExercise({ exerciseName, sets, durationSeconds, isCurrent = false, onUpdateSet, rpe, onRpeSelect }: StrengthExerciseProps) {
   // Track local edits before completing
   const [edits, setEdits] = useState<Record<number, { weight: string; reps: string; duration: string }>>({});
 
@@ -184,6 +187,13 @@ export default function StrengthExercise({ exerciseName, sets, durationSeconds, 
             );
           })}
         </Stack>
+        {/* RPE selector — shows when all sets for this exercise are complete */}
+        {sets.length > 0 && sets.every((s) => s.completed) && onRpeSelect && (
+          <ExerciseRpe
+            selectedRpe={rpe ?? null}
+            onSelect={(value) => onRpeSelect(exerciseName, value)}
+          />
+        )}
       </CardContent>
     </Card>
   );
