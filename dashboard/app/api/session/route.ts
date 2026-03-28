@@ -68,10 +68,13 @@ export async function GET(request: Request) {
     }
   } else {
     // Default: find today's workout
+    // Check assigned_date first (set by swap), then fall back to day name
     const todayName = DAY_NAMES[new Date().getDay()];
     const planItems = getPlanItems(weekNumber);
     targetItem = planItems.find(
-      (item) => item.day.toLowerCase() === todayName.toLowerCase(),
+      (item) => item.assignedDate === today,
+    ) ?? planItems.find(
+      (item) => !item.assignedDate && item.day.toLowerCase() === todayName.toLowerCase(),
     ) ?? null;
   }
 

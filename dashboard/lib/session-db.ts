@@ -1,6 +1,6 @@
 import { getDb, getDailyLog, upsertDailyLog } from './db';
 import { getTrainingWeek } from './week';
-import { getWeekForDate } from './daily-log';
+import { getWeekForDate, getDayName, getDayAbbrev } from './daily-log';
 import type { ParsedExercise, SessionSetState, SessionCardioState } from './types';
 import type Database from 'better-sqlite3';
 
@@ -280,11 +280,22 @@ export function completeSession(sessionId: number, notes: string, _db?: Database
         UPDATE daily_logs SET workout_completed = 1, session_summary = ?, session_log_id = ? WHERE date = ?
       `).run(summaryText, sessionId, sessionRow.date);
     } else {
+      // Find the plan item for this date using the same DB handle (important for tests)
+      const weekNum = getWeekForDate(sessionRow.date);
+      const dayName = getDayName(sessionRow.date);
+      const dayAbbrev = getDayAbbrev(sessionRow.date);
+      const planRow = db.prepare(
+        `SELECT id FROM plan_items WHERE week_number = ? AND assigned_date = ?`
+      ).get(weekNum, sessionRow.date) as { id: number } | undefined
+        ?? db.prepare(
+          `SELECT id FROM plan_items WHERE week_number = ? AND assigned_date IS NULL AND (day = ? OR day LIKE ? || '%')`
+        ).get(weekNum, dayName, dayAbbrev) as { id: number } | undefined;
+
       upsertDailyLog({
         date: sessionRow.date,
-        week_number: getWeekForDate(sessionRow.date),
+        week_number: weekNum,
         workout_completed: 1,
-        workout_plan_item_id: null,
+        workout_plan_item_id: planRow?.id ?? null,
         core_work_done: 0,
         rug_protocol_done: 0,
         vampire_bedtime: null,

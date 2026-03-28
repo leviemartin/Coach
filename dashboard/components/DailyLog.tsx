@@ -464,7 +464,7 @@ export default function DailyLog({
               </Typography>
             </>
           ) : (
-            <Link href="/session" style={{ textDecoration: 'none' }}>
+            <Link href={`/session${(selectedPlanItemId ?? plannedSession?.id) ? `?planItemId=${selectedPlanItemId ?? plannedSession?.id}` : ''}`} style={{ textDecoration: 'none' }}>
               <Typography
                 variant="body2"
                 fontWeight={600}
