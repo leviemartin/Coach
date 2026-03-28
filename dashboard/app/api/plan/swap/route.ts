@@ -23,6 +23,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Plan item not found' }, { status: 404 });
     }
 
+    if (item.status === 'completed') {
+      return NextResponse.json({ error: 'Cannot swap a completed session' }, { status: 400 });
+    }
+
     const weekItems = getPlanItems(item.weekNumber);
     const result = checkSequencingConstraints(weekItems, planItemId, targetDate);
 
