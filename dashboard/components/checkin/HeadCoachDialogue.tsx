@@ -13,6 +13,8 @@ import {
 import SendIcon from '@mui/icons-material/Send';
 import LockIcon from '@mui/icons-material/Lock';
 import type { DialogueMessage } from '@/lib/dialogue';
+import { parseScheduleTable } from '@/lib/parse-schedule';
+import type { PlanItem } from '@/lib/types';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -28,6 +30,7 @@ interface HeadCoachDialogueProps {
   synthesis: string;
   weekNumber: number;
   onLockIn: () => void;
+  onPlanUpdate?: (items: PlanItem[], updatedSynthesis: string) => void;
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -37,11 +40,14 @@ export default function HeadCoachDialogue({
   synthesis,
   weekNumber,
   onLockIn,
+  onPlanUpdate,
 }: HeadCoachDialogueProps) {
   const [messages, setMessages] = useState<DialogueMessage[]>([]);
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
   const [streamingText, setStreamingText] = useState('');
+  // Track the evolving draft plan — starts as original synthesis, updates when coach modifies it
+  const [currentDraftPlan, setCurrentDraftPlan] = useState(synthesis);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -81,7 +87,7 @@ export default function HeadCoachDialogue({
             error: s.error ?? undefined,
           })),
           sharedContext: '',
-          draftPlan: synthesis,
+          draftPlan: currentDraftPlan,
         }),
       });
 
@@ -134,14 +140,23 @@ export default function HeadCoachDialogue({
                   fullCoachText += data.text;
                   setStreamingText(fullCoachText);
                   break;
-                case 'dialogue_complete':
+                case 'dialogue_complete': {
+                  const coachText: string = data.fullText;
                   setMessages((prev) => [
                     ...prev,
-                    { role: 'assistant', content: data.fullText },
+                    { role: 'assistant', content: coachText },
                   ]);
                   setStreamingText('');
                   setStreaming(false);
+
+                  // Detect if the coach included an updated schedule table
+                  const parsed = parseScheduleTable(coachText, weekNumber);
+                  if (parsed.length > 0 && onPlanUpdate) {
+                    setCurrentDraftPlan(coachText);
+                    onPlanUpdate(parsed, coachText);
+                  }
                   break;
+                }
                 case 'error':
                   setMessages((prev) => [
                     ...prev,
@@ -164,6 +179,13 @@ export default function HeadCoachDialogue({
         ]);
         setStreamingText('');
         setStreaming(false);
+
+        // Check for plan updates in fallback path too
+        const parsed = parseScheduleTable(fullCoachText, weekNumber);
+        if (parsed.length > 0 && onPlanUpdate) {
+          setCurrentDraftPlan(fullCoachText);
+          onPlanUpdate(parsed, fullCoachText);
+        }
       }
     } catch (err) {
       setMessages((prev) => [
@@ -176,7 +198,7 @@ export default function HeadCoachDialogue({
       setStreamingText('');
       setStreaming(false);
     }
-  }, [input, streaming, messages, specialistOutputs, synthesis]);
+  }, [input, streaming, messages, specialistOutputs, currentDraftPlan, weekNumber, onPlanUpdate]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {

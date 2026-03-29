@@ -24,6 +24,8 @@ export default function CheckInResultsPage() {
   const [error, setError] = useState<string | null>(null);
   const [planItems, setPlanItems] = useState<PlanItem[]>([]);
   const [showDialogue, setShowDialogue] = useState(false);
+  const [planModifiedByDialogue, setPlanModifiedByDialogue] = useState(false);
+  const [currentSynthesis, setCurrentSynthesis] = useState('');
   const startedRef = useRef(false);
 
   useEffect(() => {
@@ -147,8 +149,28 @@ export default function CheckInResultsPage() {
     }
   }
 
-  const handleLockIn = () => {
+  const handleLockIn = async () => {
+    if (planModifiedByDialogue && planItems.length > 0) {
+      try {
+        await fetch('/api/plan', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            weekNumber: getPlanWeekNumber(),
+            items: planItems,
+          }),
+        });
+      } catch {
+        // Non-fatal — plan was already saved from synthesis, dialogue changes just didn't persist
+      }
+    }
     router.push('/log');
+  };
+
+  const handlePlanUpdate = (items: PlanItem[], updatedSynthesis: string) => {
+    setPlanItems(items);
+    setCurrentSynthesis(updatedSynthesis);
+    setPlanModifiedByDialogue(true);
   };
 
   const handleDiscuss = () => {
@@ -203,9 +225,10 @@ export default function CheckInResultsPage() {
       {phase === 'done' && showDialogue && (
         <HeadCoachDialogue
           specialistOutputs={specialists}
-          synthesis={synthesis}
+          synthesis={currentSynthesis || synthesis}
           weekNumber={getPlanWeekNumber()}
           onLockIn={handleLockIn}
+          onPlanUpdate={handlePlanUpdate}
         />
       )}
     </Box>
