@@ -30,8 +30,7 @@ const LOCAL_OUTPUT_PATH = path.join(LOCAL_OUTPUT_DIR, 'garmin_coach_data.json');
 const MAX_PUSH_BYTES = 10 * 1024 * 1024; // 10MB — abort if export is unexpectedly large
 
 // Load .env from project root if present
-// Script runs from dashboard/ dir, so project root is one level up
-const envPath = path.resolve(process.cwd(), '..', '.env');
+const envPath = path.resolve(__dirname, '..', '.env');
 if (fs.existsSync(envPath)) {
   const envContent = fs.readFileSync(envPath, 'utf-8');
   for (const line of envContent.split('\n')) {
