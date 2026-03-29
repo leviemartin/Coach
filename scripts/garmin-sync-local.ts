@@ -25,7 +25,7 @@ import { buildExport } from '../dashboard/lib/garmin-extract';
 // ---------------------------------------------------------------------------
 
 const GARTH_TOKEN_DIR = path.join(os.homedir(), '.garth');
-const LOCAL_OUTPUT_DIR = path.join(os.homedir(), 'garmin-coach');
+const LOCAL_OUTPUT_DIR = path.resolve(__dirname, '..', 'garmin');
 const LOCAL_OUTPUT_PATH = path.join(LOCAL_OUTPUT_DIR, 'garmin_coach_data.json');
 const MAX_PUSH_BYTES = 10 * 1024 * 1024; // 10MB — abort if export is unexpectedly large
 
