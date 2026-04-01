@@ -6,7 +6,7 @@ import { normalizeWorkoutText } from './parse-schedule';
 import { DB_PATH } from './constants';
 
 // Schema version — bump this when adding tables or columns to force re-init on cached connections
-const SCHEMA_VERSION = 9; // v9: added weekly_metrics columns for daily-log-derived stats
+const SCHEMA_VERSION = 10; // v10: added plan_exercises table and structured plan columns
 
 // Use globalThis to persist across hot reloads in dev
 const globalForDb = globalThis as unknown as { _coachDb?: Database.Database; _coachDbSchema?: number };
@@ -193,6 +193,31 @@ export function initTablesOn(db: Database.Database) {
       target_intensity TEXT,
       completed INTEGER DEFAULT 0
     );
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS plan_exercises (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      plan_item_id INTEGER NOT NULL REFERENCES plan_items(id) ON DELETE CASCADE,
+      section TEXT NOT NULL CHECK(section IN ('warm_up','activation','main_work','accessory','finisher','cool_down')),
+      exercise_order INTEGER NOT NULL,
+      exercise_name TEXT NOT NULL,
+      superset_group TEXT,
+      type TEXT NOT NULL CHECK(type IN ('strength','carry','timed','cardio_intervals','cardio_steady','ruck','mobility')),
+      sets INTEGER,
+      reps TEXT,
+      weight_kg REAL,
+      duration_seconds INTEGER,
+      rest_seconds INTEGER,
+      tempo TEXT,
+      laterality TEXT DEFAULT 'bilateral' CHECK(laterality IN ('bilateral','unilateral_each','alternating')),
+      coach_cue TEXT,
+      rounds INTEGER,
+      target_intensity TEXT,
+      interval_work_seconds INTEGER,
+      interval_rest_seconds INTEGER
+    );
+    CREATE INDEX IF NOT EXISTS idx_plan_exercises_plan_item ON plan_exercises(plan_item_id);
   `);
 
   // Migration v6: add new daily_logs columns if they don't exist
@@ -447,6 +472,23 @@ export function initTablesOn(db: Database.Database) {
   } catch {
     // Column already exists
   }
+
+  // Migration v10: structured plan exercises
+  try { db.exec(`ALTER TABLE plan_items ADD COLUMN synthesis_notes TEXT`); } catch { /* exists */ }
+  try { db.exec(`ALTER TABLE plan_items ADD COLUMN estimated_duration_min INTEGER`); } catch { /* exists */ }
+  try { db.exec(`ALTER TABLE plan_items ADD COLUMN has_structured_exercises INTEGER DEFAULT 0`); } catch { /* exists */ }
+
+  try { db.exec(`ALTER TABLE session_sets ADD COLUMN section TEXT`); } catch { /* exists */ }
+  try { db.exec(`ALTER TABLE session_sets ADD COLUMN rest_seconds INTEGER`); } catch { /* exists */ }
+  try { db.exec(`ALTER TABLE session_sets ADD COLUMN coach_cue TEXT`); } catch { /* exists */ }
+  try { db.exec(`ALTER TABLE session_sets ADD COLUMN plan_exercise_id INTEGER REFERENCES plan_exercises(id)`); } catch { /* exists */ }
+
+  try { db.exec(`ALTER TABLE session_cardio ADD COLUMN section TEXT`); } catch { /* exists */ }
+  try { db.exec(`ALTER TABLE session_cardio ADD COLUMN rest_seconds INTEGER`); } catch { /* exists */ }
+  try { db.exec(`ALTER TABLE session_cardio ADD COLUMN coach_cue TEXT`); } catch { /* exists */ }
+  try { db.exec(`ALTER TABLE session_cardio ADD COLUMN plan_exercise_id INTEGER REFERENCES plan_exercises(id)`); } catch { /* exists */ }
+  try { db.exec(`ALTER TABLE session_cardio ADD COLUMN interval_work_seconds INTEGER`); } catch { /* exists */ }
+  try { db.exec(`ALTER TABLE session_cardio ADD COLUMN interval_rest_seconds INTEGER`); } catch { /* exists */ }
 }
 
 // Settings
@@ -610,6 +652,9 @@ function mapPlanRow(row: unknown): PlanItem {
     sequenceGroup: (r.sequence_group as string) || null,
     assignedDate: (r.assigned_date as string) || null,
     status: ((r.status as string) ?? 'pending') as 'pending' | 'scheduled' | 'completed' | 'skipped',
+    synthesisNotes: (r.synthesis_notes as string) || null,
+    estimatedDurationMin: (r.estimated_duration_min as number) || null,
+    hasStructuredExercises: !!(r.has_structured_exercises),
   };
 }
 
