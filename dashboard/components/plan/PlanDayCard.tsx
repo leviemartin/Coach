@@ -1,37 +1,49 @@
 'use client';
 import React, { useState } from 'react';
-import { Box, Typography, Chip, Collapse, Button, Divider } from '@mui/material';
+import { Box, Typography, Collapse } from '@mui/material';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
-import type { PlanItem, PlanExercise } from '@/lib/types';
-import SectionHeader from './SectionHeader';
-import ExerciseRow from './ExerciseRow';
-import SupersetBlock from './SupersetBlock';
+import type { PlanItem, PlanExercise, ExerciseBlock, Section } from '@/lib/types';
+import { buildBlocksFromPlan } from '@/lib/buildBlocks';
+import { statusColors } from '@/lib/design-tokens';
+import { formatDuration } from '@/lib/format';
+import SectionDivider from './SectionDivider';
+import ExerciseRowPlan from './ExerciseRowPlan';
+import CardioCardPlan from './CardioCardPlan';
+import SupersetBlockPlan from './SupersetBlockPlan';
+import WarmupCheckbox from './WarmupCheckbox';
 
 interface PlanDayCardProps {
   item: PlanItem;
   exercises: PlanExercise[];
-  defaultExpanded?: boolean;
   status: 'draft' | 'published' | 'completed' | 'skipped';
+  defaultExpanded?: boolean;
   onStartSession?: () => void;
   onSwapDay?: () => void;
 }
 
-const STATUS_CHIPS: Record<string, { label: string; color: string; bg: string }> = {
-  draft: { label: 'Draft', color: '#b45309', bg: '#fef3c7' },
-  published: { label: 'Published', color: '#15803d', bg: '#dcfce7' },
-  completed: { label: 'Completed', color: '#1d4ed8', bg: '#dbeafe' },
-  skipped: { label: 'Skipped', color: '#64748b', bg: '#f1f5f9' },
+const SESSION_TYPE_COLORS: Record<string, { border: string; color: string; bg: string }> = {
+  strength:           { border: '#3b82f640', color: '#2563eb', bg: '#3b82f610' },
+  upper_push:         { border: '#3b82f640', color: '#2563eb', bg: '#3b82f610' },
+  upper_pull:         { border: '#3b82f640', color: '#2563eb', bg: '#3b82f610' },
+  lower_push:         { border: '#3b82f640', color: '#2563eb', bg: '#3b82f610' },
+  lower_pull:         { border: '#3b82f640', color: '#2563eb', bg: '#3b82f610' },
+  full_body:          { border: '#3b82f640', color: '#2563eb', bg: '#3b82f610' },
+  hypertrophy:        { border: '#3b82f640', color: '#2563eb', bg: '#3b82f610' },
+  conditioning:       { border: '#f9731640', color: '#ea580c', bg: '#f9731610' },
+  steady_state_cardio:{ border: '#14b8a640', color: '#0d9488', bg: '#14b8a610' },
+  interval_cardio:    { border: '#f9731640', color: '#ea580c', bg: '#f9731610' },
+  recovery:           { border: '#8b5cf640', color: '#7c3aed', bg: '#8b5cf610' },
+  active_recovery:    { border: '#8b5cf640', color: '#7c3aed', bg: '#8b5cf610' },
+  mobility:           { border: '#8b5cf640', color: '#7c3aed', bg: '#8b5cf610' },
+  rest:               { border: '#a1a1aa40', color: '#71717a', bg: '#a1a1aa10' },
+  hybrid:             { border: '#f59e0b40', color: '#d97706', bg: '#f59e0b10' },
+  sport_specific:     { border: '#dc262640', color: '#dc2626', bg: '#dc262610' },
 };
 
-function getSessionChipStyle(sessionType: string) {
-  const t = sessionType.toLowerCase();
-  if (t.includes('strength') || t.includes('upper') || t.includes('lower') || t.includes('full')) return { bg: '#dbeafe', text: '#1d4ed8' };
-  if (t.includes('cardio') || t.includes('interval')) return { bg: '#ffedd5', text: '#c2410c' };
-  if (t.includes('recovery') || t.includes('mobility')) return { bg: '#ede9fe', text: '#6d28d9' };
-  if (t.includes('ruck') || t.includes('hike')) return { bg: '#ccfbf1', text: '#0f766e' };
-  if (t.includes('rest') || t.includes('family')) return { bg: '#f1f5f9', text: '#475569' };
-  return { bg: '#f1f5f9', text: '#0f172a' };
+function getSessionTypeColors(sessionType: string) {
+  const key = sessionType.toLowerCase().replace(/\s+/g, '_');
+  return SESSION_TYPE_COLORS[key] ?? { border: '#a1a1aa40', color: '#71717a', bg: '#a1a1aa10' };
 }
 
 function isRestOrFamily(item: PlanItem): boolean {
@@ -39,112 +51,282 @@ function isRestOrFamily(item: PlanItem): boolean {
   return t.includes('rest') || t.includes('family');
 }
 
-export default function PlanDayCard({ item, exercises, defaultExpanded = false, status, onStartSession, onSwapDay }: PlanDayCardProps) {
+function getSectionLabel(section: Section): string {
+  const SECTION_LABELS: Record<string, string> = {
+    warm_up: 'WARM-UP', activation: 'ACTIVATION', main_work: 'MAIN WORK',
+    accessory: 'ACCESSORY', finisher: 'FINISHER', cool_down: 'COOL-DOWN',
+  };
+  return SECTION_LABELS[section] ?? section.toUpperCase().replace('_', ' ');
+}
+
+function getWarmupDetail(block: ExerciseBlock): string {
+  if (block.kind === 'cardio') {
+    const parts: string[] = [];
+    if (block.exercise.prescribedRounds) parts.push(`${block.exercise.prescribedRounds}×`);
+    if (block.exercise.prescribedDurationMin) parts.push(`${block.exercise.prescribedDurationMin} min`);
+    if (block.exercise.intervalWorkSeconds != null) parts.push(`${block.exercise.intervalWorkSeconds}s on`);
+    return parts.join(' · ') || '—';
+  }
+  if (block.kind === 'single') {
+    const ex = block.exercise;
+    const parts: string[] = [];
+    if (ex.sets) parts.push(`${ex.sets}×`);
+    if (ex.prescribedRepsDisplay) parts.push(ex.prescribedRepsDisplay);
+    else if (ex.prescribedDurationS) parts.push(formatDuration(ex.prescribedDurationS));
+    return parts.join(' ') || '—';
+  }
+  return '—';
+}
+
+export default function PlanDayCard({
+  item,
+  exercises,
+  status,
+  defaultExpanded = false,
+  onStartSession,
+  onSwapDay,
+}: PlanDayCardProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const isRest = isRestOrFamily(item);
-  const chipStyle = getSessionChipStyle(item.sessionType);
-  const statusChip = STATUS_CHIPS[status];
+  const typeColors = getSessionTypeColors(item.sessionType);
+  const statusStyle = statusColors[status] ?? statusColors.draft;
 
-  // Group exercises by section
-  const sections = new Map<string, PlanExercise[]>();
-  for (const ex of exercises) {
-    const group = sections.get(ex.section) ?? [];
-    group.push(ex);
-    sections.set(ex.section, group);
-  }
+  const blocks = buildBlocksFromPlan(exercises);
+  const exerciseCount = blocks.length;
+  const hasStructured = exercises.length > 0;
 
-  const sectionOrder = ['warm_up', 'activation', 'main_work', 'accessory', 'finisher', 'cool_down'];
-
-  function renderExercises(sectionExercises: PlanExercise[]) {
+  // Track which sections we've already rendered dividers for
+  function renderBlocks() {
     const rendered: React.ReactNode[] = [];
-    const seenGroups = new Set<string>();
-    let standaloneLetterIndex = 0;
+    let lastSection: string | null = null;
+    // Counter per section for exercise labels (A1, B1, etc.)
+    const sectionCounters: Record<string, number> = {};
 
-    for (const ex of sectionExercises) {
-      if (ex.supersetGroup && !seenGroups.has(ex.supersetGroup)) {
-        seenGroups.add(ex.supersetGroup);
-        const grouped = sectionExercises.filter(e => e.supersetGroup === ex.supersetGroup);
-        rendered.push(
-          <SupersetBlock key={`ss-${ex.supersetGroup}`} groupLetter={ex.supersetGroup} exercises={grouped} />
-        );
-      } else if (!ex.supersetGroup) {
-        // Find the next available letter that isn't used by a superset group
-        let letter: string;
-        do {
-          letter = String.fromCharCode(65 + standaloneLetterIndex);
-          standaloneLetterIndex++;
-        } while (seenGroups.has(letter));
+    for (let i = 0; i < blocks.length; i++) {
+      const block = blocks[i];
+      const isWarmupSection = block.section === 'warm_up' || block.section === 'cool_down';
 
+      // Section divider on section change
+      if (block.section !== lastSection) {
+        rendered.push(<SectionDivider key={`divider-${block.section}-${i}`} section={block.section} />);
+        lastSection = block.section;
+      }
+
+      if (block.kind === 'superset') {
         rendered.push(
-          <ExerciseRow key={ex.id ?? ex.exerciseOrder} exercise={ex} label={`${letter}1`} />
+          <SupersetBlockPlan
+            key={`ss-${block.groupId}-${block.section}`}
+            groupId={block.groupId}
+            exercises={block.exercises}
+            restSeconds={block.restSeconds}
+          />
         );
+      } else if (block.kind === 'cardio') {
+        if (isWarmupSection) {
+          const detail = getWarmupDetail(block);
+          rendered.push(
+            <WarmupCheckbox
+              key={`warmup-cardio-${i}`}
+              exerciseName={block.exercise.name}
+              detail={detail}
+              coachCue={block.exercise.coachCue}
+              completed={false}
+              interactive={false}
+            />
+          );
+        } else {
+          const sectionKey = block.section;
+          sectionCounters[sectionKey] = (sectionCounters[sectionKey] ?? 0) + 1;
+          const label = `${String.fromCharCode(64 + sectionCounters[sectionKey])}1`;
+          rendered.push(
+            <CardioCardPlan key={`cardio-${i}`} label={label} exercise={block.exercise} />
+          );
+        }
+      } else {
+        // single
+        if (isWarmupSection) {
+          const detail = getWarmupDetail(block);
+          rendered.push(
+            <WarmupCheckbox
+              key={`warmup-${i}`}
+              exerciseName={block.exercise.name}
+              detail={detail}
+              coachCue={block.exercise.coachCue}
+              completed={false}
+              interactive={false}
+            />
+          );
+        } else {
+          const sectionKey = block.section;
+          sectionCounters[sectionKey] = (sectionCounters[sectionKey] ?? 0) + 1;
+          const label = `${String.fromCharCode(64 + sectionCounters[sectionKey])}1`;
+          rendered.push(
+            <ExerciseRowPlan key={`ex-${i}`} label={label} exercise={block.exercise} />
+          );
+        }
       }
     }
     return rendered;
   }
 
   return (
-    <Box sx={{
-      border: '1px solid #e2e8f0',
-      borderRadius: '12px',
-      bgcolor: '#fff',
-      mb: 1.5,
-      overflow: 'hidden',
-    }}>
-      {/* Header */}
+    <Box sx={{ border: '3px solid #18181b', mb: 2, overflow: 'hidden' }}>
+      {/* ── Header (clickable) ── */}
       <Box
         onClick={() => !isRest && setExpanded(!expanded)}
         sx={{
           display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 1.5,
           cursor: isRest ? 'default' : 'pointer',
-          '&:hover': isRest ? {} : { bgcolor: '#f8fafc' },
+          '&:hover': isRest ? {} : { bgcolor: '#f5f5f2' },
         }}
       >
-        {!isRest && (expanded ? <KeyboardArrowDownIcon sx={{ color: '#94a3b8' }} /> : <KeyboardArrowRightIcon sx={{ color: '#94a3b8' }} />)}
-        <Typography sx={{ fontWeight: 700, fontSize: '0.9375rem', minWidth: 40 }}>
-          {item.day.slice(0, 3)}
-        </Typography>
-        <Chip label={item.sessionType.replace(/_/g, ' ')} size="small" sx={{ bgcolor: chipStyle.bg, color: chipStyle.text, fontWeight: 600, fontSize: '0.75rem' }} />
-        <Typography sx={{ fontSize: '0.875rem', color: '#334155', flex: 1 }}>{item.focus}</Typography>
-        {item.estimatedDurationMin && (
-          <Typography sx={{ fontSize: '0.75rem', color: '#94a3b8' }}>{item.estimatedDurationMin} min</Typography>
+        {!isRest && (
+          expanded
+            ? <KeyboardArrowDownIcon sx={{ color: '#18181b', fontSize: 18 }} />
+            : <KeyboardArrowRightIcon sx={{ color: '#18181b', fontSize: 18 }} />
         )}
-        <Chip label={statusChip.label} size="small" sx={{ bgcolor: statusChip.bg, color: statusChip.color, fontWeight: 600, fontSize: '0.6875rem' }} />
+
+        {/* Day name */}
+        <Typography sx={{
+          fontFamily: '"JetBrains Mono", monospace',
+          fontSize: '0.875rem', fontWeight: 700, minWidth: 36, color: '#18181b',
+        }}>
+          {item.day.slice(0, 3).toUpperCase()}
+        </Typography>
+
+        {/* Session type badge */}
+        <Box sx={{
+          border: `1px solid ${typeColors.border}`,
+          bgcolor: typeColors.bg,
+          px: 0.75, py: 0.25,
+          flexShrink: 0,
+        }}>
+          <Typography sx={{
+            fontFamily: '"JetBrains Mono", monospace',
+            fontSize: '0.625rem', fontWeight: 700, color: typeColors.color,
+            letterSpacing: '1px', textTransform: 'uppercase',
+          }}>
+            {item.sessionType.replace(/_/g, ' ')}
+          </Typography>
+        </Box>
+
+        {/* Status badge */}
+        <Box sx={{
+          border: `1px solid ${statusStyle.border}`,
+          bgcolor: statusStyle.bg,
+          px: 0.75, py: 0.25,
+          flexShrink: 0,
+        }}>
+          <Typography sx={{
+            fontFamily: '"JetBrains Mono", monospace',
+            fontSize: '0.625rem', fontWeight: 700, color: statusStyle.color,
+            letterSpacing: '1px', textTransform: 'uppercase',
+          }}>
+            {status}
+          </Typography>
+        </Box>
       </Box>
 
-      {/* Expanded content */}
-      <Collapse in={expanded}>
-        <Divider />
-        <Box sx={{ px: 2, py: 1.5 }}>
-          {sectionOrder.map((sectionKey) => {
-            const sectionExercises = sections.get(sectionKey);
-            if (!sectionExercises?.length) return null;
-            return (
-              <React.Fragment key={sectionKey}>
-                <SectionHeader section={sectionKey} />
-                {renderExercises(sectionExercises)}
-              </React.Fragment>
-            );
-          })}
+      {/* ── Session meta (always visible) ── */}
+      {!isRest && (
+        <Box sx={{ borderTop: '2px solid #18181b', px: 2.5, py: 1.25 }}>
+          <Typography sx={{
+            fontFamily: '"Libre Franklin", sans-serif',
+            fontSize: '1rem', fontWeight: 900, color: '#18181b', lineHeight: 1.2,
+          }}>
+            {item.focus}
+          </Typography>
+          <Typography sx={{
+            fontFamily: '"JetBrains Mono", monospace',
+            fontSize: '0.6875rem', color: '#71717a', mt: 0.5,
+          }}>
+            {item.estimatedDurationMin ? `EST. ${item.estimatedDurationMin} MIN` : null}
+            {item.estimatedDurationMin && exerciseCount > 0 ? ' · ' : null}
+            {exerciseCount > 0 ? `${exerciseCount} EXERCISE${exerciseCount !== 1 ? 'S' : ''}` : null}
+          </Typography>
+        </Box>
+      )}
 
+      {/* ── Collapsible body ── */}
+      <Collapse in={expanded}>
+        <Box>
+          {/* Exercise blocks */}
+          {hasStructured ? (
+            <Box sx={{ borderTop: '1px solid #e4e4e0' }}>
+              {renderBlocks()}
+            </Box>
+          ) : item.workoutPlan ? (
+            <Box sx={{ borderTop: '1px solid #e4e4e0', px: 2.5, py: 1.5 }}>
+              <Typography sx={{ fontSize: '0.8125rem', color: '#334155', whiteSpace: 'pre-wrap' }}>
+                {item.workoutPlan}
+              </Typography>
+            </Box>
+          ) : null}
+
+          {/* Coach cues */}
           {item.coachCues && (
-            <Box sx={{ mt: 2, p: 1.5, bgcolor: '#f8fafc', borderRadius: '8px' }}>
-              <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', mb: 0.5 }}>Coach Notes</Typography>
-              <Typography sx={{ fontSize: '0.8125rem', color: '#334155' }}>{item.coachCues}</Typography>
+            <Box sx={{
+              borderTop: '1px solid #e4e4e0',
+              px: 2.5, py: 1.25,
+              bgcolor: '#fafaf7',
+            }}>
+              <Typography sx={{
+                fontFamily: '"JetBrains Mono", monospace',
+                fontSize: '0.5625rem', fontWeight: 700, letterSpacing: '2px',
+                color: '#b45309', textTransform: 'uppercase', mb: 0.5,
+              }}>
+                Coach Cues
+              </Typography>
+              <Typography sx={{ fontSize: '0.8125rem', color: '#334155', lineHeight: 1.5 }}>
+                {item.coachCues}
+              </Typography>
+            </Box>
+          )}
+
+          {/* Actions */}
+          {(onStartSession || onSwapDay) && (
+            <Box sx={{
+              borderTop: '2px solid #18181b',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              px: 2, py: 1,
+            }}>
+              {onStartSession && (
+                <Box
+                  component="button"
+                  onClick={onStartSession}
+                  sx={{
+                    fontFamily: '"JetBrains Mono", monospace',
+                    fontSize: '0.6875rem', fontWeight: 700,
+                    letterSpacing: '1.5px', textTransform: 'uppercase',
+                    backgroundColor: '#18181b', color: '#fafaf7',
+                    border: 'none', px: 1.5, py: 0.875,
+                    cursor: 'pointer',
+                    '&:hover': { bgcolor: '#3f3f46' },
+                  }}
+                >
+                  Start Session
+                </Box>
+              )}
+              {onSwapDay && (
+                <Box
+                  component="button"
+                  onClick={onSwapDay}
+                  sx={{
+                    fontFamily: '"JetBrains Mono", monospace',
+                    fontSize: '0.6875rem', fontWeight: 700,
+                    letterSpacing: '1.5px', textTransform: 'uppercase',
+                    backgroundColor: 'transparent', color: '#18181b',
+                    border: '2px solid #18181b', px: 1.5, py: 0.875,
+                    cursor: 'pointer',
+                    '&:hover': { bgcolor: '#f5f5f2' },
+                  }}
+                >
+                  Swap Day
+                </Box>
+              )}
             </Box>
           )}
         </Box>
-
-        {/* Actions */}
-        {(onStartSession || onSwapDay) && (
-          <>
-            <Divider />
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', px: 2, py: 1 }}>
-              {onStartSession && <Button size="small" variant="contained" onClick={onStartSession}>Start Session</Button>}
-              {onSwapDay && <Button size="small" variant="text" onClick={onSwapDay}>Swap Day</Button>}
-            </Box>
-          </>
-        )}
       </Collapse>
     </Box>
   );
