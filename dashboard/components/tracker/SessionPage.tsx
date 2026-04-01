@@ -80,6 +80,28 @@ function groupExercises(
   return blocks;
 }
 
+// ── Section ordering ─────────────────────────────────────────────────────────
+
+const SECTION_ORDER: Record<string, number> = {
+  warm_up: 0,
+  activation: 1,
+  main_work: 2,
+  accessory: 3,
+  finisher: 4,
+  cool_down: 5,
+};
+
+function sectionSortKey(section: string | null | undefined): number {
+  return section ? (SECTION_ORDER[section] ?? 99) : 99;
+}
+
+function blockSortKey(block: ExerciseBlock): { section: number; order: number } {
+  const order = block.kind === 'single'
+    ? block.exercise.order
+    : Math.min(...block.exercises.map(e => e.order));
+  return { section: sectionSortKey(block.section), order };
+}
+
 // ── Helper: build exercise blocks from set/cardio data (edit mode) ────────────
 
 function buildBlocksFromSets(
@@ -99,25 +121,30 @@ function buildBlocksFromSets(
         seenGroups.add(set.supersetGroup);
         const groupSets = sets.filter(s => s.supersetGroup === set.supersetGroup);
         const exerciseNames = [...new Set(groupSets.map(s => s.exerciseName))];
+        // Rest between superset rounds: find first non-zero value from any set in the group
+        const groupRest = groupSets.find(s => s.restSeconds != null && s.restSeconds > 0)?.restSeconds ?? null;
         blocks.push({
           kind: 'superset',
           groupId: set.supersetGroup,
           section: set.section,
-          exercises: exerciseNames.map(name => ({
-            name,
-            canonicalName: name,
-            type: 'strength' as const,
-            order: groupSets.find(s => s.exerciseName === name)!.exerciseOrder,
-            supersetGroup: set.supersetGroup,
-            sets: groupSets.filter(s => s.exerciseName === name).length,
-            reps: null,
-            weightKg: null,
-            durationSeconds: groupSets.find(s => s.exerciseName === name)?.prescribedDurationS ?? null,
-            restSeconds: null,
-            rounds: null,
-            targetIntensity: null,
-            coachCue: null,
-          })),
+          exercises: exerciseNames.map(name => {
+            const firstSet = groupSets.find(s => s.exerciseName === name)!;
+            return {
+              name,
+              canonicalName: name,
+              type: 'strength' as const,
+              order: firstSet.exerciseOrder,
+              supersetGroup: set.supersetGroup,
+              sets: groupSets.filter(s => s.exerciseName === name).length,
+              reps: null,
+              weightKg: null,
+              durationSeconds: firstSet.prescribedDurationS ?? null,
+              restSeconds: groupRest,
+              rounds: null,
+              targetIntensity: null,
+              coachCue: firstSet.coachCue ?? null,
+            };
+          }),
         });
       }
     } else {
@@ -135,10 +162,10 @@ function buildBlocksFromSets(
           reps: null,
           weightKg: null,
           durationSeconds: exSets[0]?.prescribedDurationS ?? null,
-          restSeconds: null,
+          restSeconds: exSets[0]?.restSeconds ?? null,
           rounds: null,
           targetIntensity: null,
-          coachCue: null,
+          coachCue: exSets[0]?.coachCue ?? null,
         },
       });
     }
@@ -158,13 +185,21 @@ function buildBlocksFromSets(
         reps: null,
         weightKg: null,
         durationSeconds: c.prescribedDurationMin ? c.prescribedDurationMin * 60 : null,
-        restSeconds: null,
+        restSeconds: c.restSeconds ?? null,
         rounds: c.prescribedRounds,
         targetIntensity: c.targetIntensity,
-        coachCue: null,
+        coachCue: c.coachCue ?? null,
       },
     });
   }
+
+  // Sort blocks by section order, then by exercise order within each section
+  blocks.sort((a, b) => {
+    const ka = blockSortKey(a);
+    const kb = blockSortKey(b);
+    if (ka.section !== kb.section) return ka.section - kb.section;
+    return ka.order - kb.order;
+  });
 
   return blocks;
 }
@@ -726,9 +761,11 @@ export default function SessionPage() {
       );
     }
 
-    // Superset block — get rest from exercise definition or from first set in the group
-    const firstGroupSet = session.sets.find(s => s.exerciseName === block.exercises[0]?.canonicalName);
-    const restSeconds = block.exercises[0]?.restSeconds ?? firstGroupSet?.restSeconds ?? null;
+    // Superset block — get rest from exercise definition or from any set in the group with a non-zero value
+    const groupSets = session.sets.filter(s => s.supersetGroup === block.groupId);
+    const restSeconds = block.exercises[0]?.restSeconds
+      ?? groupSets.find(s => s.restSeconds != null && s.restSeconds > 0)?.restSeconds
+      ?? null;
     const supersetExercises = block.exercises.map((ex) => ({
       name: ex.name,
       sets: session.sets.filter((s) => s.exerciseName === ex.canonicalName),
