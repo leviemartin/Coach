@@ -53,9 +53,9 @@ export const typography = {
   },
 } as const;
 
-/** Shared card base styles */
+/** @deprecated Legacy card style — borderRadius now 0 via theme. Kept for existing dashboard components. */
 export const cardBase = {
-  borderRadius: '12px',
+  borderRadius: 0,
   padding: '20px',
 } as const;
 

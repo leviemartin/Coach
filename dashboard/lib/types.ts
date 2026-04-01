@@ -551,7 +551,7 @@ export interface NormalizedExercise {
   restSeconds: number | null;
   coachCue: string | null;
   planExerciseId: number | null;
-  laterality: string;
+  laterality: 'bilateral' | 'unilateral_each' | 'alternating';
 }
 
 export interface NormalizedCardio {
