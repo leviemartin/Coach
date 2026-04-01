@@ -71,3 +71,37 @@ export function heroCardSx(accentColor: string) {
 export const metricCardSx = {
   borderRadius: cardBase.borderRadius,
 } as const;
+
+/** Section accent colors for the brutalist design language */
+export const sectionColors: Record<string, string> = {
+  warm_up: '#b45309',
+  activation: '#7c3aed',
+  main_work: '#18181b',
+  accessory: '#2563eb',
+  finisher: '#dc2626',
+  cool_down: '#0d9488',
+} as const;
+
+/** Superset group colors */
+export const supersetColors: Record<string, { border: string; bg: string }> = {
+  A: { border: '#7c3aed', bg: '#7c3aed15' },
+  B: { border: '#7c3aed', bg: '#7c3aed15' },
+  C: { border: '#ea580c', bg: '#ea580c15' },
+  D: { border: '#b45309', bg: '#b4530915' },
+} as const;
+
+/** Brutalist border tokens */
+export const borders = {
+  hard: '#18181b',
+  soft: '#e4e4e0',
+  input: '#d4d4d0',
+  inputFocus: '#18181b',
+} as const;
+
+/** Status badge colors */
+export const statusColors = {
+  published: { border: '#22c55e40', color: '#16a34a', bg: '#22c55e18' },
+  draft: { border: '#f59e0b40', color: '#d97706', bg: '#f59e0b18' },
+  completed: { border: '#3b82f640', color: '#2563eb', bg: '#3b82f618' },
+  skipped: { border: '#a1a1aa40', color: '#71717a', bg: '#a1a1aa18' },
+} as const;

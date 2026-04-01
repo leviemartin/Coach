@@ -489,6 +489,7 @@ export interface SessionSetState {
 export interface SessionCardioState {
   id?: number;                    // DB id, undefined before persistence
   exerciseName: string;
+  exerciseOrder: number;
   cardioType: 'intervals' | 'steady_state';
   prescribedRounds: number | null;
   completedRounds: number;
@@ -535,3 +536,41 @@ export interface RegistryExercise {
   type: ExerciseType;
   tracks_weight: boolean;
 }
+
+export type Section = 'warm_up' | 'activation' | 'main_work' | 'accessory' | 'finisher' | 'cool_down';
+
+export interface NormalizedExercise {
+  name: string;
+  type: ExerciseType;
+  order: number;
+  supersetGroup: number | null;
+  sets: number;
+  prescribedRepsDisplay: string | null;
+  prescribedWeightKg: number | null;
+  prescribedDurationS: number | null;
+  restSeconds: number | null;
+  coachCue: string | null;
+  planExerciseId: number | null;
+  laterality: string;
+}
+
+export interface NormalizedCardio {
+  name: string;
+  type: 'cardio_intervals' | 'cardio_steady' | 'ruck';
+  order: number;
+  cardioType: 'intervals' | 'steady_state';
+  prescribedRounds: number | null;
+  prescribedDurationMin: number | null;
+  targetIntensity: string | null;
+  intervalWorkSeconds: number | null;
+  intervalRestSeconds: number | null;
+  restSeconds: number | null;
+  coachCue: string | null;
+  planExerciseId: number | null;
+  section: Section;
+}
+
+export type ExerciseBlock =
+  | { kind: 'single'; exercise: NormalizedExercise; section: Section }
+  | { kind: 'superset'; groupId: number; exercises: NormalizedExercise[]; section: Section; restSeconds: number | null }
+  | { kind: 'cardio'; exercise: NormalizedCardio; section: Section };

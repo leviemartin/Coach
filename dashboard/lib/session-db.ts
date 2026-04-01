@@ -238,13 +238,15 @@ export function getSessionCardio(sessionId: number, _db?: Database.Database): Se
     SELECT id, exercise_name, cardio_type, prescribed_rounds, completed_rounds,
            prescribed_duration_min, target_intensity, completed, actual_duration_min,
            section, rest_seconds, coach_cue, plan_exercise_id,
-           interval_work_seconds, interval_rest_seconds
+           interval_work_seconds, interval_rest_seconds,
+           COALESCE(exercise_order, id) AS exercise_order
     FROM session_cardio WHERE session_log_id = ? ORDER BY COALESCE(exercise_order, id), id
   `).all(sessionId) as Array<Record<string, unknown>>;
 
   return rows.map((r) => ({
     id: r.id as number,
     exerciseName: r.exercise_name as string,
+    exerciseOrder: r.exercise_order as number,
     cardioType: r.cardio_type as 'intervals' | 'steady_state',
     prescribedRounds: r.prescribed_rounds as number | null,
     completedRounds: r.completed_rounds as number,
