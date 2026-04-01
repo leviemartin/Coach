@@ -110,25 +110,39 @@ export async function GET(request: Request) {
     const sets = getSessionSets(active.id);
     const cardio = getSessionCardio(active.id);
 
-    // Validate: re-parse exercises and check if DB data aligns.
-    // If the session was created with wrong type (e.g., cardio_steady for a strength
-    // workout), the DB will have wrong entries. Detect and recreate.
-    const sessionType = resolveSessionType(targetItem);
-    const exercises = targetItem.workoutPlan
-      ? parseWorkoutPlan(targetItem.workoutPlan, sessionType)
-      : [];
-    const expectedStrength = exercises.filter(
-      (e) => e.type !== 'cardio_intervals' && e.type !== 'cardio_steady',
-    ).length;
-    const expectedCardio = exercises.filter(
-      (e) => e.type === 'cardio_intervals' || e.type === 'cardio_steady',
-    ).length;
+    // Validate: check if DB data aligns with what we'd expect from the plan.
+    // For structured plans, compare against plan_exercises count.
+    // For legacy plans, re-parse workout_plan text.
+    let dbMatchesExpected = false;
 
-    const dbMatchesExpected =
-      (expectedStrength === 0 || sets.length > 0) &&
-      (expectedCardio === 0 || cardio.length > 0) &&
-      // Also catch: if we expect many strength exercises but DB only has cardio
-      !(expectedStrength > 2 && sets.length === 0);
+    if (targetItem.hasStructuredExercises && targetItem.id) {
+      const planExercises = getPlanExercises(targetItem.id);
+      const expectedStrength = planExercises.filter(
+        (e) => e.type !== 'cardio_intervals' && e.type !== 'cardio_steady',
+      ).length;
+      const expectedCardio = planExercises.filter(
+        (e) => e.type === 'cardio_intervals' || e.type === 'cardio_steady',
+      ).length;
+      dbMatchesExpected =
+        (expectedStrength === 0 || sets.length > 0) &&
+        (expectedCardio === 0 || cardio.length > 0) &&
+        !(expectedStrength > 2 && sets.length === 0);
+    } else {
+      const sessionType = resolveSessionType(targetItem);
+      const exercises = targetItem.workoutPlan
+        ? parseWorkoutPlan(targetItem.workoutPlan, sessionType)
+        : [];
+      const expectedStrength = exercises.filter(
+        (e) => e.type !== 'cardio_intervals' && e.type !== 'cardio_steady',
+      ).length;
+      const expectedCardio = exercises.filter(
+        (e) => e.type === 'cardio_intervals' || e.type === 'cardio_steady',
+      ).length;
+      dbMatchesExpected =
+        (expectedStrength === 0 || sets.length > 0) &&
+        (expectedCardio === 0 || cardio.length > 0) &&
+        !(expectedStrength > 2 && sets.length === 0);
+    }
 
     if (dbMatchesExpected) {
       return buildSessionResponse(targetItem, active.id, sets, cardio, true);
@@ -139,7 +153,8 @@ export async function GET(request: Request) {
   }
 
   // --- No plan item found ---
-  if (!targetItem || !targetItem.workoutPlan) {
+  const hasWorkout = targetItem && (targetItem.hasStructuredExercises || targetItem.workoutPlan);
+  if (!targetItem || !hasWorkout) {
     return NextResponse.json(
       { sessionId: null, message: 'No workout planned' },
       { status: 404 },
