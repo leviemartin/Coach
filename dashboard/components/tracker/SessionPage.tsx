@@ -330,8 +330,10 @@ export default function SessionPage() {
   }, []);
 
   // ── Derive exercise blocks ─────────────────────────────────────────────────
+  // For structured plans, exercises[] is empty — build blocks from sets/cardio data instead
+  const useSetBasedBlocks = session && (isEditMode || session.exercises.length === 0);
   const blocks = session
-    ? (isEditMode ? buildBlocksFromSets(session.sets, session.cardio) : groupExercises(session.exercises, session.sets, session.cardio))
+    ? (useSetBasedBlocks ? buildBlocksFromSets(session.sets, session.cardio) : groupExercises(session.exercises, session.sets, session.cardio))
     : [];
 
   // ── Update a strength set (optimistic + POST) ──────────────────────────────
