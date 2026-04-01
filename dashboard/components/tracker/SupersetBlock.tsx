@@ -4,6 +4,7 @@ import { Box, Card, CardContent, Chip, Typography } from '@mui/material';
 import { semanticColors } from '@/lib/design-tokens';
 import type { SessionSetState } from '@/lib/types';
 import StrengthExercise from './StrengthExercise';
+import { formatDuration } from '@/lib/format';
 
 interface SupersetExercise {
   name: string;
@@ -53,7 +54,7 @@ export default function SupersetBlock({ groupName, exercises, restSeconds, onUpd
             <Typography variant="caption" color="text.secondary" fontWeight={600}>
               {rounds > 0 && `${rounds} rounds`}
               {rounds > 0 && restSeconds != null && ' · '}
-              {restSeconds != null && `${restSeconds}s rest between rounds`}
+              {restSeconds != null && `${formatDuration(restSeconds)} rest between rounds`}
             </Typography>
           )}
         </Box>

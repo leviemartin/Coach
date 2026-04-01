@@ -13,6 +13,7 @@ import CardioIntervals from './CardioIntervals';
 import CardioSteady from './CardioSteady';
 import SessionComplete from './SessionComplete';
 import SectionHeader from '@/components/plan/SectionHeader';
+import { formatDuration } from '@/lib/format';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -615,7 +616,7 @@ export default function SessionPage() {
     const allDoneLocal = exSets.length > 0 && exSets.every((s) => s.completed);
     const coachCue = getCoachCue(ex.canonicalName) ?? ex.coachCue;
     const description = ex.durationSeconds
-      ? `${ex.durationSeconds}s`
+      ? formatDuration(ex.durationSeconds)
       : exSets.length > 0
         ? `${exSets.length} set${exSets.length > 1 ? 's' : ''}`
         : null;

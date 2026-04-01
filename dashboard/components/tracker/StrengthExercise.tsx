@@ -6,6 +6,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { semanticColors } from '@/lib/design-tokens';
 import type { SessionSetState } from '@/lib/types';
 import ExerciseRpe from './ExerciseRpe';
+import { formatDuration } from '@/lib/format';
 
 interface StrengthExerciseProps {
   exerciseName: string;
@@ -75,7 +76,7 @@ export default function StrengthExercise({ exerciseName, sets, durationSeconds, 
           {exerciseName}
           {durationSeconds != null && (
             <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1, fontWeight: 400 }}>
-              {durationSeconds}s each
+              {formatDuration(durationSeconds)} each
             </Typography>
           )}
         </Typography>
@@ -119,7 +120,7 @@ export default function StrengthExercise({ exerciseName, sets, durationSeconds, 
                         {set.actualWeightKg != null && `${set.actualWeightKg}kg`}
                         {set.actualWeightKg != null && set.actualReps != null && ' × '}
                         {set.actualReps != null && `${set.actualReps} reps`}
-                        {set.actualWeightKg == null && set.actualReps == null && (set.actualDurationS ?? durationSeconds) != null && `${set.actualDurationS ?? durationSeconds}s ✓`}
+                        {set.actualWeightKg == null && set.actualReps == null && (set.actualDurationS ?? durationSeconds) != null && `${formatDuration(set.actualDurationS ?? durationSeconds!)} ✓`}
                         {set.actualWeightKg == null && set.actualReps == null && (set.actualDurationS ?? durationSeconds) == null && '✓'}
                       </Typography>
                       <CheckCircleIcon sx={{ color: semanticColors.recovery.good, fontSize: 20 }} />
@@ -202,7 +203,7 @@ export default function StrengthExercise({ exerciseName, sets, durationSeconds, 
                       fontWeight: 600,
                     }}
                   >
-                    Rest {effectiveRest}s
+                    Rest {formatDuration(effectiveRest)}
                   </Typography>
                 )}
               </Box>

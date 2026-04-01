@@ -8,6 +8,7 @@ import {
   Typography,
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import { formatDuration } from '@/lib/format';
 
 interface ExerciseListItem {
   name: string;
@@ -24,7 +25,7 @@ interface ExerciseListProps {
 }
 
 function formatSets(total: number, completed: number | null, duration: number | null | undefined): string {
-  const suffix = duration != null ? ` × ${duration}s` : ' sets';
+  const suffix = duration != null ? ` × ${formatDuration(duration)}` : ' sets';
   if (completed != null) return `${completed}/${total}${suffix}`;
   return `${total}${suffix}`;
 }
