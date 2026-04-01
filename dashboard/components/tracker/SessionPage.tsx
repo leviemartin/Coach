@@ -301,7 +301,9 @@ export default function SessionPage() {
         }
         const data: SessionData = await res.json();
         // Guard against responses missing required fields
-        if (!data.sessionId || !data.exercises?.length) {
+        // Structured plans have exercises in sets/cardio, not in the exercises array
+        const hasExerciseData = (data.exercises?.length > 0) || (data.sets?.length > 0) || (data.cardio?.length > 0);
+        if (!data.sessionId || !hasExerciseData) {
           setSession(null);
           setLoading(false);
           return;
