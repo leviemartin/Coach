@@ -216,6 +216,31 @@ export interface PlanItem {
   sequenceGroup?: string | null;
   assignedDate?: string | null;
   status?: 'pending' | 'scheduled' | 'completed' | 'skipped';
+  synthesisNotes?: string | null;
+  estimatedDurationMin?: number | null;
+  hasStructuredExercises?: boolean;
+}
+
+export interface PlanExercise {
+  id?: number;
+  planItemId: number;
+  section: 'warm_up' | 'activation' | 'main_work' | 'accessory' | 'finisher' | 'cool_down';
+  exerciseOrder: number;
+  exerciseName: string;
+  supersetGroup: string | null;
+  type: ExerciseType;
+  sets: number | null;
+  reps: string | null;        // stored as string to support "8-10", "AMRAP"
+  weightKg: number | null;
+  durationSeconds: number | null;
+  restSeconds: number | null;
+  tempo: string | null;
+  laterality: 'bilateral' | 'unilateral_each' | 'alternating';
+  coachCue: string | null;
+  rounds: number | null;
+  targetIntensity: string | null;
+  intervalWorkSeconds: number | null;
+  intervalRestSeconds: number | null;
 }
 
 export interface WeeklyMetrics {
@@ -422,7 +447,7 @@ export interface DashboardPayload {
 
 // --- Workout Tracker Types ---
 
-export type ExerciseType = 'strength' | 'carry' | 'timed' | 'cardio_intervals' | 'cardio_steady' | 'ruck';
+export type ExerciseType = 'strength' | 'carry' | 'timed' | 'cardio_intervals' | 'cardio_steady' | 'ruck' | 'mobility';
 
 export interface ParsedExercise {
   name: string;
