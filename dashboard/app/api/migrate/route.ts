@@ -78,15 +78,24 @@ export async function POST() {
       }, { status: 500 });
     }
 
-    // Step 5: Clear FK references, delete old plan items, persist new structured data
+    // Step 5: Clear ALL FK references, delete old data, persist new structured data
     log.push('Persisting structured plan...');
 
-    // Null out daily_logs FK references to old plan_items before deletion
-    const oldItemIds = existingItems.map(i => i.id as number);
-    for (const oldId of oldItemIds) {
-      db.prepare('UPDATE daily_logs SET workout_plan_item_id = NULL WHERE workout_plan_item_id = ?').run(oldId);
-    }
+    // Null out ALL daily_logs FK references for this week's plan_items
+    db.prepare(`
+      UPDATE daily_logs SET workout_plan_item_id = NULL
+      WHERE workout_plan_item_id IN (SELECT id FROM plan_items WHERE week_number = ?)
+    `).run(weekNumber);
+    log.push('Cleared daily_logs FK references');
 
+    // Delete plan_exercises explicitly (in case ON DELETE CASCADE isn't working)
+    db.prepare(`
+      DELETE FROM plan_exercises
+      WHERE plan_item_id IN (SELECT id FROM plan_items WHERE week_number = ?)
+    `).run(weekNumber);
+    log.push('Cleared existing plan_exercises');
+
+    // Now safe to delete plan_items
     deletePlanItems(weekNumber);
     const { planItemIds } = persistWeekPlan(result.data);
     log.push(`Created ${planItemIds.length} structured plan items`);
