@@ -492,6 +492,9 @@ export function initTablesOn(db: Database.Database) {
 
   // Migration: add notes column to session_exercise_feedback
   try { db.exec(`ALTER TABLE session_exercise_feedback ADD COLUMN notes TEXT`); } catch { /* exists */ }
+
+  // Migration: add plan_exercise_id to session_exercise_feedback for robust linking
+  try { db.exec(`ALTER TABLE session_exercise_feedback ADD COLUMN plan_exercise_id INTEGER`); } catch { /* exists */ }
 }
 
 // Settings

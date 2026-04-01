@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { readWeeklyLogSynthesis } from '@/lib/state';
 import { parseScheduleTable } from '@/lib/parse-schedule';
-import { deletePlanItems, insertPlanItems, getLatestWeekNumber } from '@/lib/db';
+import { deletePlanItems, insertPlanItems, getLatestWeekNumber, getPlanItems } from '@/lib/db';
 
 export async function POST(request: Request) {
   let weekNumber: number;
@@ -17,6 +17,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'No week number found' }, { status: 400 });
   }
 
+  // Check if week already has structured plan data
+  const existingItems = getPlanItems(weekNumber);
+  const hasStructured = existingItems.some(item => item.hasStructuredExercises);
+  if (hasStructured) {
+    return NextResponse.json({
+      success: true,
+      weekNumber,
+      itemCount: existingItems.length,
+      items: existingItems.map((p) => ({ day: p.day, focus: p.focus })),
+      message: 'Week already has structured plan data. No reimport needed.',
+    });
+  }
+
+  // Legacy fallback: re-parse synthesis text
   const synthesis = readWeeklyLogSynthesis(weekNumber);
   if (!synthesis) {
     return NextResponse.json(

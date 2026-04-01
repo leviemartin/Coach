@@ -20,6 +20,14 @@ function deriveSessionType(sessionTypeStr: string): string {
   return 'strength';
 }
 
+function resolveSessionType(planItem: PlanItem): string {
+  // For structured plan items, session_type already contains the correct enum value
+  if (planItem.hasStructuredExercises) {
+    return planItem.sessionType;
+  }
+  return deriveSessionType(planItem.sessionType);
+}
+
 function buildSessionResponse(
   planItem: PlanItem,
   sessionId: number,
@@ -27,7 +35,7 @@ function buildSessionResponse(
   cardio: ReturnType<typeof getSessionCardio>,
   resumed: boolean,
 ) {
-  const sessionType = deriveSessionType(planItem.sessionType);
+  const sessionType = resolveSessionType(planItem);
   const exercises = planItem.workoutPlan
     ? parseWorkoutPlan(planItem.workoutPlan, sessionType)
     : [];
@@ -105,7 +113,7 @@ export async function GET(request: Request) {
     // Validate: re-parse exercises and check if DB data aligns.
     // If the session was created with wrong type (e.g., cardio_steady for a strength
     // workout), the DB will have wrong entries. Detect and recreate.
-    const sessionType = deriveSessionType(targetItem.sessionType);
+    const sessionType = resolveSessionType(targetItem);
     const exercises = targetItem.workoutPlan
       ? parseWorkoutPlan(targetItem.workoutPlan, sessionType)
       : [];
@@ -139,7 +147,7 @@ export async function GET(request: Request) {
   }
 
   // --- Create a new session ---
-  const sessionType = deriveSessionType(targetItem.sessionType);
+  const sessionType = resolveSessionType(targetItem);
 
   // Log to today's date (the day the athlete actually does the workout)
   let sessionId: number;

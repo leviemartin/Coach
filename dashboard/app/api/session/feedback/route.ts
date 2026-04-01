@@ -14,7 +14,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const { sessionLogId, exerciseName, exerciseOrder, rpe, notes } = await request.json();
+  const { sessionLogId, exerciseName, exerciseOrder, rpe, notes, planExerciseId } = await request.json();
 
   if (!sessionLogId || !exerciseName || rpe == null) {
     return NextResponse.json({ error: 'sessionLogId, exerciseName, and rpe required' }, { status: 400 });
@@ -24,6 +24,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'rpe must be between 1 and 5' }, { status: 400 });
   }
 
-  upsertExerciseFeedback(sessionLogId, exerciseName, exerciseOrder ?? 0, rpe, notes ?? null);
+  upsertExerciseFeedback(sessionLogId, exerciseName, exerciseOrder ?? 0, rpe, notes ?? null, planExerciseId ?? null);
   return NextResponse.json({ success: true });
 }
