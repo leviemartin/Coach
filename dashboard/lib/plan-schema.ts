@@ -22,7 +22,7 @@ export const ExerciseItemSchema = z.object({
   weightKg: z.number().nullish(),
   durationSeconds: z.number().int().min(1).nullish(),
   restSeconds: z.number().int().min(0).nullish(),
-  tempo: z.string().regex(/^[\dX]{4}$/).nullish(),
+  tempo: z.string().nullish(),
   laterality: LateralityEnum.default('bilateral'),
   coachCue: z.string().nullish(),
   rounds: z.number().int().min(1).nullish(),
