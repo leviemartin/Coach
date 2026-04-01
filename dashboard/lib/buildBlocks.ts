@@ -110,9 +110,19 @@ export function buildBlocksFromSets(
       return s.restSeconds != null && s.restSeconds > 0 ? s.restSeconds : null;
     }, null) ?? exSets[0].restSeconds;
 
+    // Infer exercise type from set data since session_sets doesn't store type directly
+    let inferredType: ExerciseType = 'strength';
+    if (first.prescribedReps == null && first.prescribedRepsDisplay === 'MAX TIME') {
+      inferredType = 'timed';
+    } else if (first.prescribedReps == null && first.prescribedDurationS != null) {
+      inferredType = 'timed';
+    } else if (first.prescribedReps == null && first.prescribedWeightKg == null && first.prescribedDurationS == null && first.prescribedRepsDisplay == null) {
+      inferredType = 'timed'; // Duration-only exercises like planks with no prescribed value
+    }
+
     const norm: NormalizedExercise = {
       name: first.exerciseName,
-      type: 'strength', // SessionSetState doesn't carry type; default to strength
+      type: inferredType,
       order: first.exerciseOrder,
       supersetGroup: first.supersetGroup,
       sets: exSets.length,
