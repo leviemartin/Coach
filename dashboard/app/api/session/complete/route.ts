@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { completeSession, getSessionSets } from '@/lib/session-db';
+import { CURRENT_CEILINGS_PATH } from '@/lib/constants';
 import fs from 'fs';
-import path from 'path';
 
 export async function POST(request: Request) {
   const { sessionId, notes } = await request.json();
@@ -14,8 +14,7 @@ export async function POST(request: Request) {
 
   let ceilingCheck: string | null = null;
   try {
-    const ceilingsPath = path.join(process.cwd(), '..', 'state', 'current_ceilings.json');
-    const raw = fs.readFileSync(ceilingsPath, 'utf-8');
+    const raw = fs.readFileSync(CURRENT_CEILINGS_PATH, 'utf-8');
     const ceilings = JSON.parse(raw);
     const ceilingEntries: Record<string, number> = ceilings.ceilings || {};
 

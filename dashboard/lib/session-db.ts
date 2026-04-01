@@ -110,8 +110,8 @@ export function createSessionFromPlanExercises(
     INSERT INTO session_sets
     (session_log_id, exercise_name, exercise_order, superset_group, set_number,
      prescribed_weight_kg, prescribed_reps, prescribed_duration_s, completed, is_modified,
-     section, rest_seconds, coach_cue, plan_exercise_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?)
+     section, rest_seconds, coach_cue, plan_exercise_id, prescribed_reps_display)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?)
   `);
 
   const insertCardio = db.prepare(`
@@ -119,8 +119,8 @@ export function createSessionFromPlanExercises(
     (session_log_id, exercise_name, cardio_type, prescribed_rounds,
      completed_rounds, prescribed_duration_min, target_intensity, completed,
      section, rest_seconds, coach_cue, plan_exercise_id,
-     interval_work_seconds, interval_rest_seconds)
-    VALUES (?, ?, ?, ?, 0, ?, ?, 0, ?, ?, ?, ?, ?, ?)
+     interval_work_seconds, interval_rest_seconds, exercise_order)
+    VALUES (?, ?, ?, ?, 0, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   for (const ex of planExercises) {
@@ -133,10 +133,12 @@ export function createSessionFromPlanExercises(
         ex.targetIntensity,
         ex.section, ex.restSeconds, ex.coachCue, ex.id ?? null,
         ex.intervalWorkSeconds, ex.intervalRestSeconds,
+        ex.exerciseOrder,
       );
     } else {
       const numSets = ex.sets ?? 1;
       const repsNum = ex.reps != null ? parseInt(String(ex.reps), 10) : null;
+      const repsDisplay = ex.reps != null ? String(ex.reps) : null;
       const supersetGroupInt = ex.supersetGroup
         ? ex.supersetGroup.charCodeAt(0) - 64 // A=1, B=2, C=3
         : null;
@@ -147,6 +149,7 @@ export function createSessionFromPlanExercises(
           ex.weightKg, isNaN(repsNum ?? NaN) ? null : repsNum,
           ex.durationSeconds,
           ex.section, ex.restSeconds, ex.coachCue, ex.id ?? null,
+          repsDisplay,
         );
       }
     }
@@ -164,13 +167,16 @@ export function updateSet(
   _db?: Database.Database,
 ): void {
   const db = _db ?? getDb();
-  const set = db.prepare('SELECT prescribed_weight_kg, prescribed_reps FROM session_sets WHERE id = ?').get(setId) as {
+  const set = db.prepare('SELECT prescribed_weight_kg, prescribed_reps, prescribed_duration_s FROM session_sets WHERE id = ?').get(setId) as {
     prescribed_weight_kg: number | null;
     prescribed_reps: number | null;
+    prescribed_duration_s: number | null;
   } | undefined;
 
   const isModified = set
-    ? (actualWeightKg !== set.prescribed_weight_kg || actualReps !== set.prescribed_reps)
+    ? (actualWeightKg !== set.prescribed_weight_kg
+      || actualReps !== set.prescribed_reps
+      || (actualDurationS != null && actualDurationS !== set.prescribed_duration_s))
     : false;
 
   db.prepare(`
@@ -197,7 +203,8 @@ export function getSessionSets(sessionId: number, _db?: Database.Database): Sess
   const db = _db ?? getDb();
   const rows = db.prepare(`
     SELECT id, exercise_name, exercise_order, superset_group, set_number,
-           prescribed_weight_kg, prescribed_reps, actual_weight_kg, actual_reps,
+           prescribed_weight_kg, prescribed_reps, prescribed_reps_display,
+           actual_weight_kg, actual_reps,
            completed, is_modified, prescribed_duration_s, actual_duration_s,
            section, rest_seconds, coach_cue, plan_exercise_id
     FROM session_sets WHERE session_log_id = ? ORDER BY exercise_order, set_number
@@ -221,6 +228,7 @@ export function getSessionSets(sessionId: number, _db?: Database.Database): Sess
     restSeconds: r.rest_seconds as number | null,
     coachCue: r.coach_cue as string | null,
     planExerciseId: r.plan_exercise_id as number | null,
+    prescribedRepsDisplay: r.prescribed_reps_display as string | null,
   }));
 }
 
@@ -231,7 +239,7 @@ export function getSessionCardio(sessionId: number, _db?: Database.Database): Se
            prescribed_duration_min, target_intensity, completed, actual_duration_min,
            section, rest_seconds, coach_cue, plan_exercise_id,
            interval_work_seconds, interval_rest_seconds
-    FROM session_cardio WHERE session_log_id = ? ORDER BY id
+    FROM session_cardio WHERE session_log_id = ? ORDER BY COALESCE(exercise_order, id), id
   `).all(sessionId) as Array<Record<string, unknown>>;
 
   return rows.map((r) => ({

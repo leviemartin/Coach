@@ -473,6 +473,7 @@ export interface SessionSetState {
   setNumber: number;
   prescribedWeightKg: number | null;
   prescribedReps: number | null;
+  prescribedRepsDisplay: string | null;  // raw string from plan: "8-10", "AMRAP", etc.
   actualWeightKg: number | null;
   actualReps: number | null;
   completed: boolean;
