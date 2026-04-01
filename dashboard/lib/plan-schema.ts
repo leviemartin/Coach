@@ -55,7 +55,7 @@ export const SessionPlanSchema = z.object({
   sessionType: SessionTypeEnum,
   focus: z.string().min(1),
   estimatedDurationMin: z.number().int().min(0),
-  sections: z.array(ExerciseSectionSchema).min(1),
+  sections: z.array(ExerciseSectionSchema),
   sequenceOrder: z.number().int().min(1),
   sequenceGroup: z.string().nullish(),
   sequenceNotes: z.string().nullish(),
