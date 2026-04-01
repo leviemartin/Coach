@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Box, Button, Card, CardContent, TextField, Typography } from '@mui/material';
-import { semanticColors, typography } from '@/lib/design-tokens';
+import { semanticColors } from '@/lib/design-tokens';
 import type { SessionCardioState } from '@/lib/types';
 
 interface CardioSteadyProps {
@@ -11,15 +11,6 @@ interface CardioSteadyProps {
   coachCue: string | null;
   workoutDescription?: string | null;
   onUpdateCardio: (cardioId: number, completedRounds: number, completed: boolean, actualDurationMin?: number | null) => void;
-}
-
-function formatDuration(minutes: number): string {
-  if (minutes >= 60) {
-    const h = Math.floor(minutes / 60);
-    const m = minutes % 60;
-    return m > 0 ? `${h}h ${m}m` : `${h}h`;
-  }
-  return `${minutes}`;
 }
 
 export default function CardioSteady({
@@ -45,17 +36,33 @@ export default function CardioSteady({
   const durationMin = cardio.prescribedDurationMin;
   const intensity = cardio.targetIntensity;
 
+  // Format minutes for display: ≥60 shows as h/m breakdown, <60 shows as plain number
+  const displayDurationMin = (minutes: number): string => {
+    if (minutes >= 60) {
+      const h = Math.floor(minutes / 60);
+      const m = minutes % 60;
+      return m > 0 ? `${h}h ${m}m` : `${h}h`;
+    }
+    return `${minutes}`;
+  };
+
   return (
     <Card
       variant="outlined"
       sx={{
-        borderRadius: '12px',
-        borderLeft: `4px solid ${semanticColors.cardioSteady}`,
+        borderRadius: 0,
+        borderLeft: '4px solid #18181b',
       }}
     >
       <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
         {/* Exercise name */}
-        <Typography sx={{ ...typography.categoryLabel, color: semanticColors.cardioSteady }}>
+        <Typography sx={{
+          fontFamily: '"Libre Franklin", sans-serif',
+          fontWeight: 800,
+          textTransform: 'uppercase',
+          letterSpacing: '0.5px',
+          color: semanticColors.cardioSteady,
+        }}>
           {exerciseName}
         </Typography>
 
@@ -64,8 +71,8 @@ export default function CardioSteady({
           <Box sx={{ mt: 1, mb: 1.5 }}>
             <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
               {cardio.completed ? (
-                <Typography sx={{ ...typography.heroNumber, lineHeight: 1 }}>
-                  {editDuration || formatDuration(durationMin)}
+                <Typography sx={{ fontSize: '2rem', fontWeight: 800, lineHeight: 1, fontFamily: '"JetBrains Mono", monospace' }}>
+                  {editDuration || displayDurationMin(durationMin)}
                 </Typography>
               ) : (
                 <TextField
@@ -73,12 +80,12 @@ export default function CardioSteady({
                   value={editDuration}
                   onChange={(e) => setEditDuration(e.target.value)}
                   placeholder={durationMin.toString()}
-                  inputProps={{ inputMode: 'decimal', style: { textAlign: 'center', padding: '8px 12px', fontSize: '2rem', fontWeight: 800 } }}
-                  sx={{ width: 100, '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
+                  inputProps={{ inputMode: 'decimal', style: { textAlign: 'center', padding: '8px 12px', fontSize: '2rem', fontWeight: 800, fontFamily: '"JetBrains Mono", monospace' } }}
+                  sx={{ width: 100, '& .MuiOutlinedInput-root': { borderRadius: 0 } }}
                 />
               )}
               {(cardio.completed ? parseFloat(editDuration || '0') : durationMin) < 60 && (
-                <Typography sx={{ fontSize: '1.25rem', fontWeight: 600, color: 'text.secondary' }}>
+                <Typography sx={{ fontSize: '1.25rem', fontWeight: 600, color: 'text.secondary', fontFamily: '"JetBrains Mono", monospace' }}>
                   min
                 </Typography>
               )}
@@ -89,11 +96,11 @@ export default function CardioSteady({
         {/* Intensity / HR zone guidance */}
         {intensity && (
           <Box sx={{
-            mb: 1.5, px: 1.5, py: 0.75, borderRadius: '8px',
+            mb: 1.5, px: 1.5, py: 0.75, borderRadius: 0,
             bgcolor: `${semanticColors.cardioSteady}14`,
             display: 'inline-block',
           }}>
-            <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: semanticColors.cardioSteady }}>
+            <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: semanticColors.cardioSteady, fontFamily: '"JetBrains Mono", monospace' }}>
               {intensity}
             </Typography>
           </Box>
@@ -119,14 +126,13 @@ export default function CardioSteady({
         {/* Coach cue */}
         {coachCue && (
           <Box sx={{
-            mb: 2, p: 1.5, borderRadius: '8px',
-            bgcolor: 'action.hover',
-            borderLeft: `3px solid ${semanticColors.recovery.caution}`,
+            mb: 2, p: 1.5, borderRadius: 0,
+            borderLeft: '2px solid #b4530940',
           }}>
-            <Typography variant="caption" fontWeight={700} color="text.secondary" display="block" mb={0.25}>
+            <Typography variant="caption" fontWeight={700} display="block" mb={0.25} sx={{ color: '#b45309', fontFamily: '"Libre Franklin", sans-serif' }}>
               Coach Cue
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-wrap' }}>
+            <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: '#b45309', fontStyle: 'italic' }}>
               {coachCue}
             </Typography>
           </Box>
@@ -139,18 +145,21 @@ export default function CardioSteady({
           onClick={handleToggle}
           sx={{
             minHeight: 52,
-            borderRadius: '10px',
+            borderRadius: 0,
             fontWeight: 700,
             fontSize: '1rem',
+            fontFamily: '"JetBrains Mono", monospace',
             ...(cardio.completed
               ? {
-                  backgroundColor: semanticColors.recovery.good,
+                  backgroundColor: '#22c55e',
+                  color: '#fafaf7',
                   '&:hover': { backgroundColor: '#16a34a' },
                 }
               : {
-                  borderColor: semanticColors.cardioSteady,
-                  color: semanticColors.cardioSteady,
-                  '&:hover': { bgcolor: `${semanticColors.cardioSteady}14` },
+                  backgroundColor: 'transparent',
+                  borderColor: '#18181b',
+                  color: '#18181b',
+                  '&:hover': { bgcolor: '#18181b14' },
                 }),
           }}
         >
