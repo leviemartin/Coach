@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getPlanItems, getLatestWeekNumber, getSessionLogIdForPlanItem, deletePlanItems, insertPlanItems } from '@/lib/db';
+import { getPlanExercises } from '@/lib/plan-db';
 import { getTrainingWeek } from '@/lib/week';
-import type { PlanItem } from '@/lib/types';
+import type { PlanItem, PlanExercise } from '@/lib/types';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -16,7 +17,14 @@ export async function GET(request: Request) {
     sessionLogId: item.status === 'completed' && item.id ? getSessionLogIdForPlanItem(item.id) : null,
   }));
 
-  return NextResponse.json({ items: enrichedItems, weekNumber });
+  const exercises: Record<number, PlanExercise[]> = {};
+  for (const item of items) {
+    if (item.hasStructuredExercises && item.id) {
+      exercises[item.id] = getPlanExercises(item.id);
+    }
+  }
+
+  return NextResponse.json({ items: enrichedItems, exercises, weekNumber });
 }
 
 export async function PUT(request: Request) {

@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getPlanItems, getPlanItemById } from '@/lib/db';
+import { getPlanExercises } from '@/lib/plan-db';
 import { getTrainingWeek } from '@/lib/week';
 import { parseWorkoutPlan } from '@/lib/workout-parser';
-import { createSession, getActiveSession, getSessionSets, getSessionCardio, updateSet, updateCardioRound, deleteSession, getExerciseFeedback } from '@/lib/session-db';
+import { createSession, createSessionFromPlanExercises, getActiveSession, getSessionSets, getSessionCardio, updateSet, updateCardioRound, deleteSession, getExerciseFeedback } from '@/lib/session-db';
 import type { PlanItem } from '@/lib/types';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -139,15 +140,28 @@ export async function GET(request: Request) {
 
   // --- Create a new session ---
   const sessionType = deriveSessionType(targetItem.sessionType);
-  const exercises = parseWorkoutPlan(targetItem.workoutPlan, sessionType);
 
   // Log to today's date (the day the athlete actually does the workout)
-  const sessionId = createSession(
-    today,
-    sessionType,
-    targetItem.focus || targetItem.sessionType,
-    exercises,
-  );
+  let sessionId: number;
+  if (targetItem.hasStructuredExercises && targetItem.id) {
+    // New path: use structured plan_exercises data directly
+    const planExercises = getPlanExercises(targetItem.id);
+    sessionId = createSessionFromPlanExercises(
+      today,
+      sessionType,
+      targetItem.focus || targetItem.sessionType,
+      planExercises,
+    );
+  } else {
+    // Legacy path: parse workout_plan text
+    const exercises = parseWorkoutPlan(targetItem.workoutPlan, sessionType);
+    sessionId = createSession(
+      today,
+      sessionType,
+      targetItem.focus || targetItem.sessionType,
+      exercises,
+    );
+  }
 
   const sets = getSessionSets(sessionId);
   const cardio = getSessionCardio(sessionId);

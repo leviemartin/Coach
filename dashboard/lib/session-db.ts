@@ -1,7 +1,7 @@
 import { getDb, getDailyLog, upsertDailyLog } from './db';
 import { getTrainingWeek } from './week';
 import { getWeekForDate, getDayName, getDayAbbrev } from './daily-log';
-import type { ParsedExercise, SessionSetState, SessionCardioState, ExerciseFeedback } from './types';
+import type { ParsedExercise, PlanExercise, SessionSetState, SessionCardioState, ExerciseFeedback } from './types';
 import type Database from 'better-sqlite3';
 
 export function createSession(
@@ -69,6 +69,84 @@ export function createSession(
           ex.weightKg,
           ex.reps,
           ex.durationSeconds,
+        );
+      }
+    }
+  }
+
+  return sessionId;
+}
+
+export function createSessionFromPlanExercises(
+  date: string,
+  sessionType: string,
+  sessionTitle: string,
+  planExercises: PlanExercise[],
+  _db?: Database.Database,
+): number {
+  const db = _db ?? getDb();
+  const weekNumber = getTrainingWeek();
+
+  const existing = db.prepare(`
+    SELECT id FROM session_logs WHERE date = ? AND session_title = ?
+  `).get(date, sessionTitle) as { id: number } | undefined;
+
+  let sessionId: number;
+  if (existing) {
+    sessionId = existing.id;
+  } else {
+    const insert = db.prepare(`
+      INSERT INTO session_logs (date, week_number, session_type, session_title, started_at)
+      VALUES (?, ?, ?, ?, ?)
+    `);
+    const result = insert.run(date, weekNumber, sessionType, sessionTitle, new Date().toISOString());
+    sessionId = Number(result.lastInsertRowid);
+  }
+
+  db.prepare('DELETE FROM session_sets WHERE session_log_id = ?').run(sessionId);
+  db.prepare('DELETE FROM session_cardio WHERE session_log_id = ?').run(sessionId);
+
+  const insertSet = db.prepare(`
+    INSERT INTO session_sets
+    (session_log_id, exercise_name, exercise_order, superset_group, set_number,
+     prescribed_weight_kg, prescribed_reps, prescribed_duration_s, completed, is_modified,
+     section, rest_seconds, coach_cue, plan_exercise_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?)
+  `);
+
+  const insertCardio = db.prepare(`
+    INSERT INTO session_cardio
+    (session_log_id, exercise_name, cardio_type, prescribed_rounds,
+     completed_rounds, prescribed_duration_min, target_intensity, completed,
+     section, rest_seconds, coach_cue, plan_exercise_id,
+     interval_work_seconds, interval_rest_seconds)
+    VALUES (?, ?, ?, ?, 0, ?, ?, 0, ?, ?, ?, ?, ?, ?)
+  `);
+
+  for (const ex of planExercises) {
+    if (ex.type === 'cardio_intervals' || ex.type === 'cardio_steady') {
+      insertCardio.run(
+        sessionId, ex.exerciseName,
+        ex.type === 'cardio_intervals' ? 'intervals' : 'steady_state',
+        ex.rounds,
+        ex.durationSeconds ? ex.durationSeconds / 60 : null,
+        ex.targetIntensity,
+        ex.section, ex.restSeconds, ex.coachCue, ex.id ?? null,
+        ex.intervalWorkSeconds, ex.intervalRestSeconds,
+      );
+    } else {
+      const numSets = ex.sets ?? 1;
+      const repsNum = ex.reps != null ? parseInt(String(ex.reps), 10) : null;
+      const supersetGroupInt = ex.supersetGroup
+        ? ex.supersetGroup.charCodeAt(0) - 64 // A=1, B=2, C=3
+        : null;
+
+      for (let s = 1; s <= numSets; s++) {
+        insertSet.run(
+          sessionId, ex.exerciseName, ex.exerciseOrder, supersetGroupInt, s,
+          ex.weightKg, isNaN(repsNum ?? NaN) ? null : repsNum,
+          ex.durationSeconds,
+          ex.section, ex.restSeconds, ex.coachCue, ex.id ?? null,
         );
       }
     }
