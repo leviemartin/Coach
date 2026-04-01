@@ -15,20 +15,20 @@ export const SectionEnum = z.enum([
 export const ExerciseItemSchema = z.object({
   order: z.number().int().min(0),
   exerciseName: z.string().min(1),
-  supersetGroup: z.string().max(2).nullable(),
+  supersetGroup: z.string().max(2).nullish(),
   type: ExerciseTypeEnum,
-  sets: z.number().int().min(1).nullable(),
-  reps: z.union([z.number().int().min(1), z.string().min(1), z.null()]),
-  weightKg: z.number().nullable(),
-  durationSeconds: z.number().int().min(1).nullable(),
-  restSeconds: z.number().int().min(0).nullable(),
-  tempo: z.string().regex(/^[\dX]{4}$/).nullable(),
-  laterality: LateralityEnum,
-  coachCue: z.string().nullable(),
-  rounds: z.number().int().min(1).nullable(),
-  targetIntensity: z.string().nullable(),
-  intervalWorkSeconds: z.number().int().min(1).nullable(),
-  intervalRestSeconds: z.number().int().min(1).nullable(),
+  sets: z.number().int().min(1).nullish(),
+  reps: z.union([z.number().int().min(1), z.string().min(1), z.null(), z.undefined()]),
+  weightKg: z.number().nullish(),
+  durationSeconds: z.number().int().min(1).nullish(),
+  restSeconds: z.number().int().min(0).nullish(),
+  tempo: z.string().regex(/^[\dX]{4}$/).nullish(),
+  laterality: LateralityEnum.default('bilateral'),
+  coachCue: z.string().nullish(),
+  rounds: z.number().int().min(1).nullish(),
+  targetIntensity: z.string().nullish(),
+  intervalWorkSeconds: z.number().int().min(1).nullish(),
+  intervalRestSeconds: z.number().int().min(1).nullish(),
 });
 
 // ── Section ──────────────────────────────────────────────────────────────
@@ -57,17 +57,17 @@ export const SessionPlanSchema = z.object({
   estimatedDurationMin: z.number().int().min(0),
   sections: z.array(ExerciseSectionSchema).min(1),
   sequenceOrder: z.number().int().min(1),
-  sequenceGroup: z.string().nullable(),
-  sequenceNotes: z.string().nullable(),
-  coachNotes: z.string().nullable(),
+  sequenceGroup: z.string().nullish(),
+  sequenceNotes: z.string().nullish(),
+  coachNotes: z.string().nullish(),
 });
 
 // ── Sequencing ───────────────────────────────────────────────────────────
 
 export const SequencingRuleSchema = z.object({
   sessionOrder: z.number().int().min(1),
-  group: z.string().nullable(),
-  note: z.string().nullable(),
+  group: z.string().nullish(),
+  note: z.string().nullish(),
 });
 
 // ── Week Plan ────────────────────────────────────────────────────────────
