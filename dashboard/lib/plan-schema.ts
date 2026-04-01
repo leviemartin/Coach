@@ -94,7 +94,7 @@ export const WEEK_PLAN_TOOL = {
   name: 'save_week_plan',
   description: 'Save the structured weekly training plan. Call this tool with the complete plan for the week.',
   input_schema: {
-    type: 'object' as const,
+    type: 'object',
     required: ['weekNumber', 'phaseId', 'sessions', 'sequencingRules', 'synthesisNotes'],
     properties: {
       weekNumber: { type: 'integer', description: 'Training week number from program epoch' },
@@ -168,4 +168,4 @@ export const WEEK_PLAN_TOOL = {
       synthesisNotes: { type: 'string' },
     },
   },
-} as const;
+};

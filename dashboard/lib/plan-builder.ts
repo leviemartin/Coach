@@ -86,7 +86,8 @@ export async function runPlanBuilder(
   const response = await client.messages.create({
     model: OPUS_MODEL,
     max_tokens: 8000,
-    tools: [WEEK_PLAN_TOOL],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    tools: [WEEK_PLAN_TOOL as any],
     tool_choice: { type: 'tool', name: 'save_week_plan' },
     messages: [{ role: 'user', content: prompt }],
   });
