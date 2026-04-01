@@ -15,14 +15,15 @@ import {
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import TrainingPlanTable from '@/components/TrainingPlanTable';
+import PlanDayCard from '@/components/plan/PlanDayCard';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
 import PageBreadcrumb from '@/components/PageBreadcrumb';
-import type { PlanItem } from '@/lib/types';
+import type { PlanItem, PlanExercise } from '@/lib/types';
 import { PROGRAM_EPOCH } from '@/lib/week';
 
 export default function PlanPage() {
   const [items, setItems] = useState<PlanItem[]>([]);
+  const [exercises, setExercises] = useState<Record<number, PlanExercise[]>>({});
   const [loading, setLoading] = useState(true);
   const [synthesis, setSynthesis] = useState('');
   const [weekNumber, setWeekNumber] = useState<number | null>(null);
@@ -36,6 +37,7 @@ export default function PlanPage() {
       if (res.ok) {
         const data = await res.json();
         setItems(data.items || []);
+        setExercises(data.exercises || {});
         setWeekNumber(data.weekNumber ?? null);
       }
     } catch (err: unknown) {
@@ -148,7 +150,18 @@ export default function PlanPage() {
           No training plan for the current week. Run a check-in to generate one.
         </Alert>
       ) : (
-        <TrainingPlanTable items={items} />
+        items.map((item) => (
+          <PlanDayCard
+            key={item.id ?? item.dayOrder}
+            item={item}
+            exercises={exercises[item.id!] ?? []}
+            status={item.status === 'completed' ? 'completed' : item.status === 'skipped' ? 'skipped' : 'published'}
+            defaultExpanded={false}
+            onStartSession={() => {
+              window.location.href = `/session?planItemId=${item.id}`;
+            }}
+          />
+        ))
       )}
     </Box>
   );

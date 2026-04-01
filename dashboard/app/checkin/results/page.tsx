@@ -8,7 +8,7 @@ import PlanPreview from '@/components/checkin/PlanPreview';
 import HeadCoachDialogue from '@/components/checkin/HeadCoachDialogue';
 import { parseScheduleTable } from '@/lib/parse-schedule';
 import { getPlanWeekNumber } from '@/lib/week';
-import type { PlanItem } from '@/lib/types';
+import type { PlanItem, PlanExercise } from '@/lib/types';
 interface SpecialistOutput {
   agentId: string;
   label: string;
@@ -23,6 +23,7 @@ export default function CheckInResultsPage() {
   const [phase, setPhase] = useState<string>('init');
   const [error, setError] = useState<string | null>(null);
   const [planItems, setPlanItems] = useState<PlanItem[]>([]);
+  const [planExercises, setPlanExercises] = useState<Record<number, PlanExercise[]>>({});
   const [showDialogue, setShowDialogue] = useState(false);
   const [planModifiedByDialogue, setPlanModifiedByDialogue] = useState(false);
   const [currentSynthesis, setCurrentSynthesis] = useState('');
@@ -125,12 +126,20 @@ export default function CheckInResultsPage() {
                   } catch {
                     // ignore storage errors
                   }
-                  // Parse plan items from synthesis output
+                  // Fetch structured plan (items + exercises) from DB
                   try {
-                    const weekNum = getPlanWeekNumber();
-                    const parsed = parseScheduleTable(data.fullText || '', weekNum);
-                    if (parsed.length > 0) {
-                      setPlanItems(parsed);
+                    const planRes = await fetch('/api/plan');
+                    if (planRes.ok) {
+                      const planData = await planRes.json();
+                      if (planData.items?.length > 0) {
+                        setPlanItems(planData.items);
+                        setPlanExercises(planData.exercises || {});
+                      } else {
+                        // Fallback: parse from synthesis text
+                        const weekNum = getPlanWeekNumber();
+                        const parsed = parseScheduleTable(data.fullText || '', weekNum);
+                        if (parsed.length > 0) setPlanItems(parsed);
+                      }
                     }
                   } catch {
                     // Non-fatal — plan preview simply won't render
@@ -203,6 +212,7 @@ export default function CheckInResultsPage() {
       {phase === 'done' && planItems.length > 0 && (
         <PlanPreview
           items={planItems}
+          exercises={planExercises}
           weekNumber={getPlanWeekNumber()}
           onLockIn={handleLockIn}
           onDiscuss={handleDiscuss}

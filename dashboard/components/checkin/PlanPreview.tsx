@@ -4,8 +4,8 @@ import React from 'react';
 import { Box, Typography, Chip, Button, Divider } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
-import type { PlanItem } from '@/lib/types';
-import PlanDayCard from './PlanDayCard';
+import type { PlanItem, PlanExercise } from '@/lib/types';
+import PlanDayCard from '@/components/plan/PlanDayCard';
 
 // ─── Week date range helper ───────────────────────────────────────────────────
 
@@ -32,12 +32,13 @@ function weekDateRange(items: PlanItem[]): string {
 
 interface PlanPreviewProps {
   items: PlanItem[];
+  exercises: Record<number, PlanExercise[]>;
   weekNumber: number;
   onLockIn: () => void;
   onDiscuss?: () => void;
 }
 
-export default function PlanPreview({ items, weekNumber, onLockIn, onDiscuss }: PlanPreviewProps) {
+export default function PlanPreview({ items, exercises, weekNumber, onLockIn, onDiscuss }: PlanPreviewProps) {
   if (!items || items.length === 0) return null;
 
   const dateRange = weekDateRange(items);
@@ -91,11 +92,13 @@ export default function PlanPreview({ items, weekNumber, onLockIn, onDiscuss }: 
 
       {/* Day cards */}
       <Box>
-        {items.map((item, idx) => (
+        {items.map((item) => (
           <PlanDayCard
-            key={item.id ?? idx}
+            key={item.id ?? item.dayOrder}
             item={item}
-            defaultExpanded={idx === 0}
+            exercises={exercises[item.id!] ?? []}
+            status="draft"
+            defaultExpanded={true}
           />
         ))}
       </Box>
