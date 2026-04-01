@@ -198,7 +198,8 @@ export function getSessionSets(sessionId: number, _db?: Database.Database): Sess
   const rows = db.prepare(`
     SELECT id, exercise_name, exercise_order, superset_group, set_number,
            prescribed_weight_kg, prescribed_reps, actual_weight_kg, actual_reps,
-           completed, is_modified, prescribed_duration_s, actual_duration_s
+           completed, is_modified, prescribed_duration_s, actual_duration_s,
+           section, rest_seconds, coach_cue, plan_exercise_id
     FROM session_sets WHERE session_log_id = ? ORDER BY exercise_order, set_number
   `).all(sessionId) as Array<Record<string, unknown>>;
 
@@ -216,6 +217,10 @@ export function getSessionSets(sessionId: number, _db?: Database.Database): Sess
     isModified: (r.is_modified as number) === 1,
     prescribedDurationS: r.prescribed_duration_s as number | null,
     actualDurationS: r.actual_duration_s as number | null,
+    section: r.section as string | null,
+    restSeconds: r.rest_seconds as number | null,
+    coachCue: r.coach_cue as string | null,
+    planExerciseId: r.plan_exercise_id as number | null,
   }));
 }
 
@@ -223,7 +228,9 @@ export function getSessionCardio(sessionId: number, _db?: Database.Database): Se
   const db = _db ?? getDb();
   const rows = db.prepare(`
     SELECT id, exercise_name, cardio_type, prescribed_rounds, completed_rounds,
-           prescribed_duration_min, target_intensity, completed, actual_duration_min
+           prescribed_duration_min, target_intensity, completed, actual_duration_min,
+           section, rest_seconds, coach_cue, plan_exercise_id,
+           interval_work_seconds, interval_rest_seconds
     FROM session_cardio WHERE session_log_id = ? ORDER BY id
   `).all(sessionId) as Array<Record<string, unknown>>;
 
@@ -237,6 +244,12 @@ export function getSessionCardio(sessionId: number, _db?: Database.Database): Se
     targetIntensity: r.target_intensity as string | null,
     completed: (r.completed as number) === 1,
     actualDurationMin: r.actual_duration_min as number | null,
+    section: r.section as string | null,
+    restSeconds: r.rest_seconds as number | null,
+    coachCue: r.coach_cue as string | null,
+    planExerciseId: r.plan_exercise_id as number | null,
+    intervalWorkSeconds: r.interval_work_seconds as number | null,
+    intervalRestSeconds: r.interval_rest_seconds as number | null,
   }));
 }
 

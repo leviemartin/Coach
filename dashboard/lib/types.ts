@@ -479,6 +479,10 @@ export interface SessionSetState {
   isModified: boolean;
   prescribedDurationS: number | null;
   actualDurationS: number | null;
+  section: string | null;
+  restSeconds: number | null;
+  coachCue: string | null;
+  planExerciseId: number | null;
 }
 
 export interface SessionCardioState {
@@ -491,6 +495,12 @@ export interface SessionCardioState {
   targetIntensity: string | null;
   completed: boolean;
   actualDurationMin: number | null;
+  section: string | null;
+  restSeconds: number | null;
+  coachCue: string | null;
+  planExerciseId: number | null;
+  intervalWorkSeconds: number | null;
+  intervalRestSeconds: number | null;
 }
 
 export interface ExerciseFeedback {
