@@ -37,11 +37,24 @@ export default function CardioIntervals({ exerciseName, cardio, coachCue, onUpda
         </Typography>
 
         {/* Protocol specs */}
-        <Box sx={{ mt: 1, mb: 2, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+        <Box sx={{ mt: 1, mb: 2, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
           {totalRounds > 0 && (
             <Box>
               <Typography sx={{ fontSize: '1.5rem', fontWeight: 800, lineHeight: 1 }}>{totalRounds}</Typography>
               <Typography variant="caption" color="text.secondary">rounds</Typography>
+            </Box>
+          )}
+          {(cardio.intervalWorkSeconds != null || cardio.intervalRestSeconds != null) && (
+            <Box sx={{
+              px: 1.5, py: 0.5, borderRadius: '8px',
+              bgcolor: `${semanticColors.cardioIntervals}14`,
+              alignSelf: 'center',
+            }}>
+              <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: semanticColors.cardioIntervals }}>
+                {cardio.intervalWorkSeconds != null ? `${cardio.intervalWorkSeconds}s work` : ''}
+                {cardio.intervalWorkSeconds != null && cardio.intervalRestSeconds != null ? ' / ' : ''}
+                {cardio.intervalRestSeconds != null ? `${cardio.intervalRestSeconds}s rest` : ''}
+              </Typography>
             </Box>
           )}
           {cardio.targetIntensity && (

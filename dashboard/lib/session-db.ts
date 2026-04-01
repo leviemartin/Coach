@@ -466,20 +466,21 @@ export function upsertExerciseFeedback(
   exerciseName: string,
   exerciseOrder: number,
   rpe: number,
+  notes?: string | null,
   _db?: Database.Database,
 ): void {
   const db = _db ?? getDb();
   db.prepare(`
-    INSERT INTO session_exercise_feedback (session_log_id, exercise_name, exercise_order, rpe, created_at)
-    VALUES (?, ?, ?, ?, datetime('now'))
-    ON CONFLICT(session_log_id, exercise_name) DO UPDATE SET rpe = ?, created_at = datetime('now')
-  `).run(sessionLogId, exerciseName, exerciseOrder, rpe, rpe);
+    INSERT INTO session_exercise_feedback (session_log_id, exercise_name, exercise_order, rpe, notes, created_at)
+    VALUES (?, ?, ?, ?, ?, datetime('now'))
+    ON CONFLICT(session_log_id, exercise_name) DO UPDATE SET rpe = ?, notes = ?, created_at = datetime('now')
+  `).run(sessionLogId, exerciseName, exerciseOrder, rpe, notes ?? null, rpe, notes ?? null);
 }
 
 export function getExerciseFeedback(sessionLogId: number, _db?: Database.Database): ExerciseFeedback[] {
   const db = _db ?? getDb();
   const rows = db.prepare(`
-    SELECT id, session_log_id, exercise_name, exercise_order, rpe, created_at
+    SELECT id, session_log_id, exercise_name, exercise_order, rpe, notes, created_at
     FROM session_exercise_feedback WHERE session_log_id = ? ORDER BY exercise_order
   `).all(sessionLogId) as Array<Record<string, unknown>>;
 
@@ -489,6 +490,7 @@ export function getExerciseFeedback(sessionLogId: number, _db?: Database.Databas
     exerciseName: r.exercise_name as string,
     exerciseOrder: r.exercise_order as number,
     rpe: r.rpe as number,
+    notes: r.notes as string | null,
     createdAt: r.created_at as string,
   }));
 }

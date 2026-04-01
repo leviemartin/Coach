@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Typography } from '@mui/material';
+import { Box, TextField, Typography } from '@mui/material';
 import { semanticColors } from '@/lib/design-tokens';
 
 const RPE_OPTIONS = [
@@ -14,9 +14,11 @@ const RPE_OPTIONS = [
 interface ExerciseRpeProps {
   selectedRpe: number | null;
   onSelect: (rpe: number) => void;
+  notes?: string;
+  onNotesChange?: (notes: string) => void;
 }
 
-export default function ExerciseRpe({ selectedRpe, onSelect }: ExerciseRpeProps) {
+export default function ExerciseRpe({ selectedRpe, onSelect, notes, onNotesChange }: ExerciseRpeProps) {
   return (
     <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
       <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" mb={0.75}>
@@ -65,6 +67,23 @@ export default function ExerciseRpe({ selectedRpe, onSelect }: ExerciseRpeProps)
           );
         })}
       </Box>
+      {onNotesChange && (
+        <TextField
+          size="small"
+          placeholder="Notes on this exercise (optional)"
+          value={notes ?? ''}
+          onChange={(e) => onNotesChange(e.target.value)}
+          fullWidth
+          multiline
+          minRows={1}
+          maxRows={3}
+          sx={{
+            mt: 1,
+            '& .MuiOutlinedInput-root': { borderRadius: '8px', fontSize: '0.8125rem' },
+            '& .MuiOutlinedInput-input': { py: 0.75, px: 1 },
+          }}
+        />
+      )}
     </Box>
   );
 }

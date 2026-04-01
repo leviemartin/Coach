@@ -11,13 +11,16 @@ interface StrengthExerciseProps {
   exerciseName: string;
   sets: SessionSetState[];
   durationSeconds?: number | null;
+  restSeconds?: number | null;
   isCurrent?: boolean;
   onUpdateSet: (setId: number, actualWeightKg: number | null, actualReps: number | null, completed: boolean, actualDurationS?: number | null) => void;
   rpe?: number | null;
   onRpeSelect?: (exerciseName: string, rpe: number) => void;
+  notes?: string;
+  onNotesChange?: (exerciseName: string, notes: string) => void;
 }
 
-export default function StrengthExercise({ exerciseName, sets, durationSeconds, isCurrent = false, onUpdateSet, rpe, onRpeSelect }: StrengthExerciseProps) {
+export default function StrengthExercise({ exerciseName, sets, durationSeconds, restSeconds, isCurrent = false, onUpdateSet, rpe, onRpeSelect, notes, onNotesChange }: StrengthExerciseProps) {
   // Track local edits before completing
   const [edits, setEdits] = useState<Record<number, { weight: string; reps: string; duration: string }>>({});
 
@@ -77,111 +80,130 @@ export default function StrengthExercise({ exerciseName, sets, durationSeconds, 
           )}
         </Typography>
         <Stack spacing={1}>
-          {sets.map((set) => {
+          {sets.map((set, idx) => {
             const edit = getEdit(set);
             const modified = isModified(set);
             const hasWeight = set.prescribedWeightKg != null;
             const hasReps = set.prescribedReps != null;
+            const effectiveRest = restSeconds ?? set.restSeconds;
+            const nextSet = idx < sets.length - 1 ? sets[idx + 1] : null;
+            const showRestHint = set.completed && nextSet && !nextSet.completed && effectiveRest != null;
 
             return (
-              <Box
-                key={set.id}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1,
-                  p: 1.5,
-                  borderRadius: '8px',
-                  backgroundColor: set.completed
-                    ? `${semanticColors.recovery.good}12`
-                    : modified
-                      ? `${semanticColors.recovery.caution}12`
-                      : 'action.hover',
-                }}
-              >
-                <Typography variant="body2" color="text.secondary" sx={{ minWidth: 44, fontWeight: 600 }}>
-                  Set {set.setNumber}
-                </Typography>
+              <Box key={set.id}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    p: 1.5,
+                    borderRadius: '8px',
+                    backgroundColor: set.completed
+                      ? `${semanticColors.recovery.good}12`
+                      : modified
+                        ? `${semanticColors.recovery.caution}12`
+                        : 'action.hover',
+                  }}
+                >
+                  <Typography variant="body2" color="text.secondary" sx={{ minWidth: 44, fontWeight: 600 }}>
+                    Set {set.setNumber}
+                  </Typography>
 
-                {set.completed ? (
-                  // Completed: tappable to undo
-                  <Box
-                    onClick={() => handleComplete(set)}
-                    sx={{ display: 'flex', alignItems: 'center', flex: 1, cursor: 'pointer' }}
-                  >
-                    <Typography variant="body2" sx={{ flex: 1, fontWeight: 600 }}>
-                      {set.actualWeightKg != null && `${set.actualWeightKg}kg`}
-                      {set.actualWeightKg != null && set.actualReps != null && ' × '}
-                      {set.actualReps != null && `${set.actualReps} reps`}
-                      {set.actualWeightKg == null && set.actualReps == null && (set.actualDurationS ?? durationSeconds) != null && `${set.actualDurationS ?? durationSeconds}s ✓`}
-                      {set.actualWeightKg == null && set.actualReps == null && (set.actualDurationS ?? durationSeconds) == null && '✓'}
-                    </Typography>
-                    <CheckCircleIcon sx={{ color: semanticColors.recovery.good, fontSize: 20 }} />
-                  </Box>
-                ) : (
-                  // Active: editable fields — only show what's relevant
-                  <>
-                    {!hasWeight && !hasReps && (durationSeconds != null || set.prescribedDurationS != null) && (
-                      <>
-                        <TextField
-                          size="small"
-                          value={edit.duration}
-                          onChange={(e) => updateEdit(set.id!, 'duration', e.target.value)}
-                          placeholder={set.prescribedDurationS?.toString() ?? durationSeconds?.toString() ?? '—'}
-                          inputProps={{ inputMode: 'numeric', style: { textAlign: 'center', padding: '6px 8px' } }}
-                          sx={{ width: 56, '& .MuiOutlinedInput-root': { borderRadius: '6px' } }}
-                        />
-                        <Typography variant="caption" color="text.secondary">s</Typography>
-                      </>
-                    )}
-                    {hasWeight && (
-                      <>
-                        <TextField
-                          size="small"
-                          value={edit.weight}
-                          onChange={(e) => updateEdit(set.id!, 'weight', e.target.value)}
-                          placeholder={set.prescribedWeightKg?.toString() ?? '—'}
-                          inputProps={{ inputMode: 'decimal', style: { textAlign: 'center', padding: '6px 8px' } }}
-                          sx={{ width: 64, '& .MuiOutlinedInput-root': { borderRadius: '6px' } }}
-                        />
-                        <Typography variant="caption" color="text.secondary">kg</Typography>
-                      </>
-                    )}
-                    {hasWeight && hasReps && (
-                      <Typography variant="body2" color="text.secondary">×</Typography>
-                    )}
-                    {hasReps && (
-                      <>
-                        <TextField
-                          size="small"
-                          value={edit.reps}
-                          onChange={(e) => updateEdit(set.id!, 'reps', e.target.value)}
-                          placeholder={set.prescribedReps?.toString() ?? '—'}
-                          inputProps={{ inputMode: 'numeric', style: { textAlign: 'center', padding: '6px 8px' } }}
-                          sx={{ width: 52, '& .MuiOutlinedInput-root': { borderRadius: '6px' } }}
-                        />
-                        <Typography variant="caption" color="text.secondary">reps</Typography>
-                      </>
-                    )}
-                    <Button
-                      size="small"
-                      variant="contained"
+                  {set.completed ? (
+                    // Completed: tappable to undo
+                    <Box
                       onClick={() => handleComplete(set)}
-                      sx={{
-                        ml: 'auto',
-                        minWidth: 0,
-                        px: 1.5,
-                        borderRadius: '8px',
-                        fontWeight: 700,
-                        fontSize: '0.75rem',
-                        textTransform: 'none',
-                        backgroundColor: semanticColors.body,
-                        '&:hover': { backgroundColor: '#2563eb' },
-                      }}
+                      sx={{ display: 'flex', alignItems: 'center', flex: 1, cursor: 'pointer' }}
                     >
-                      {hasWeight || hasReps ? `Complete Set ${set.setNumber} ✓` : 'Done ✓'}
-                    </Button>
-                  </>
+                      <Typography variant="body2" sx={{ flex: 1, fontWeight: 600 }}>
+                        {set.actualWeightKg != null && `${set.actualWeightKg}kg`}
+                        {set.actualWeightKg != null && set.actualReps != null && ' × '}
+                        {set.actualReps != null && `${set.actualReps} reps`}
+                        {set.actualWeightKg == null && set.actualReps == null && (set.actualDurationS ?? durationSeconds) != null && `${set.actualDurationS ?? durationSeconds}s ✓`}
+                        {set.actualWeightKg == null && set.actualReps == null && (set.actualDurationS ?? durationSeconds) == null && '✓'}
+                      </Typography>
+                      <CheckCircleIcon sx={{ color: semanticColors.recovery.good, fontSize: 20 }} />
+                    </Box>
+                  ) : (
+                    // Active: editable fields — only show what's relevant
+                    <>
+                      {!hasWeight && !hasReps && (durationSeconds != null || set.prescribedDurationS != null) && (
+                        <>
+                          <TextField
+                            size="small"
+                            value={edit.duration}
+                            onChange={(e) => updateEdit(set.id!, 'duration', e.target.value)}
+                            placeholder={set.prescribedDurationS?.toString() ?? durationSeconds?.toString() ?? '—'}
+                            inputProps={{ inputMode: 'numeric', style: { textAlign: 'center', padding: '6px 8px' } }}
+                            sx={{ width: 56, '& .MuiOutlinedInput-root': { borderRadius: '6px' } }}
+                          />
+                          <Typography variant="caption" color="text.secondary">s</Typography>
+                        </>
+                      )}
+                      {hasWeight && (
+                        <>
+                          <TextField
+                            size="small"
+                            value={edit.weight}
+                            onChange={(e) => updateEdit(set.id!, 'weight', e.target.value)}
+                            placeholder={set.prescribedWeightKg?.toString() ?? '—'}
+                            inputProps={{ inputMode: 'decimal', style: { textAlign: 'center', padding: '6px 8px' } }}
+                            sx={{ width: 64, '& .MuiOutlinedInput-root': { borderRadius: '6px' } }}
+                          />
+                          <Typography variant="caption" color="text.secondary">kg</Typography>
+                        </>
+                      )}
+                      {hasWeight && hasReps && (
+                        <Typography variant="body2" color="text.secondary">×</Typography>
+                      )}
+                      {hasReps && (
+                        <>
+                          <TextField
+                            size="small"
+                            value={edit.reps}
+                            onChange={(e) => updateEdit(set.id!, 'reps', e.target.value)}
+                            placeholder={set.prescribedReps?.toString() ?? '—'}
+                            inputProps={{ inputMode: 'numeric', style: { textAlign: 'center', padding: '6px 8px' } }}
+                            sx={{ width: 52, '& .MuiOutlinedInput-root': { borderRadius: '6px' } }}
+                          />
+                          <Typography variant="caption" color="text.secondary">reps</Typography>
+                        </>
+                      )}
+                      <Button
+                        size="small"
+                        variant="contained"
+                        onClick={() => handleComplete(set)}
+                        sx={{
+                          ml: 'auto',
+                          minWidth: 0,
+                          px: 1.5,
+                          borderRadius: '8px',
+                          fontWeight: 700,
+                          fontSize: '0.75rem',
+                          textTransform: 'none',
+                          backgroundColor: semanticColors.body,
+                          '&:hover': { backgroundColor: '#2563eb' },
+                        }}
+                      >
+                        {hasWeight || hasReps ? `Complete Set ${set.setNumber} ✓` : 'Done ✓'}
+                      </Button>
+                    </>
+                  )}
+                </Box>
+                {showRestHint && (
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      display: 'block',
+                      textAlign: 'center',
+                      mt: 0.5,
+                      color: 'text.disabled',
+                      fontSize: '0.6875rem',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Rest {effectiveRest}s
+                  </Typography>
                 )}
               </Box>
             );
@@ -192,6 +214,8 @@ export default function StrengthExercise({ exerciseName, sets, durationSeconds, 
           <ExerciseRpe
             selectedRpe={rpe ?? null}
             onSelect={(value) => onRpeSelect(exerciseName, value)}
+            notes={notes}
+            onNotesChange={onNotesChange ? (value) => onNotesChange(exerciseName, value) : undefined}
           />
         )}
       </CardContent>

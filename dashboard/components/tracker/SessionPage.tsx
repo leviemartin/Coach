@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Box, Typography, CircularProgress, Alert, Container, IconButton, Tooltip, TextField, Button } from '@mui/material';
+import { Box, Typography, CircularProgress, Alert, Container, IconButton, Tooltip, TextField, Button, Card, CardContent } from '@mui/material';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import type { SessionSetState, SessionCardioState, ParsedExercise } from '@/lib/types';
 import SessionProgress from './SessionProgress';
@@ -12,6 +12,7 @@ import SupersetBlock from './SupersetBlock';
 import CardioIntervals from './CardioIntervals';
 import CardioSteady from './CardioSteady';
 import SessionComplete from './SessionComplete';
+import SectionHeader from '@/components/plan/SectionHeader';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -22,7 +23,7 @@ interface SessionData {
   exercises: ParsedExercise[];
   sets: SessionSetState[];
   cardio: SessionCardioState[];
-  feedback: Array<{ exerciseName: string; exerciseOrder: number; rpe: number }>;
+  feedback: Array<{ exerciseName: string; exerciseOrder: number; rpe: number; notes?: string | null }>;
   coachCues: string | null;
   workoutDescription: string | null;
   resumed: boolean;
@@ -36,23 +37,42 @@ interface CompleteResult {
 
 // An exercise block is either a single exercise or a superset group
 type ExerciseBlock =
-  | { kind: 'single'; exercise: ParsedExercise }
-  | { kind: 'superset'; groupId: number; exercises: ParsedExercise[] };
+  | { kind: 'single'; exercise: ParsedExercise; section?: string | null }
+  | { kind: 'superset'; groupId: number; exercises: ParsedExercise[]; section?: string | null };
 
 // ── Helper: group exercises into blocks ───────────────────────────────────────
 
-function groupExercises(exercises: ParsedExercise[]): ExerciseBlock[] {
+function groupExercises(
+  exercises: ParsedExercise[],
+  sets: SessionSetState[] = [],
+  cardio: SessionCardioState[] = [],
+): ExerciseBlock[] {
   const blocks: ExerciseBlock[] = [];
   const seenGroups = new Set<number>();
 
+  // Build a section lookup from sets and cardio data
+  const sectionMap = new Map<string, string | null>();
+  for (const s of sets) {
+    if (s.section && !sectionMap.has(s.exerciseName)) {
+      sectionMap.set(s.exerciseName, s.section);
+    }
+  }
+  for (const c of cardio) {
+    if (c.section && !sectionMap.has(c.exerciseName)) {
+      sectionMap.set(c.exerciseName, c.section);
+    }
+  }
+
   for (const ex of exercises) {
+    const section = sectionMap.get(ex.canonicalName) ?? sectionMap.get(ex.name) ?? null;
     if (ex.supersetGroup == null) {
-      blocks.push({ kind: 'single', exercise: ex });
+      blocks.push({ kind: 'single', exercise: ex, section });
     } else {
       if (!seenGroups.has(ex.supersetGroup)) {
         seenGroups.add(ex.supersetGroup);
         const grouped = exercises.filter((e) => e.supersetGroup === ex.supersetGroup);
-        blocks.push({ kind: 'superset', groupId: ex.supersetGroup, exercises: grouped });
+        const groupSection = sectionMap.get(grouped[0]?.canonicalName) ?? sectionMap.get(grouped[0]?.name) ?? null;
+        blocks.push({ kind: 'superset', groupId: ex.supersetGroup, exercises: grouped, section: groupSection });
       }
     }
   }
@@ -82,6 +102,7 @@ function buildBlocksFromSets(
         blocks.push({
           kind: 'superset',
           groupId: set.supersetGroup,
+          section: set.section,
           exercises: exerciseNames.map(name => ({
             name,
             canonicalName: name,
@@ -103,6 +124,7 @@ function buildBlocksFromSets(
       const exSets = sets.filter(s => s.exerciseName === set.exerciseName);
       blocks.push({
         kind: 'single',
+        section: set.section,
         exercise: {
           name: set.exerciseName,
           canonicalName: set.exerciseName,
@@ -125,6 +147,7 @@ function buildBlocksFromSets(
   for (const c of cardio) {
     blocks.push({
       kind: 'single',
+      section: c.section,
       exercise: {
         name: c.exerciseName,
         canonicalName: c.exerciseName,
@@ -213,6 +236,7 @@ export default function SessionPage() {
   const [isComplete, setIsComplete] = useState(false);
   const [completeResult, setCompleteResult] = useState<CompleteResult | null>(null);
   const [rpeFeedback, setRpeFeedback] = useState<Record<string, number>>({});
+  const [exerciseNotes, setExerciseNotes] = useState<Record<string, string>>({});
   const [editNotes, setEditNotes] = useState('');
 
   // ── Load session on mount ──────────────────────────────────────────────────
@@ -245,10 +269,13 @@ export default function SessionPage() {
           });
           if (data.feedback?.length) {
             const rpeMap: Record<string, number> = {};
+            const notesMap: Record<string, string> = {};
             for (const f of data.feedback) {
               rpeMap[f.exerciseName] = f.rpe;
+              if (f.notes) notesMap[f.exerciseName] = f.notes;
             }
             setRpeFeedback(rpeMap);
+            setExerciseNotes(notesMap);
           }
           setEditNotes(data.notes || '');
           setLoading(false);
@@ -280,13 +307,16 @@ export default function SessionPage() {
           return;
         }
         setSession(data);
-        // Restore saved RPE feedback
+        // Restore saved RPE feedback and notes
         if (data.feedback?.length) {
           const rpeMap: Record<string, number> = {};
+          const notesMap: Record<string, string> = {};
           for (const f of data.feedback) {
             rpeMap[f.exerciseName] = f.rpe;
+            if (f.notes) notesMap[f.exerciseName] = f.notes;
           }
           setRpeFeedback(rpeMap);
+          setExerciseNotes(notesMap);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load session');
@@ -299,7 +329,7 @@ export default function SessionPage() {
 
   // ── Derive exercise blocks ─────────────────────────────────────────────────
   const blocks = session
-    ? (isEditMode ? buildBlocksFromSets(session.sets, session.cardio) : groupExercises(session.exercises))
+    ? (isEditMode ? buildBlocksFromSets(session.sets, session.cardio) : groupExercises(session.exercises, session.sets, session.cardio))
     : [];
 
   // ── Update a strength set (optimistic + POST) ──────────────────────────────
@@ -357,13 +387,45 @@ export default function SessionPage() {
             exerciseName,
             exerciseOrder: exercise?.order ?? 0,
             rpe,
+            notes: exerciseNotes[exerciseName] ?? null,
           }),
         });
       } catch (err) {
         console.error('Failed to save RPE:', err);
       }
     },
-    [session],
+    [session, exerciseNotes],
+  );
+
+  // ── Update exercise notes (debounced save with RPE) ────────────────────────
+  const handleExerciseNotesChange = useCallback(
+    async (exerciseName: string, notes: string) => {
+      if (!session?.sessionId) return;
+
+      setExerciseNotes((prev) => ({ ...prev, [exerciseName]: notes }));
+
+      const rpe = rpeFeedback[exerciseName];
+      if (rpe == null) return; // Only persist notes if RPE has been set
+
+      const exercise = session.exercises.find((e) => e.canonicalName === exerciseName || e.name === exerciseName);
+
+      try {
+        await fetch('/api/session/feedback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionLogId: session.sessionId,
+            exerciseName,
+            exerciseOrder: exercise?.order ?? 0,
+            rpe,
+            notes,
+          }),
+        });
+      } catch (err) {
+        console.error('Failed to save exercise notes:', err);
+      }
+    },
+    [session, rpeFeedback],
   );
 
   // ── Update a cardio block (optimistic + POST) ──────────────────────────────
@@ -495,10 +557,112 @@ export default function SessionPage() {
     }
   }, [session, blocks, currentBlockIndex]);
 
+  // ── Helper: get coach cue for the first set of an exercise ─────────────────
+  function getCoachCue(exerciseName: string): string | null {
+    if (!session) return null;
+    const set = session.sets.find(s => s.exerciseName === exerciseName);
+    if (set?.coachCue) return set.coachCue;
+    const cardio = session.cardio.find(c => c.exerciseName === exerciseName);
+    return cardio?.coachCue ?? null;
+  }
+
   // ── Render helpers ─────────────────────────────────────────────────────────
+
+  function renderSimplifiedBlock(block: ExerciseBlock) {
+    if (!session) return null;
+    if (block.kind !== 'single') return null;
+    const ex = block.exercise;
+    const exSets = session.sets.filter((s) => s.exerciseName === ex.canonicalName);
+    const allDoneLocal = exSets.length > 0 && exSets.every((s) => s.completed);
+    const coachCue = getCoachCue(ex.canonicalName) ?? ex.coachCue;
+    const description = ex.durationSeconds
+      ? `${ex.durationSeconds}s`
+      : exSets.length > 0
+        ? `${exSets.length} set${exSets.length > 1 ? 's' : ''}`
+        : null;
+
+    const handleDoneToggle = () => {
+      for (const s of exSets) {
+        handleUpdateSet(s.id!, s.actualWeightKg ?? s.prescribedWeightKg, s.actualReps ?? s.prescribedReps, !allDoneLocal);
+      }
+    };
+
+    return (
+      <Card
+        key={ex.name}
+        variant="outlined"
+        sx={{
+          borderRadius: '12px',
+          borderColor: allDoneLocal ? semanticColors.body : 'divider',
+          opacity: allDoneLocal ? 0.7 : 1,
+        }}
+      >
+        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 }, display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box
+            onClick={handleDoneToggle}
+            sx={{
+              width: 36,
+              height: 36,
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              flexShrink: 0,
+              border: '2px solid',
+              borderColor: allDoneLocal ? semanticColors.body : 'divider',
+              backgroundColor: allDoneLocal ? `${semanticColors.body}18` : 'transparent',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            {allDoneLocal && (
+              <Typography sx={{ fontSize: '1rem', fontWeight: 700, color: semanticColors.body }}>
+                ✓
+              </Typography>
+            )}
+          </Box>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography
+              variant="body2"
+              fontWeight={600}
+              sx={{ textDecoration: allDoneLocal ? 'line-through' : 'none' }}
+            >
+              {ex.name}
+            </Typography>
+            {description && (
+              <Typography variant="caption" color="text.secondary">
+                {description}
+              </Typography>
+            )}
+            {coachCue && (
+              <Typography variant="caption" sx={{ display: 'block', fontStyle: 'italic', color: 'text.secondary', mt: 0.25 }}>
+                {coachCue}
+              </Typography>
+            )}
+          </Box>
+        </CardContent>
+      </Card>
+    );
+  }
 
   function renderBlock(block: ExerciseBlock) {
     if (!session) return null;
+
+    // Simplified view for warm-up and cool-down exercises
+    const section = block.section;
+    if (section === 'warm_up' || section === 'cool_down') {
+      if (block.kind === 'single') {
+        return renderSimplifiedBlock(block);
+      }
+      // Supersets in warm-up/cool-down: render each exercise simplified
+      return (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {block.exercises.map((ex) =>
+            renderSimplifiedBlock({ kind: 'single', exercise: ex, section })
+          )}
+        </Box>
+      );
+    }
 
     if (block.kind === 'single') {
       const ex = block.exercise;
@@ -511,7 +675,7 @@ export default function SessionPage() {
             key={ex.name}
             exerciseName={ex.name}
             cardio={cardioState}
-            coachCue={ex.coachCue}
+            coachCue={cardioState.coachCue ?? ex.coachCue}
             onUpdateCardio={handleUpdateCardio}
           />
         );
@@ -525,7 +689,7 @@ export default function SessionPage() {
             key={ex.name}
             exerciseName={ex.name}
             cardio={cardioState}
-            coachCue={ex.coachCue}
+            coachCue={cardioState.coachCue ?? ex.coachCue}
             workoutDescription={blocks.length === 1 ? session.workoutDescription : null}
             onUpdateCardio={handleUpdateCardio}
           />
@@ -534,27 +698,39 @@ export default function SessionPage() {
 
       // Strength / bodyweight
       const exSets = session.sets.filter((s) => s.exerciseName === ex.canonicalName);
+      const coachCue = getCoachCue(ex.canonicalName) ?? ex.coachCue;
       return (
-        <StrengthExercise
-          key={ex.name}
-          exerciseName={ex.name}
-          sets={exSets}
-          durationSeconds={ex.durationSeconds}
-          isCurrent
-          onUpdateSet={handleUpdateSet}
-          rpe={rpeFeedback[ex.canonicalName] ?? null}
-          onRpeSelect={(name, rpe) => handleRpeSelect(ex.canonicalName, rpe)}
-        />
+        <Box key={ex.name}>
+          <StrengthExercise
+            exerciseName={ex.name}
+            sets={exSets}
+            durationSeconds={ex.durationSeconds}
+            restSeconds={exSets[0]?.restSeconds ?? null}
+            isCurrent
+            onUpdateSet={handleUpdateSet}
+            rpe={rpeFeedback[ex.canonicalName] ?? null}
+            onRpeSelect={(name, rpe) => handleRpeSelect(ex.canonicalName, rpe)}
+            notes={exerciseNotes[ex.canonicalName] ?? ''}
+            onNotesChange={(name, notes) => handleExerciseNotesChange(ex.canonicalName, notes)}
+          />
+          {coachCue && (
+            <Typography variant="body2" sx={{ mt: 0.5, ml: 1, fontStyle: 'italic', color: 'text.secondary', fontSize: '0.8125rem' }}>
+              {coachCue}
+            </Typography>
+          )}
+        </Box>
       );
     }
 
-    // Superset block
-    const restSeconds = block.exercises[0]?.restSeconds ?? null;
+    // Superset block — get rest from exercise definition or from first set in the group
+    const firstGroupSet = session.sets.find(s => s.exerciseName === block.exercises[0]?.canonicalName);
+    const restSeconds = block.exercises[0]?.restSeconds ?? firstGroupSet?.restSeconds ?? null;
     const supersetExercises = block.exercises.map((ex) => ({
       name: ex.name,
       sets: session.sets.filter((s) => s.exerciseName === ex.canonicalName),
       durationSeconds: ex.durationSeconds,
       rpe: rpeFeedback[ex.canonicalName] ?? null,
+      notes: exerciseNotes[ex.canonicalName] ?? '',
     }));
 
     return (
@@ -567,6 +743,10 @@ export default function SessionPage() {
         onRpeSelect={(name, rpe) => {
           const ex = block.exercises.find((e) => e.name === name);
           handleRpeSelect(ex?.canonicalName ?? name, rpe);
+        }}
+        onNotesChange={(name, notes) => {
+          const ex = block.exercises.find((e) => e.name === name);
+          handleExerciseNotesChange(ex?.canonicalName ?? name, notes);
         }}
       />
     );
@@ -698,13 +878,27 @@ export default function SessionPage() {
       {/* Exercise blocks */}
       {isEditMode ? (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 3 }}>
-          {blocks.map((block, idx) => (
-            <Box key={idx}>{renderBlock(block)}</Box>
-          ))}
+          {blocks.map((block, idx) => {
+            const prevSection = idx > 0 ? blocks[idx - 1].section : null;
+            const showHeader = block.section && block.section !== prevSection;
+            return (
+              <Box key={idx}>
+                {showHeader && <SectionHeader section={block.section!} />}
+                {renderBlock(block)}
+              </Box>
+            );
+          })}
         </Box>
       ) : (
         <Box sx={{ mb: 3 }}>
-          {blocks[currentBlockIndex] && renderBlock(blocks[currentBlockIndex])}
+          {blocks[currentBlockIndex] && (
+            <>
+              {blocks[currentBlockIndex].section && (
+                <SectionHeader section={blocks[currentBlockIndex].section!} />
+              )}
+              {renderBlock(blocks[currentBlockIndex])}
+            </>
+          )}
         </Box>
       )}
 

@@ -10,6 +10,7 @@ interface SupersetExercise {
   sets: SessionSetState[];
   durationSeconds?: number | null;
   rpe?: number | null;
+  notes?: string;
 }
 
 interface SupersetBlockProps {
@@ -18,9 +19,10 @@ interface SupersetBlockProps {
   restSeconds: number | null;
   onUpdateSet: (setId: number, actualWeightKg: number | null, actualReps: number | null, completed: boolean, actualDurationS?: number | null) => void;
   onRpeSelect?: (exerciseName: string, rpe: number) => void;
+  onNotesChange?: (exerciseName: string, notes: string) => void;
 }
 
-export default function SupersetBlock({ groupName, exercises, restSeconds, onUpdateSet, onRpeSelect }: SupersetBlockProps) {
+export default function SupersetBlock({ groupName, exercises, restSeconds, onUpdateSet, onRpeSelect, onNotesChange }: SupersetBlockProps) {
   // Derive round count from first exercise's set count
   const rounds = exercises[0]?.sets.length ?? 0;
 
@@ -75,6 +77,8 @@ export default function SupersetBlock({ groupName, exercises, restSeconds, onUpd
               onUpdateSet={onUpdateSet}
               rpe={ex.rpe}
               onRpeSelect={onRpeSelect}
+              notes={ex.notes}
+              onNotesChange={onNotesChange}
             />
           </Box>
         ))}

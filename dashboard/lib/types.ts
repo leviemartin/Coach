@@ -509,6 +509,7 @@ export interface ExerciseFeedback {
   exerciseName: string;
   exerciseOrder: number;
   rpe: number; // 1-5
+  notes?: string | null;
   createdAt?: string;
 }
 

@@ -489,6 +489,9 @@ export function initTablesOn(db: Database.Database) {
   try { db.exec(`ALTER TABLE session_cardio ADD COLUMN plan_exercise_id INTEGER REFERENCES plan_exercises(id)`); } catch { /* exists */ }
   try { db.exec(`ALTER TABLE session_cardio ADD COLUMN interval_work_seconds INTEGER`); } catch { /* exists */ }
   try { db.exec(`ALTER TABLE session_cardio ADD COLUMN interval_rest_seconds INTEGER`); } catch { /* exists */ }
+
+  // Migration: add notes column to session_exercise_feedback
+  try { db.exec(`ALTER TABLE session_exercise_feedback ADD COLUMN notes TEXT`); } catch { /* exists */ }
 }
 
 // Settings
