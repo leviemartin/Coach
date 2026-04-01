@@ -1,13 +1,15 @@
 import { NextResponse } from 'next/server';
 import { readGarminData, extractExtendedSummary } from '@/lib/garmin';
-import { buildSharedContext, runSpecialistsSequentially, streamHeadCoachSynthesis } from '@/lib/agents';
+import { buildSharedContext, runSpecialistsSequentially } from '@/lib/agents';
+import { streamSynthesis } from '@/lib/synthesis-coach';
+import { runPlanBuilder } from '@/lib/plan-builder';
+import { validatePlanRules, formatViolationsForFix } from '@/lib/plan-validator';
+import { persistWeekPlan } from '@/lib/plan-db';
 import { writeWeeklyLog, appendTrainingHistory, readCeilings, writeCeilings } from '@/lib/state';
 import { getPlanWeekNumber, getTrainingWeek } from '@/lib/week';
-import { parseScheduleTable } from '@/lib/parse-schedule';
 import { computeWeekSummary } from '@/lib/daily-log';
 import {
   upsertWeeklyMetrics,
-  insertPlanItems,
   insertCeilingHistory,
   deletePlanItems,
   getDailyLogsByWeek,
@@ -16,6 +18,7 @@ import { getWeekSessionIds, getExerciseFeedback } from '@/lib/session-db';
 import type { CheckInFormData, CheckinSubjectiveData, WeeklyMetrics, CeilingEntry } from '@/lib/types';
 import { isNewFormatPayload } from '@/lib/types';
 import type { TriageAnswer } from '@/lib/triage-agent';
+import type { PlanViolation } from '@/lib/plan-validator';
 
 // New-format payload from the stepper flow
 interface CheckinPayload {
@@ -102,31 +105,55 @@ export async function POST(request: Request) {
           });
         }
 
-        send('status', { phase: 'synthesis', message: 'Head Coach synthesizing...' });
+        // Phase 2: Stream Synthesis Coach (trimmed decision log)
+        send('status', { phase: 'synthesis', message: 'Synthesis Coach analyzing...' });
 
-        // Phase 2: Stream Head Coach synthesis
         let fullSynthesis = '';
-        for await (const chunk of streamHeadCoachSynthesis(
-          specialistOutputs,
-          sharedContext,
-          model
-        )) {
+        for await (const chunk of streamSynthesis(specialistOutputs, sharedContext)) {
           fullSynthesis += chunk;
           send('synthesis_chunk', { text: chunk });
         }
 
-        // Phase 3: Persist everything
+        // Phase 3: Plan Builder + Validator
+        send('status', { phase: 'plan_builder', message: 'Building structured plan...' });
+
+        const weekNumber = getPlanWeekNumber();
+        const MAX_RETRIES = 2;
+        let planResult = await runPlanBuilder(fullSynthesis, sharedContext, weekNumber);
+        let violations: PlanViolation[] = [];
+
+        if (planResult.success) {
+          violations = validatePlanRules(planResult.data);
+          let retries = 0;
+          while (violations.length > 0 && retries < MAX_RETRIES) {
+            retries++;
+            send('status', { phase: 'plan_builder', message: `Fixing ${violations.length} violations (attempt ${retries + 1})...` });
+            const fixInstructions = formatViolationsForFix(violations);
+            planResult = await runPlanBuilder(fullSynthesis, sharedContext, weekNumber, fixInstructions);
+            if (planResult.success) {
+              violations = validatePlanRules(planResult.data);
+            } else {
+              break;
+            }
+          }
+        }
+
+        if (!planResult.success) {
+          send('error', { message: `Plan Builder failed: ${planResult.error}` });
+          // Still continue to save synthesis and metrics
+        }
+
+        // Phase 4: Persist everything
         send('status', { phase: 'saving', message: 'Saving state...' });
 
         const today = new Date().toISOString().split('T')[0];
         const ceilings = readCeilings();
-        const weekNumber = getPlanWeekNumber();
 
         // Build weekly log content
         const specialistSection = specialistOutputs
           .map((o) => `## ${o.label}\n${o.error ? `**ERROR:** ${o.error}` : o.content}`)
           .join('\n\n');
-        const logContent = `# Week ${weekNumber} Check-In — ${today}\n\n${specialistSection}\n\n## Head Coach Synthesis\n${fullSynthesis}`;
+        const logContent = `# Week ${weekNumber} Check-In — ${today}\n\n${specialistSection}\n\n## Synthesis Coach\n${fullSynthesis}`;
 
         // Write weekly log file
         writeWeeklyLog(weekNumber, today, logContent);
@@ -134,11 +161,12 @@ export async function POST(request: Request) {
         // Append to training history
         appendTrainingHistory(`## Week ${weekNumber} — ${today}\n\nCheck-in completed. See weekly_logs/ for full details.`);
 
-        // Parse schedule table and save plan items
-        const planItems = parseScheduleTable(fullSynthesis, weekNumber);
-        if (planItems.length > 0) {
-          deletePlanItems(weekNumber); // Clear any existing items for this week
-          insertPlanItems(planItems);
+        // Persist structured plan
+        let planItemCount = 0;
+        if (planResult.success) {
+          deletePlanItems(weekNumber);
+          const { planItemIds } = persistWeekPlan(planResult.data);
+          planItemCount = planItemIds.length;
         }
 
         // Extract Garmin summary for metrics
@@ -286,7 +314,8 @@ export async function POST(request: Request) {
         send('synthesis_complete', {
           fullText: fullSynthesis,
           weekNumber,
-          planItemCount: planItems.length,
+          planItemCount,
+          violations: violations.map(v => ({ rule: v.rule, session: v.sessionFocus, message: v.message })),
         });
         send('status', { phase: 'done', message: 'Check-in complete' });
       } catch (error) {

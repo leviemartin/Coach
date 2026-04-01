@@ -1,5 +1,6 @@
 import { getDb } from './db';
 import type { PlanExercise } from './types';
+import type { WeekPlan } from './plan-schema';
 import type Database from 'better-sqlite3';
 
 export function insertPlanExercises(exercises: PlanExercise[], _db?: Database.Database): void {
@@ -58,4 +59,62 @@ export function getPlanExercises(planItemId: number, _db?: Database.Database): P
 export function deletePlanExercises(planItemId: number, _db?: Database.Database): void {
   const db = _db ?? getDb();
   db.prepare('DELETE FROM plan_exercises WHERE plan_item_id = ?').run(planItemId);
+}
+
+export function persistWeekPlan(plan: WeekPlan, _db?: Database.Database): { planItemIds: number[] } {
+  const db = _db ?? getDb();
+  const planItemIds: number[] = [];
+
+  const insertItem = db.prepare(`
+    INSERT INTO plan_items (
+      week_number, day_order, day, session_type, focus,
+      starting_weight, workout_plan, coach_cues, athlete_notes,
+      completed, sequence_notes, sequence_group, assigned_date, status,
+      synthesis_notes, estimated_duration_min, has_structured_exercises
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', 0, ?, ?, NULL, 'pending', ?, ?, 1)
+  `);
+
+  const insertExercise = db.prepare(`
+    INSERT INTO plan_exercises (
+      plan_item_id, section, exercise_order, exercise_name, superset_group,
+      type, sets, reps, weight_kg, duration_seconds, rest_seconds, tempo,
+      laterality, coach_cue, rounds, target_intensity,
+      interval_work_seconds, interval_rest_seconds
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  db.transaction(() => {
+    for (const session of plan.sessions) {
+      const result = insertItem.run(
+        plan.weekNumber,
+        session.dayOrder,
+        session.suggestedDay,
+        session.sessionType,
+        session.focus,
+        '',  // starting_weight deprecated
+        null, // workout_plan deprecated for structured plans
+        session.coachNotes || '',
+        session.sequenceNotes || null,
+        session.sequenceGroup || null,
+        plan.synthesisNotes,
+        session.estimatedDurationMin,
+      );
+      const planItemId = Number(result.lastInsertRowid);
+      planItemIds.push(planItemId);
+
+      for (const section of session.sections) {
+        for (const ex of section.exercises) {
+          insertExercise.run(
+            planItemId, section.section, ex.order, ex.exerciseName, ex.supersetGroup,
+            ex.type, ex.sets, ex.reps != null ? String(ex.reps) : null, ex.weightKg,
+            ex.durationSeconds, ex.restSeconds, ex.tempo,
+            ex.laterality, ex.coachCue, ex.rounds, ex.targetIntensity,
+            ex.intervalWorkSeconds, ex.intervalRestSeconds,
+          );
+        }
+      }
+    }
+  })();
+
+  return { planItemIds };
 }
