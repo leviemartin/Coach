@@ -44,10 +44,10 @@ export default function SessionSummaryCard({ sessionSummary, sessionLogId }: Ses
   return (
     <Box
       sx={{
-        bgcolor: '#fff',
-        border: '1px solid #e2e8f0',
+        bgcolor: 'background.paper',
+        border: '2px solid',
+        borderColor: 'divider',
         borderLeft: '4px solid #22c55e',
-        borderRadius: '12px',
         overflow: 'hidden',
       }}
     >
@@ -65,10 +65,9 @@ export default function SessionSummaryCard({ sessionSummary, sessionLogId }: Ses
           label={sessionTitle}
           size="small"
           sx={{
-            bgcolor: '#dcfce7',
-            color: '#15803d',
-            fontWeight: 700,
-            fontSize: '0.75rem',
+            bgcolor: '#22c55e18',
+            color: '#16a34a',
+            border: '1px solid #22c55e40',
           }}
         />
 
@@ -105,16 +104,16 @@ export default function SessionSummaryCard({ sessionSummary, sessionLogId }: Ses
             sx={{
               px: 2,
               pb: 1.5,
-              borderTop: '1px solid #f1f5f9',
+              borderTop: '1px solid', borderColor: 'divider',
             }}
           >
             <Typography
               variant="caption"
               component="div"
               sx={{
-                fontFamily: 'monospace',
+                fontFamily: '"JetBrains Mono", monospace',
                 fontSize: '0.75rem',
-                color: '#374151',
+                color: 'text.primary',
                 whiteSpace: 'pre-wrap',
                 lineHeight: 1.7,
                 pt: 1,
@@ -126,14 +125,14 @@ export default function SessionSummaryCard({ sessionSummary, sessionLogId }: Ses
         </Collapse>
       )}
       {sessionLogId && (
-        <Box sx={{ px: 2, pb: 1.5, borderTop: '1px solid #f1f5f9' }}>
+        <Box sx={{ px: 2, pb: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
           <Typography
             component="a"
             href={`/session?edit=true&sessionLogId=${sessionLogId}`}
             sx={{
               fontSize: '0.75rem',
               fontWeight: 600,
-              color: '#3b82f6',
+              color: 'text.primary',
               textDecoration: 'none',
               '&:hover': { textDecoration: 'underline' },
             }}

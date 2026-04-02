@@ -13,13 +13,13 @@ interface ChipStyle { bg: string; text: string }
 
 function getSessionChipStyle(sessionType: string): ChipStyle {
   const t = sessionType.toLowerCase();
-  if (t.includes('strength')) return { bg: '#dbeafe', text: '#1d4ed8' };
-  if (t.includes('cardio') || t.includes('endurance')) return { bg: '#ffedd5', text: '#c2410c' };
-  if (t.includes('recovery') || t.includes('active')) return { bg: '#ede9fe', text: '#6d28d9' };
-  if (t.includes('ruck') || t.includes('hike')) return { bg: '#ccfbf1', text: '#0f766e' };
-  if (t.includes('rest') || t.includes('family') || t.includes('off')) return { bg: '#f1f5f9', text: '#475569' };
-  if (t.includes('mobility')) return { bg: '#fef3c7', text: '#b45309' };
-  return { bg: '#f1f5f9', text: '#0f172a' };
+  if (t.includes('strength')) return { bg: '#3b82f618', text: '#2563eb' };
+  if (t.includes('cardio') || t.includes('endurance')) return { bg: '#f9731618', text: '#ea580c' };
+  if (t.includes('recovery') || t.includes('active')) return { bg: '#8b5cf618', text: '#7c3aed' };
+  if (t.includes('ruck') || t.includes('hike')) return { bg: '#14b8a618', text: '#0d9488' };
+  if (t.includes('rest') || t.includes('family') || t.includes('off')) return { bg: '#a1a1aa18', text: '#71717a' };
+  if (t.includes('mobility')) return { bg: '#f59e0b18', text: '#d97706' };
+  return { bg: '#a1a1aa18', text: '#18181b' };
 }
 
 function isRestOrFamily(item: PlanItem): boolean {
@@ -54,7 +54,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
       fontWeight: 600,
       textTransform: 'uppercase',
       letterSpacing: '1px',
-      color: '#64748b',
+      color: '#71717a',
       mt: 2,
       mb: 0.5,
     }}>
@@ -86,26 +86,26 @@ export default function PlanDayCard({ item, defaultExpanded = false }: PlanDayCa
     return (
       <Box sx={{
         bgcolor: '#ffffff',
-        border: '1px solid #e2e8f0',
-        borderRadius: '12px',
+        border: '1px solid #e4e4e0',
+        borderRadius: 0,
         px: 2.5,
         py: 2,
         mb: 1.5,
         opacity: 0.6,
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Typography sx={{ fontSize: '0.9375rem', fontWeight: 700, minWidth: 40, color: '#0f172a' }}>
+          <Typography sx={{ fontSize: '0.9375rem', fontWeight: 700, minWidth: 40, color: '#18181b' }}>
             {shortDay}
           </Typography>
           {dateStr && (
-            <Typography sx={{ fontSize: '0.75rem', color: '#64748b' }}>
+            <Typography sx={{ fontSize: '0.75rem', color: '#71717a' }}>
               {dateStr}
             </Typography>
           )}
           <Chip
             label={item.sessionType || item.focus || 'Rest'}
             size="small"
-            sx={{ bgcolor: '#f1f5f9', color: '#475569', fontWeight: 600, fontSize: '0.75rem' }}
+            sx={{ bgcolor: '#a1a1aa18', color: '#71717a', fontWeight: 600, fontSize: '0.75rem', borderRadius: 0 }}
           />
         </Box>
       </Box>
@@ -116,12 +116,12 @@ export default function PlanDayCard({ item, defaultExpanded = false }: PlanDayCa
     <Box sx={{
       bgcolor: '#ffffff',
       border: '1px solid',
-      borderColor: expanded ? '#3b82f6' : '#e2e8f0',
-      borderRadius: '12px',
+      borderColor: expanded ? '#18181b' : '#e4e4e0',
+      borderRadius: 0,
       mb: 1.5,
       overflow: 'hidden',
       transition: 'border-color 0.15s ease',
-      '&:hover': { borderColor: '#3b82f6' },
+      '&:hover': { borderColor: '#18181b' },
     }}>
       {/* Header */}
       <Box
@@ -139,11 +139,11 @@ export default function PlanDayCard({ item, defaultExpanded = false }: PlanDayCa
         {/* Left: day name, date, session type chip, focus */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
           <Box>
-            <Box component="span" sx={{ fontSize: '0.9375rem', fontWeight: 700, color: '#0f172a', mr: 1 }}>
+            <Box component="span" sx={{ fontSize: '0.9375rem', fontWeight: 700, color: '#18181b', mr: 1 }}>
               {shortDay}
             </Box>
             {dateStr && (
-              <Box component="span" sx={{ fontSize: '0.75rem', color: '#64748b' }}>
+              <Box component="span" sx={{ fontSize: '0.75rem', color: '#71717a' }}>
                 {dateStr}
               </Box>
             )}
@@ -159,12 +159,13 @@ export default function PlanDayCard({ item, defaultExpanded = false }: PlanDayCa
                 fontWeight: 600,
                 fontSize: '0.75rem',
                 height: 22,
+                borderRadius: 0,
               }}
             />
           )}
 
           {item.focus && (
-            <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0f172a' }}>
+            <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: '#18181b' }}>
               {item.focus}
             </Typography>
           )}
@@ -179,10 +180,10 @@ export default function PlanDayCard({ item, defaultExpanded = false }: PlanDayCa
               gap: 0.5,
               px: 1,
               py: 0.25,
-              borderRadius: '4px',
-              bgcolor: '#f1f5f9',
-              color: '#64748b',
-              border: '1px solid #e2e8f0',
+              borderRadius: 0,
+              bgcolor: '#f0f0eb',
+              color: '#71717a',
+              border: '1px solid #e4e4e0',
               fontSize: '0.6875rem',
               fontWeight: 600,
               whiteSpace: 'nowrap',
@@ -191,7 +192,7 @@ export default function PlanDayCard({ item, defaultExpanded = false }: PlanDayCa
               {item.sequenceNotes ? (item.sequenceOrder ? ` · ${item.sequenceNotes}` : item.sequenceNotes) : ''}
             </Box>
           )}
-          <Typography sx={{ fontSize: '0.75rem', color: '#64748b', display: 'flex', alignItems: 'center' }}>
+          <Typography sx={{ fontSize: '0.75rem', color: '#71717a', display: 'flex', alignItems: 'center' }}>
             {expanded
               ? <><KeyboardArrowDownIcon sx={{ fontSize: 16 }} /> Details</>
               : <><KeyboardArrowRightIcon sx={{ fontSize: 16 }} /> Expand</>
@@ -203,8 +204,8 @@ export default function PlanDayCard({ item, defaultExpanded = false }: PlanDayCa
       {/* Expanded body */}
       <Collapse in={expanded} timeout="auto" unmountOnExit>
         <Box sx={{
-          borderTop: '1px solid #e2e8f0',
-          bgcolor: '#fafbfc',
+          borderTop: '1px solid #e4e4e0',
+          bgcolor: '#fafaf7',
           px: 2.5,
           py: 2,
         }}>
@@ -213,7 +214,7 @@ export default function PlanDayCard({ item, defaultExpanded = false }: PlanDayCa
             <Box sx={{
               bgcolor: '#fffbeb',
               border: '1px solid #fde68a',
-              borderRadius: '6px',
+              borderRadius: 0,
               px: 1.75,
               py: 1.25,
               mb: 2,
@@ -227,8 +228,8 @@ export default function PlanDayCard({ item, defaultExpanded = false }: PlanDayCa
 
           {/* Starting weight hint */}
           {item.startingWeight && item.startingWeight.trim() && (
-            <Typography sx={{ fontSize: '0.75rem', color: '#64748b', mb: 1 }}>
-              Est. starting weight: <Box component="span" sx={{ fontWeight: 600, color: '#0f172a' }}>{item.startingWeight}</Box>
+            <Typography sx={{ fontSize: '0.75rem', color: '#71717a', mb: 1 }}>
+              Est. starting weight: <Box component="span" sx={{ fontWeight: 600, color: '#18181b' }}>{item.startingWeight}</Box>
             </Typography>
           )}
 
@@ -266,7 +267,7 @@ export default function PlanDayCard({ item, defaultExpanded = false }: PlanDayCa
           {groups.length === 0 && item.workoutPlan && item.workoutPlan.trim() && (
             <Typography sx={{
               fontSize: '0.8125rem',
-              color: '#475569',
+              color: '#71717a',
               whiteSpace: 'pre-line',
               lineHeight: 1.7,
             }}>
@@ -278,7 +279,7 @@ export default function PlanDayCard({ item, defaultExpanded = false }: PlanDayCa
           {item.sequenceGroup && (
             <Box sx={{ mt: 1.5 }}>
               <Divider sx={{ mb: 1.5 }} />
-              <Typography sx={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+              <Typography sx={{ fontSize: '0.75rem', color: '#a1a1aa' }}>
                 Group: {item.sequenceGroup}
               </Typography>
             </Box>

@@ -18,7 +18,7 @@ import HrvTrend from '@/components/HrvTrend';
 import TrainingLoadFocus from '@/components/TrainingLoadFocus';
 import AcwrCard from '@/components/AcwrCard';
 import { getTrainingWeek } from '@/lib/week';
-import { typography } from '@/lib/design-tokens';
+import { typography, borders } from '@/lib/design-tokens';
 import type { PhaseInfo } from '@/components/PhaseTimeline';
 import type { PlanItem, DashboardPayload } from '@/lib/types';
 
@@ -111,13 +111,28 @@ export default function DashboardHome() {
       {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4, flexWrap: 'wrap' }}>
         <Typography variant="h3">Dashboard</Typography>
-        <Chip label={`Week ${getTrainingWeek()}`} size="small" />
-        <Button variant="text" size="small" onClick={() => router.push('/log')} sx={{ ml: 'auto' }}>
-          Go to today&apos;s log
+        <Chip
+          label={`Week ${getTrainingWeek()}`}
+          size="small"
+          sx={{ border: `1px solid ${borders.hard}`, bgcolor: 'transparent' }}
+        />
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={() => router.push('/log')}
+          sx={{ ml: 'auto', borderWidth: 2, '&:hover': { borderWidth: 2 } }}
+        >
+          Today&apos;s Log
         </Button>
         <Tooltip title={syncing ? 'Syncing...' : 'Sync Garmin data'}>
-          <IconButton onClick={handleSync} disabled={syncing} size="small">
+          <IconButton
+            onClick={handleSync}
+            disabled={syncing}
+            size="small"
+            sx={{ borderRadius: 0, border: `2px solid ${borders.hard}`, width: 36, height: 36 }}
+          >
             <SyncIcon sx={{
+              fontSize: 18,
               animation: syncing ? 'spin 1s linear infinite' : 'none',
               '@keyframes spin': { '0%': { transform: 'rotate(0deg)' }, '100%': { transform: 'rotate(360deg)' } },
             }} />
@@ -127,11 +142,23 @@ export default function DashboardHome() {
 
       {/* Sunday reminder */}
       {isSunday && (
-        <Box sx={{ mb: 4, p: 3, bgcolor: 'secondary.main', color: 'secondary.contrastText', borderRadius: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Typography variant="h6">It&apos;s Sunday. Time for your check-in.</Typography>
-            <Button variant="contained" size="large" onClick={() => router.push('/checkin')}
-              sx={{ bgcolor: 'white', color: 'secondary.main', '&:hover': { bgcolor: 'grey.100' } }}>
+        <Box sx={{ mb: 4, p: 3, bgcolor: borders.hard, color: '#fafaf7', border: `3px solid ${borders.hard}` }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+            <Typography sx={{
+              fontFamily: '"Libre Franklin", sans-serif',
+              fontWeight: 900,
+              fontSize: '1rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+            }}>
+              It&apos;s Sunday. Time for your check-in.
+            </Typography>
+            <Button
+              variant="contained"
+              size="large"
+              onClick={() => router.push('/checkin')}
+              sx={{ bgcolor: '#fafaf7', color: borders.hard, '&:hover': { bgcolor: '#e4e4e0' } }}
+            >
               Start Check-In
             </Button>
           </Box>

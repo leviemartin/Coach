@@ -2,7 +2,7 @@
 
 import { Typography, Box, Button, Chip, Skeleton } from '@mui/material';
 import { useRouter } from 'next/navigation';
-import { typography } from '@/lib/design-tokens';
+import { typography, borders, statusColors } from '@/lib/design-tokens';
 import type { PlanItem } from '@/lib/types';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -16,7 +16,7 @@ export default function TodayAction({ items }: TodayActionProps) {
   const todayName = DAY_NAMES[new Date().getDay()];
 
   if (items === null) {
-    return <Skeleton variant="rounded" height={140} sx={{ borderRadius: '12px', mb: 3 }} />;
+    return <Skeleton variant="rectangular" height={140} sx={{ borderRadius: 0, mb: 3 }} />;
   }
 
   const todayItem = items.find(
@@ -26,15 +26,14 @@ export default function TodayAction({ items }: TodayActionProps) {
   if (!todayItem) {
     return (
       <Box sx={{
-        bgcolor: 'background.paper', borderRadius: '12px', p: 2.5,
-        border: 1, borderColor: 'divider', mb: 3,
+        bgcolor: 'background.paper', border: `3px solid ${borders.hard}`, p: 2.5, mb: 3,
       }}>
         <Typography sx={typography.categoryLabel}>Today — {todayName}</Typography>
-        <Typography variant="body1" fontWeight={700} sx={{ mt: 0.5 }}>
+        <Typography sx={{ ...typography.sectionTitle, mt: 0.5 }}>
           {items.length === 0 ? 'No plan this week' : 'Rest Day'}
         </Typography>
         {items.length === 0 && (
-          <Button size="small" onClick={() => router.push('/checkin')} sx={{ mt: 1 }}>
+          <Button size="small" variant="outlined" onClick={() => router.push('/checkin')} sx={{ mt: 1, borderWidth: 2 }}>
             Run Check-In
           </Button>
         )}
@@ -49,29 +48,28 @@ export default function TodayAction({ items }: TodayActionProps) {
     .filter((l) => l.length > 0)
     .slice(0, 6); // Max 6 shown
 
-  // Session type → badge color
-  const badgeColors: Record<string, { bg: string; text: string }> = {
-    strength: { bg: '#dbeafe', text: '#1d4ed8' },
-    upper: { bg: '#dbeafe', text: '#1d4ed8' },
-    lower: { bg: '#dbeafe', text: '#1d4ed8' },
-    functional: { bg: '#fef3c7', text: '#92400e' },
-    ocr: { bg: '#fef3c7', text: '#92400e' },
-    cardio: { bg: '#ccfbf1', text: '#0f766e' },
-    aerobic: { bg: '#ccfbf1', text: '#0f766e' },
-    ruck: { bg: '#dcfce7', text: '#166534' },
-    recovery: { bg: '#f0f9ff', text: '#0369a1' },
+  // Session type → badge color (uses design token patterns)
+  const badgeColors: Record<string, { bg: string; text: string; border: string }> = {
+    strength: { bg: '#3b82f618', text: '#2563eb', border: '#3b82f640' },
+    upper: { bg: '#3b82f618', text: '#2563eb', border: '#3b82f640' },
+    lower: { bg: '#3b82f618', text: '#2563eb', border: '#3b82f640' },
+    functional: { bg: '#f59e0b18', text: '#d97706', border: '#f59e0b40' },
+    ocr: { bg: '#f59e0b18', text: '#d97706', border: '#f59e0b40' },
+    cardio: { bg: '#ea580c18', text: '#ea580c', border: '#ea580c40' },
+    aerobic: { bg: '#ea580c18', text: '#ea580c', border: '#ea580c40' },
+    ruck: { bg: '#22c55e18', text: '#16a34a', border: '#22c55e40' },
+    recovery: { bg: '#0d948818', text: '#0d9488', border: '#0d948840' },
   };
 
   const sessionWords = todayItem.sessionType.toLowerCase().split(/[\s+&]/);
   const badges = sessionWords
     .map((w) => badgeColors[w])
-    .filter((b): b is { bg: string; text: string } => b != null);
-  if (badges.length === 0) badges.push({ bg: '#f1f5f9', text: '#475569' });
+    .filter((b): b is { bg: string; text: string; border: string } => b != null);
+  if (badges.length === 0) badges.push({ bg: '#a1a1aa18', text: '#71717a', border: '#a1a1aa40' });
 
   return (
     <Box sx={{
-      bgcolor: 'background.paper', borderRadius: '12px', p: 2.5,
-      border: 1, borderColor: 'divider', mb: 3,
+      bgcolor: 'background.paper', border: `3px solid ${borders.hard}`, p: 2.5, mb: 3,
     }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
         <Box>
@@ -87,10 +85,9 @@ export default function TodayAction({ items }: TodayActionProps) {
               label={w.charAt(0).toUpperCase() + w.slice(1)}
               size="small"
               sx={{
-                bgcolor: badges[i]?.bg || '#f1f5f9',
-                color: badges[i]?.text || '#475569',
-                fontWeight: 600,
-                fontSize: '0.75rem',
+                bgcolor: badges[i]?.bg || '#a1a1aa18',
+                color: badges[i]?.text || '#71717a',
+                border: `1px solid ${badges[i]?.border || '#a1a1aa40'}`,
               }}
             />
           ))}

@@ -64,12 +64,12 @@ export default function PlanPreview({ items, exercises, weekNumber, onLockIn, on
               alignItems: 'center',
               px: 1.5,
               py: 0.5,
-              borderRadius: '6px',
-              bgcolor: '#f1f5f9',
-              border: '1px solid #e2e8f0',
+              borderRadius: 0,
+              bgcolor: '#f0f0eb',
+              border: '1px solid #e4e4e0',
               fontSize: '0.8125rem',
               fontWeight: 600,
-              color: '#0f172a',
+              color: '#18181b',
             }}>
               {dateRange}
             </Box>
@@ -107,7 +107,7 @@ export default function PlanPreview({ items, exercises, weekNumber, onLockIn, on
 
       {/* Action row */}
       <Box sx={{ textAlign: 'center' }}>
-        <Typography variant="caption" sx={{ display: 'block', color: '#64748b', mb: 1.5 }}>
+        <Typography variant="caption" sx={{ display: 'block', color: '#71717a', mb: 1.5 }}>
           Satisfied with this plan?
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5 }}>
@@ -116,11 +116,12 @@ export default function PlanPreview({ items, exercises, weekNumber, onLockIn, on
             onClick={onDiscuss}
             startIcon={<ChatBubbleOutlineIcon />}
             sx={{
-              borderColor: '#6366f1',
-              color: '#6366f1',
+              borderColor: '#18181b',
+              color: '#18181b',
+              borderRadius: 0,
               '&:hover': {
-                borderColor: '#4f46e5',
-                bgcolor: 'rgba(99, 102, 241, 0.04)',
+                borderColor: '#3f3f46',
+                bgcolor: '#f0f0eb',
               },
             }}
           >
@@ -135,6 +136,7 @@ export default function PlanPreview({ items, exercises, weekNumber, onLockIn, on
             sx={{
               bgcolor: '#22c55e',
               color: '#ffffff',
+              borderRadius: 0,
               px: 3,
               py: 1,
               '&:hover': { bgcolor: '#16a34a' },

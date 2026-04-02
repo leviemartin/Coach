@@ -25,7 +25,7 @@ function ComplianceBar({ label, value, max, unit = '%' }: { label: string; value
         variant="determinate"
         value={pct}
         color={color}
-        sx={{ height: 6, borderRadius: 3 }}
+        sx={{ height: 6 }}
       />
     </Box>
   );

@@ -41,7 +41,7 @@ function BodyCompBar({ scan }: { scan: DexaScan }) {
 
   return (
     <Box sx={{ mt: 1.5 }}>
-      <Box sx={{ display: 'flex', height: 18, borderRadius: 1, overflow: 'hidden', width: '100%' }}>
+      <Box sx={{ display: 'flex', height: 18, overflow: 'hidden', width: '100%' }}>
         <Tooltip title={`Fat: ${scan.fatMassKg.toFixed(1)} kg (${fatPct.toFixed(1)}%)`}>
           <Box sx={{ width: `${fatPct}%`, bgcolor: semanticColors.recovery.problem, cursor: 'default' }} />
         </Tooltip>

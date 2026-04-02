@@ -143,12 +143,12 @@ export default function WeightJourney({
           )}
 
           {/* Start label */}
-          <text x={padLeft} y={padTop - 2} fontSize="8" fill="currentColor" opacity="0.5" fontFamily="Inter, sans-serif">
+          <text x={padLeft} y={padTop - 2} fontSize="8" fill="currentColor" opacity="0.5" fontFamily="'JetBrains Mono', monospace">
             {Math.round(allWeights[0] ?? 102)}kg
           </text>
 
           {/* Current phase target label */}
-          <text x={width - padRight} y={toY(currentPhaseTarget) - 4} fontSize="8" fill="currentColor" opacity="0.5" textAnchor="end" fontFamily="Inter, sans-serif">
+          <text x={width - padRight} y={toY(currentPhaseTarget) - 4} fontSize="8" fill="currentColor" opacity="0.5" textAnchor="end" fontFamily="'JetBrains Mono', monospace">
             {currentPhaseTarget}kg target
           </text>
 
@@ -160,7 +160,7 @@ export default function WeightJourney({
             fill={semanticColors.body}
             textAnchor="middle"
             fontWeight="600"
-            fontFamily="Inter, sans-serif"
+            fontFamily="'JetBrains Mono', monospace"
           >
             W{currentWeek}
           </text>
@@ -170,7 +170,7 @@ export default function WeightJourney({
       {/* Legend */}
       <Box sx={{ display: 'flex', gap: 2, mt: 0.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <Box sx={{ width: 16, height: 2, bgcolor: semanticColors.body, borderRadius: 1 }} />
+          <Box sx={{ width: 16, height: 2, bgcolor: semanticColors.body }} />
           <Typography sx={{ fontSize: '0.625rem', color: 'currentColor' }}>Actual</Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>

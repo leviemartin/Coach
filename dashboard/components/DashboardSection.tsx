@@ -4,6 +4,7 @@ import { Accordion, AccordionSummary, AccordionDetails, Typography, Box } from '
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
+import { borders } from '@/lib/design-tokens';
 
 interface DashboardSectionProps {
   title: string;
@@ -32,6 +33,7 @@ export default function DashboardSection({
         bgcolor: 'background.paper',
         overflow: 'hidden',
         mb: 3,
+        border: `2px solid ${borders.hard}`,
       }}
     >
       <AccordionSummary

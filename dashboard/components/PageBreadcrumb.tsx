@@ -10,9 +10,25 @@ interface PageBreadcrumbProps {
   items: BreadcrumbItem[];
 }
 
+const breadcrumbTypography = {
+  fontFamily: '"JetBrains Mono", monospace',
+  fontSize: '10px',
+  fontWeight: 700,
+  textTransform: 'uppercase' as const,
+  letterSpacing: '1.5px',
+};
+
 export default function PageBreadcrumb({ items }: PageBreadcrumbProps) {
   return (
-    <Breadcrumbs sx={{ mb: 2 }}>
+    <Breadcrumbs
+      sx={{
+        mb: 2,
+        '& .MuiBreadcrumbs-separator': {
+          ...breadcrumbTypography,
+          color: 'text.disabled',
+        },
+      }}
+    >
       {items.map((item, i) =>
         i < items.length - 1 && item.href ? (
           <Link
@@ -21,15 +37,14 @@ export default function PageBreadcrumb({ items }: PageBreadcrumbProps) {
             style={{ textDecoration: 'none', color: 'inherit' }}
           >
             <Typography
-              variant="body2"
               color="text.secondary"
-              sx={{ '&:hover': { textDecoration: 'underline' } }}
+              sx={{ ...breadcrumbTypography, '&:hover': { textDecoration: 'underline' } }}
             >
               {item.label}
             </Typography>
           </Link>
         ) : (
-          <Typography key={item.label} variant="body2" color="text.primary">
+          <Typography key={item.label} color="text.primary" sx={breadcrumbTypography}>
             {item.label}
           </Typography>
         )

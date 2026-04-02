@@ -21,13 +21,13 @@ function LoadBar({ label, value, min, max }: { label: string; value: number; min
   return (
     <Box sx={{ mb: 1 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.25 }}>
-        <Typography sx={{ fontSize: '0.6875rem', color: '#64748b' }}>{label}</Typography>
-        <Typography sx={{ fontSize: '0.6875rem', color, fontWeight: 600 }}>
+        <Typography sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.6875rem', color: 'text.secondary' }}>{label}</Typography>
+        <Typography sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.6875rem', color, fontWeight: 600 }}>
           {Math.round(value)} {isShort ? '(shortage)' : ''}
         </Typography>
       </Box>
-      <Box sx={{ height: 6, bgcolor: 'action.disabledBackground', borderRadius: 1 }}>
-        <Box sx={{ height: 6, bgcolor: color, borderRadius: 1, width: `${pct}%` }} />
+      <Box sx={{ height: 6, bgcolor: 'action.disabledBackground' }}>
+        <Box sx={{ height: 6, bgcolor: color, width: `${pct}%` }} />
       </Box>
     </Box>
   );
@@ -55,7 +55,7 @@ export default function TrainingLoadFocus({ loadFocus, hrZones, enduranceScore }
 
       {enduranceScore != null && (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1.5 }}>
-          <Typography sx={{ fontSize: '0.6875rem', color: '#64748b' }}>Endurance Score</Typography>
+          <Typography sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.6875rem', color: 'text.secondary' }}>Endurance Score</Typography>
           <Chip label={enduranceScore} size="small" sx={{ fontWeight: 700 }} />
         </Box>
       )}

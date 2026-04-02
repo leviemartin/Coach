@@ -3,8 +3,9 @@
 import React, { useState } from 'react';
 import { Box, IconButton } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
-import Sidebar, { DRAWER_WIDTH } from './Sidebar';
+import Sidebar from './Sidebar';
 import MobileBottomNav from './MobileBottomNav';
+import { borders } from '@/lib/design-tokens';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -13,7 +14,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       <Sidebar mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
 
-      {/* Hamburger — visible on xs/sm only, toggles drawer */}
+      {/* Hamburger — square, hard border, no shadow */}
       <IconButton
         aria-label="Open navigation menu"
         aria-expanded={mobileOpen}
@@ -25,9 +26,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           left: 8,
           zIndex: (theme) => theme.zIndex.drawer + 1,
           bgcolor: 'background.paper',
-          boxShadow: 1,
-          minWidth: 48,
-          minHeight: 48,
+          border: `2px solid ${borders.hard}`,
+          borderRadius: 0,
+          minWidth: 44,
+          minHeight: 44,
           '&:hover': { bgcolor: 'action.hover' },
         }}
       >

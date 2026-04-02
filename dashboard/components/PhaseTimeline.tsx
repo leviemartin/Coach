@@ -26,7 +26,7 @@ export default function PhaseTimeline({ phases, currentPhaseNumber, selectedPhas
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   return (
-    <Box sx={{ display: 'flex', width: '100%', height: 44, mb: 1, borderRadius: 1, overflow: 'hidden' }}>
+    <Box sx={{ display: 'flex', width: '100%', height: 44, mb: 1, overflow: 'hidden', border: `2px solid ${theme.palette.divider}` }}>
       {phases.map((phase, idx) => {
         const isPast = phase.number < currentPhaseNumber;
         const isCurrent = phase.number === currentPhaseNumber;
@@ -54,8 +54,7 @@ export default function PhaseTimeline({ phases, currentPhaseNumber, selectedPhas
                     : 'secondary.main',
                 borderLeft: idx > 0 ? '1px solid' : 'none',
                 borderColor: 'background.default',
-                borderBottom: isSelected ? `2px solid ${theme.palette.secondary.main}` : '2px solid transparent',
-                borderRadius: idx === 0 ? '4px 0 0 4px' : idx === phases.length - 1 ? '0 4px 4px 0' : 0,
+                borderBottom: isSelected ? `3px solid ${theme.palette.text.primary}` : '3px solid transparent',
                 position: 'relative',
                 cursor: 'pointer',
                 transition: 'all 0.2s',

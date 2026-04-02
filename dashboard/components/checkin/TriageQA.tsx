@@ -56,17 +56,17 @@ function AgentBubble({ text }: { text: string }) {
       <Box
         sx={{
           maxWidth: '80%',
-          bgcolor: '#f1f5f9',
-          border: '1px solid #e2e8f0',
-          borderRadius: '4px 16px 16px 16px',
+          bgcolor: '#f0f0eb',
+          border: '1px solid #e4e4e0',
+          borderRadius: 0,
           px: 2,
           py: 1.5,
         }}
       >
-        <Typography variant="caption" sx={{ fontWeight: 700, color: '#64748b', display: 'block', mb: 0.5 }}>
+        <Typography variant="caption" sx={{ fontWeight: 700, color: '#71717a', display: 'block', mb: 0.5 }}>
           Triage Agent
         </Typography>
-        <Typography variant="body2" sx={{ color: '#1e293b', lineHeight: 1.6 }}>
+        <Typography variant="body2" sx={{ color: '#18181b', lineHeight: 1.6 }}>
           {text}
         </Typography>
       </Box>
@@ -80,14 +80,14 @@ function AthleteBubble({ text }: { text: string }) {
       <Box
         sx={{
           maxWidth: '80%',
-          bgcolor: '#dbeafe',
-          border: '1px solid #bfdbfe',
-          borderRadius: '16px 4px 16px 16px',
+          bgcolor: '#3b82f618',
+          border: '1px solid #3b82f640',
+          borderRadius: 0,
           px: 2,
           py: 1.5,
         }}
       >
-        <Typography variant="body2" sx={{ color: '#1d4ed8', lineHeight: 1.6 }}>
+        <Typography variant="body2" sx={{ color: '#2563eb', lineHeight: 1.6 }}>
           {text}
         </Typography>
       </Box>
@@ -196,7 +196,7 @@ export default function TriageQA({ reviewData, subjectiveData, onComplete }: Tri
     <Box>
       {/* Header */}
       <Box sx={{ mb: 3 }}>
-        <Typography variant="subtitle1" fontWeight={700} sx={{ color: '#0f172a' }}>
+        <Typography variant="subtitle1" fontWeight={700} sx={{ color: '#18181b' }}>
           Pre-flight check
         </Typography>
         <Typography variant="body2" color="text.secondary">
@@ -262,7 +262,7 @@ export default function TriageQA({ reviewData, subjectiveData, onComplete }: Tri
               {/* Progress indicator */}
               <Typography
                 variant="caption"
-                sx={{ display: 'block', color: '#94a3b8', mb: 1.5, pl: 0.5 }}
+                sx={{ display: 'block', color: '#a1a1aa', mb: 1.5, pl: 0.5 }}
               >
                 Question {currentIndex + 1} of {questions.length}
               </Typography>
@@ -282,7 +282,7 @@ export default function TriageQA({ reviewData, subjectiveData, onComplete }: Tri
                   size="small"
                   sx={{
                     '& .MuiOutlinedInput-root': {
-                      borderRadius: '8px',
+                      borderRadius: 0,
                     },
                   }}
                 />
@@ -291,7 +291,7 @@ export default function TriageQA({ reviewData, subjectiveData, onComplete }: Tri
                   disableElevation
                   onClick={submitAnswer}
                   disabled={!draftAnswer.trim()}
-                  sx={{ minWidth: 44, px: 1.5, py: 1.25, borderRadius: '8px' }}
+                  sx={{ minWidth: 44, px: 1.5, py: 1.25, borderRadius: 0 }}
                 >
                   <SendIcon fontSize="small" />
                 </Button>
@@ -305,9 +305,9 @@ export default function TriageQA({ reviewData, subjectiveData, onComplete }: Tri
               sx={{
                 mt: 3,
                 p: 3,
-                bgcolor: '#f0fdf4',
-                border: '1px solid #bbf7d0',
-                borderRadius: 2,
+                bgcolor: '#22c55e18',
+                border: '1px solid #22c55e40',
+                borderRadius: 0,
                 textAlign: 'center',
               }}
             >
@@ -335,7 +335,7 @@ export default function TriageQA({ reviewData, subjectiveData, onComplete }: Tri
             variant="text"
             size="small"
             onClick={handleSkip}
-            sx={{ color: '#94a3b8', fontSize: '0.75rem' }}
+            sx={{ color: '#a1a1aa', fontSize: '0.75rem' }}
           >
             Skip triage
           </Button>

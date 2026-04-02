@@ -120,8 +120,8 @@ export default function CheckInPage() {
       {activeStep === 3 && (
         <Box
           sx={{
-            border: '1px dashed #e2e8f0',
-            borderRadius: 2,
+            border: '1px dashed #e4e4e0',
+            borderRadius: 0,
             p: 4,
             textAlign: 'center',
             color: 'text.secondary',
@@ -139,8 +139,8 @@ export default function CheckInPage() {
       {activeStep === 4 && (
         <Box
           sx={{
-            border: '1px dashed #e2e8f0',
-            borderRadius: 2,
+            border: '1px dashed #e4e4e0',
+            borderRadius: 0,
             p: 4,
             textAlign: 'center',
             color: 'text.secondary',

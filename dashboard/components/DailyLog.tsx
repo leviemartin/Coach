@@ -367,7 +367,7 @@ export default function DailyLog({
         sx={{
           border: '1px solid',
           borderColor: 'divider',
-          borderRadius: '8px !important',
+          borderRadius: '0 !important',
           '&:before': { display: 'none' },
         }}
       >
@@ -470,9 +470,9 @@ export default function DailyLog({
                 variant="body2"
                 fontWeight={600}
                 sx={{
-                  color: semanticColors.body,
-                  border: `1px solid ${semanticColors.body}`,
-                  borderRadius: 1,
+                  color: 'text.primary',
+                  border: '2px solid',
+                  borderColor: 'text.primary',
                   px: 1.5,
                   py: 0.5,
                   display: 'inline-block',

@@ -86,14 +86,6 @@ export default function BedtimeCard({ bedtime, onUpdate }: BedtimeCardProps) {
             variant="contained"
             startIcon={<DarkModeIcon />}
             onClick={handleLightsOut}
-            sx={{
-              bgcolor: 'indigo.main',
-              background: 'linear-gradient(135deg, #3730a3 0%, #1e1b4b 100%)',
-              color: '#fff',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #4338ca 0%, #312e81 100%)',
-              },
-            }}
           >
             Lights Out
           </Button>

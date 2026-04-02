@@ -83,7 +83,6 @@ export default function AgentBriefing({
                 <Box
                   sx={{
                     width: 4,
-                    borderRadius: 2,
                     bgcolor: AGENT_COLORS[spec.agentId] || 'grey.500',
                     mr: 2,
                     alignSelf: 'stretch',

@@ -117,10 +117,8 @@ function RaceCard({ race, confirmDelete, onEdit, onDelete, onConfirmDelete }: Ra
                 variant="determinate"
                 value={progress}
                 sx={{
-                  height: 4,
-                  borderRadius: 2,
+                  height: 6,
                   bgcolor: 'action.hover',
-                  '& .MuiLinearProgress-bar': { borderRadius: 2 },
                 }}
               />
               <Typography variant="caption" color="text.disabled" sx={{ mt: 0.25, display: 'block' }}>

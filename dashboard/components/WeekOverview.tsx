@@ -22,11 +22,11 @@ const STATUS_STYLES: Record<
   WeekDay['status'],
   { borderColor: string; bg: string; opacity?: number }
 > = {
-  done: { borderColor: '#22c55e', bg: '#f0fdf4' },
-  today: { borderColor: '#3b82f6', bg: '#eff6ff' },
-  pending: { borderColor: '#e2e8f0', bg: '#f8fafc' },
-  family: { borderColor: '#e2e8f0', bg: '#f8fafc', opacity: 0.4 },
-  rest: { borderColor: '#e2e8f0', bg: '#f8fafc', opacity: 0.6 },
+  done: { borderColor: '#22c55e', bg: '#22c55e18' },
+  today: { borderColor: '#18181b', bg: '#fafaf7' },
+  pending: { borderColor: '#e4e4e0', bg: '#fafaf7' },
+  family: { borderColor: '#e4e4e0', bg: '#fafaf7', opacity: 0.4 },
+  rest: { borderColor: '#e4e4e0', bg: '#fafaf7', opacity: 0.6 },
 };
 
 const STATUS_INDICATOR: Record<WeekDay['status'], string> = {
@@ -67,7 +67,7 @@ export default function WeekOverview({
               sx={{
                 bgcolor: styles.bg,
                 border: `1px solid ${styles.borderColor}`,
-                borderRadius: '6px',
+                borderRadius: 0,
                 padding: '10px 6px',
                 textAlign: 'center',
                 opacity: styles.opacity ?? 1,
@@ -140,7 +140,7 @@ export default function WeekOverview({
                       day.status === 'done'
                         ? '#22c55e'
                         : day.status === 'today'
-                          ? '#3b82f6'
+                          ? '#18181b'
                           : day.status === 'family'
                             ? '#ec4899'
                             : 'text.disabled',
@@ -162,8 +162,8 @@ export default function WeekOverview({
           size="small"
           variant="outlined"
           sx={{
-            borderColor: sessionsCompleted >= sessionsPlanned ? '#22c55e' : '#e2e8f0',
-            color: sessionsCompleted >= sessionsPlanned ? '#22c55e' : 'text.secondary',
+            borderColor: sessionsCompleted >= sessionsPlanned ? '#22c55e' : '#e4e4e0',
+            color: sessionsCompleted >= sessionsPlanned ? '#16a34a' : 'text.secondary',
             fontSize: '0.7rem',
           }}
         />

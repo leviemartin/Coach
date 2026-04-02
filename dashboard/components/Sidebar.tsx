@@ -9,10 +9,8 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Toolbar,
   Typography,
   Box,
-  Divider,
   IconButton,
 } from '@mui/material';
 import Avatar from '@mui/material/Avatar';
@@ -32,7 +30,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import React from 'react';
 import { ThemeModeContext } from './ThemeRegistry';
 import RaceCountdown from './RaceCountdown';
-import { typography, semanticColors } from '@/lib/design-tokens';
+import { borders } from '@/lib/design-tokens';
 
 const DRAWER_WIDTH = 220;
 
@@ -64,8 +62,14 @@ const NAV_SECTIONS = [
   },
 ];
 
+/** Section header: JetBrains Mono 9px, uppercase, 2px letter spacing, muted */
 const sectionLabelSx = {
-  ...typography.categoryLabel,
+  fontFamily: '"JetBrains Mono", monospace',
+  fontSize: '9px',
+  fontWeight: 700,
+  textTransform: 'uppercase' as const,
+  letterSpacing: '2px',
+  color: 'text.secondary',
   px: 2,
   pt: 1.5,
   pb: 0.5,
@@ -80,22 +84,47 @@ function DrawerContent({ onItemClick }: { onItemClick?: () => void }) {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Toolbar>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
-          <Typography variant="h6" noWrap sx={{ fontWeight: 700, flex: 1 }}>
-            OCR Coach
-          </Typography>
-          <IconButton onClick={toggleMode} size="small" aria-label={mode === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}>
-            {mode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
-          </IconButton>
-        </Box>
-      </Toolbar>
-      <Divider />
-      <List sx={{ px: 1, overflowY: 'auto', flex: 1 }}>
+      {/* App title bar — Libre Franklin 900, uppercase, hard bottom border */}
+      <Box sx={{
+        px: 2,
+        py: 1.5,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1,
+        borderBottom: `2px solid ${borders.hard}`,
+        minHeight: 56,
+      }}>
+        <Typography
+          noWrap
+          sx={{
+            fontFamily: '"Libre Franklin", sans-serif',
+            fontSize: '14px',
+            fontWeight: 900,
+            textTransform: 'uppercase',
+            letterSpacing: '1px',
+            flex: 1,
+          }}
+        >
+          OCR Coach
+        </Typography>
+        <IconButton
+          onClick={toggleMode}
+          size="small"
+          aria-label={mode === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+          sx={{ borderRadius: 0, border: `1px solid ${borders.soft}`, width: 32, height: 32 }}
+        >
+          {mode === 'light' ? <DarkModeIcon sx={{ fontSize: 16 }} /> : <LightModeIcon sx={{ fontSize: 16 }} />}
+        </IconButton>
+      </Box>
+
+      {/* Nav sections — hard borders between groups, no rounded corners */}
+      <List sx={{ px: 0, overflowY: 'auto', flex: 1 }}>
         {NAV_SECTIONS.map((section, sectionIndex) => (
           <React.Fragment key={section.label}>
-            {sectionIndex > 0 && <Divider sx={{ my: 0.5 }} />}
-            <Typography variant="caption" color="text.secondary" sx={sectionLabelSx}>
+            {sectionIndex > 0 && (
+              <Box sx={{ borderTop: `2px solid ${borders.hard}` }} />
+            )}
+            <Typography sx={sectionLabelSx}>
               {section.label}
             </Typography>
             {section.items.map((item) => {
@@ -104,7 +133,7 @@ function DrawerContent({ onItemClick }: { onItemClick?: () => void }) {
                   ? pathname === '/'
                   : pathname.startsWith(item.path);
               return (
-                <ListItem key={item.path} disablePadding sx={{ mb: 0.5 }}>
+                <ListItem key={item.path} disablePadding>
                   <ListItemButton
                     selected={isActive}
                     aria-current={isActive ? 'page' : undefined}
@@ -113,18 +142,31 @@ function DrawerContent({ onItemClick }: { onItemClick?: () => void }) {
                       onItemClick?.();
                     }}
                     sx={{
-                      borderRadius: 1,
+                      borderRadius: 0,
+                      py: 0.75,
+                      px: 2,
+                      borderBottom: `1px solid ${borders.soft}`,
                       '&.Mui-selected': {
-                        bgcolor: `${semanticColors.body}14`,
-                        color: semanticColors.body,
-                        borderLeft: `3px solid ${semanticColors.body}`,
-                        '& .MuiListItemIcon-root': { color: semanticColors.body },
-                        '&:hover': { bgcolor: `${semanticColors.body}1F` },
+                        bgcolor: 'transparent',
+                        borderLeft: `3px solid ${borders.hard}`,
+                        '& .MuiListItemIcon-root': { color: 'text.primary' },
+                        '& .MuiListItemText-primary': { fontWeight: 700 },
+                        '&:hover': { bgcolor: 'action.hover' },
                       },
+                      '&:hover': { bgcolor: 'action.hover' },
                     }}
                   >
-                    <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
-                    <ListItemText primary={item.label} />
+                    <ListItemIcon sx={{ minWidth: 36, color: 'text.secondary' }}>{item.icon}</ListItemIcon>
+                    <ListItemText
+                      primary={item.label}
+                      primaryTypographyProps={{
+                        sx: {
+                          fontFamily: '"JetBrains Mono", monospace',
+                          fontSize: '12px',
+                          fontWeight: isActive ? 700 : 400,
+                        },
+                      }}
+                    />
                   </ListItemButton>
                 </ListItem>
               );
@@ -132,20 +174,35 @@ function DrawerContent({ onItemClick }: { onItemClick?: () => void }) {
           </React.Fragment>
         ))}
       </List>
-      <Box sx={{ mt: 'auto', p: 2 }}>
+
+      {/* Bottom section — race countdown + user */}
+      <Box sx={{ mt: 'auto', p: 1.5, borderTop: `2px solid ${borders.hard}` }}>
         <RaceCountdown />
         {session?.user && (
-          <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ mt: 1.5, display: 'flex', alignItems: 'center', gap: 1, pt: 1.5, borderTop: `1px solid ${borders.soft}` }}>
             <Avatar
               src={session.user.image || undefined}
               alt={session.user.name || ''}
-              sx={{ width: 32, height: 32 }}
+              sx={{ width: 28, height: 28, borderRadius: 0 }}
             />
-            <Typography variant="body2" sx={{ flex: 1 }} noWrap>
+            <Typography
+              noWrap
+              sx={{
+                flex: 1,
+                fontFamily: '"JetBrains Mono", monospace',
+                fontSize: '11px',
+                fontWeight: 500,
+              }}
+            >
               {session.user.name || session.user.email}
             </Typography>
-            <IconButton size="small" onClick={() => signOut()} aria-label="Sign out">
-              <LogoutIcon fontSize="small" />
+            <IconButton
+              size="small"
+              onClick={() => signOut()}
+              aria-label="Sign out"
+              sx={{ borderRadius: 0, width: 28, height: 28 }}
+            >
+              <LogoutIcon sx={{ fontSize: 16 }} />
             </IconButton>
           </Box>
         )}

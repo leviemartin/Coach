@@ -15,8 +15,8 @@ interface SubjectiveInputsProps {
 const buttonBase = {
   width: 44,
   height: 40,
-  borderRadius: '4px',
-  border: '1px solid #e2e8f0',
+  borderRadius: 0,
+  border: '1px solid #e4e4e0',
   cursor: 'pointer',
   display: 'flex',
   alignItems: 'center',
@@ -26,14 +26,14 @@ const buttonBase = {
   userSelect: 'none' as const,
   transition: 'background 0.1s, border-color 0.1s',
   bgcolor: '#fff',
-  color: '#374151',
-  '&:hover': { borderColor: '#94a3b8', bgcolor: '#f8fafc' },
+  color: '#18181b',
+  '&:hover': { borderColor: '#a1a1aa', bgcolor: '#f0f0eb' },
 };
 
 const selectedBlue = {
-  bgcolor: '#dbeafe',
+  bgcolor: '#3b82f618',
   borderColor: '#3b82f6',
-  color: '#1d4ed8',
+  color: '#2563eb',
 };
 
 const READINESS_LABELS: Record<number, string> = {
@@ -100,7 +100,7 @@ export default function SubjectiveInputs({ data, onChange, modelSuggestion }: Su
           {/* Perceived Readiness */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
             <Box sx={{ minWidth: 140 }}>
-              <Typography variant="caption" sx={{ fontWeight: 600, color: '#374151' }}>
+              <Typography variant="caption" sx={{ fontWeight: 600, color: '#18181b' }}>
                 Perceived Readiness
               </Typography>
               {data.perceivedReadiness > 0 && (
@@ -119,7 +119,7 @@ export default function SubjectiveInputs({ data, onChange, modelSuggestion }: Su
           {/* Plan Satisfaction */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Box sx={{ minWidth: 140 }}>
-              <Typography variant="caption" sx={{ fontWeight: 600, color: '#374151' }}>
+              <Typography variant="caption" sx={{ fontWeight: 600, color: '#18181b' }}>
                 Plan Satisfaction
               </Typography>
               {data.planSatisfaction > 0 && (

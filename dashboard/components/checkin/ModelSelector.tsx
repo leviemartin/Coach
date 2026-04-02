@@ -84,13 +84,13 @@ export default function ModelSelector({ value, onChange, suggestion }: ModelSele
               key={optValue}
               sx={{
                 border: '1px solid',
-                borderColor: value === optValue ? '#3b82f6' : '#e2e8f0',
-                borderRadius: 1,
+                borderColor: value === optValue ? '#3b82f6' : '#e4e4e0',
+                borderRadius: 0,
                 px: 1.5,
                 py: 1,
                 mb: 1,
                 cursor: 'pointer',
-                bgcolor: value === optValue ? '#eff6ff' : 'transparent',
+                bgcolor: value === optValue ? '#3b82f618' : 'transparent',
                 transition: 'border-color 0.1s, background 0.1s',
                 '&:last-child': { mb: 0 },
               }}
@@ -111,9 +111,9 @@ export default function ModelSelector({ value, onChange, suggestion }: ModelSele
                             ml: 1,
                             px: 0.75,
                             py: 0.25,
-                            bgcolor: '#dcfce7',
+                            bgcolor: '#22c55e18',
                             color: '#15803d',
-                            borderRadius: '4px',
+                            borderRadius: 0,
                             fontWeight: 600,
                           }}
                         >

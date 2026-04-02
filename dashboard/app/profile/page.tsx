@@ -206,9 +206,9 @@ export default function ProfilePage() {
 
       {/* Collapsible markdown sections */}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 4 }}>
-        <Accordion defaultExpanded disableGutters elevation={1} sx={{ borderRadius: 1 }}>
+        <Accordion defaultExpanded disableGutters elevation={0} sx={{ border: '2px solid', borderColor: 'text.primary' }}>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography variant="h6" fontWeight={600}>
+            <Typography variant="h6">
               Athlete Profile
             </Typography>
           </AccordionSummary>
@@ -217,9 +217,9 @@ export default function ProfilePage() {
           </AccordionDetails>
         </Accordion>
 
-        <Accordion defaultExpanded disableGutters elevation={1} sx={{ borderRadius: 1 }}>
+        <Accordion defaultExpanded disableGutters elevation={0} sx={{ border: '2px solid', borderColor: 'text.primary' }}>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography variant="h6" fontWeight={600}>
+            <Typography variant="h6">
               Periodization Plan
             </Typography>
           </AccordionSummary>

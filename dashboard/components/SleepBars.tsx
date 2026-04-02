@@ -51,15 +51,15 @@ export default function SleepBars({ avgSleep, dailyScores, sleepDelta }: SleepBa
 
           return (
             <g key={d.day}>
-              <rect x={x} y={y} width={barWidth} height={h} rx={4} fill={color} opacity={opacity} />
+              <rect x={x} y={y} width={barWidth} height={h} rx={0} fill={color} opacity={opacity} />
               {d.score != null && (
                 <text x={x + barWidth / 2} y={y + 12} fontSize="8" fill="white" textAnchor="middle"
-                  fontWeight="600" fontFamily="Inter, sans-serif">
+                  fontWeight="600" fontFamily="'JetBrains Mono', monospace">
                   {d.score}
                 </text>
               )}
               <text x={x + barWidth / 2} y={80} fontSize="8" fill="#64748b" textAnchor="middle"
-                fontFamily="Inter, sans-serif">
+                fontFamily="'JetBrains Mono', monospace">
                 {d.day}
               </text>
             </g>
@@ -75,7 +75,7 @@ export default function SleepBars({ avgSleep, dailyScores, sleepDelta }: SleepBa
           { color: semanticColors.recovery.problem, label: '<60' },
         ].map(({ color, label }) => (
           <Box key={label} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Box sx={{ width: 8, height: 8, bgcolor: color, borderRadius: '2px' }} />
+            <Box sx={{ width: 8, height: 8, bgcolor: color }} />
             <Typography sx={{ fontSize: '0.625rem', color: '#94a3b8' }}>{label}</Typography>
           </Box>
         ))}

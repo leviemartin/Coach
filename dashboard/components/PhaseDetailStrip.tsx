@@ -74,7 +74,8 @@ export default function PhaseDetailStrip({ phase, currentWeight, isCurrentPhase 
         gap: 2,
         flexWrap: 'wrap',
         bgcolor: 'action.hover',
-        borderRadius: 2,
+        border: '1px solid',
+        borderColor: 'divider',
         p: 1.5,
         mb: 1,
       }}

@@ -14,29 +14,31 @@ interface EnergyPainCardProps {
 const buttonBase = {
   width: 36,
   height: 34,
-  borderRadius: '4px',
-  border: '1px solid #e2e8f0',
+  borderRadius: 0,
+  border: '2px solid',
+  borderColor: '#e4e4e0',
   cursor: 'pointer',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
+  fontFamily: '"JetBrains Mono", monospace',
   fontSize: '0.8125rem',
   fontWeight: 600,
   userSelect: 'none' as const,
   transition: 'background 0.1s, border-color 0.1s',
-  bgcolor: '#fff',
-  color: '#374151',
-  '&:hover': { borderColor: '#94a3b8', bgcolor: '#f8fafc' },
+  bgcolor: '#ffffff',
+  color: '#18181b',
+  '&:hover': { borderColor: '#18181b', bgcolor: '#f0f0eb' },
 };
 
 const selectedAmber = {
-  bgcolor: '#fef3c7',
+  bgcolor: '#f59e0b18',
   borderColor: '#f59e0b',
   color: '#b45309',
 };
 
 const selectedGreen = {
-  bgcolor: '#dcfce7',
+  bgcolor: '#22c55e18',
   borderColor: '#22c55e',
   color: '#15803d',
 };
@@ -62,7 +64,7 @@ export default function EnergyPainCard({
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
           <Typography
             variant="caption"
-            sx={{ fontWeight: 600, minWidth: 48, color: '#374151' }}
+            sx={{ fontWeight: 600, minWidth: 48, color: 'text.primary' }}
           >
             Energy
           </Typography>
@@ -90,7 +92,7 @@ export default function EnergyPainCard({
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: painLevel && painLevel > 0 ? 1.5 : 0 }}>
           <Typography
             variant="caption"
-            sx={{ fontWeight: 600, minWidth: 48, color: '#374151' }}
+            sx={{ fontWeight: 600, minWidth: 48, color: 'text.primary' }}
           >
             Pain
           </Typography>

@@ -218,7 +218,7 @@ export default function HeadCoachDialogue({
       </Typography>
       <Typography
         variant="body2"
-        sx={{ color: '#64748b', mb: 3 }}
+        sx={{ color: '#71717a', mb: 3 }}
       >
         Challenge the plan, ask why, request changes. The Head Coach will explain
         trade-offs and adjust within safety bounds.
@@ -232,15 +232,15 @@ export default function HeadCoachDialogue({
           overflowY: 'auto',
           p: 2,
           mb: 2,
-          borderRadius: '12px',
-          borderColor: '#e2e8f0',
+          borderRadius: 0,
+          borderColor: '#e4e4e0',
           bgcolor: '#ffffff',
         }}
       >
         {messages.length === 0 && !streaming && (
           <Typography
             variant="body2"
-            sx={{ color: '#94a3b8', textAlign: 'center', py: 4 }}
+            sx={{ color: '#a1a1aa', textAlign: 'center', py: 4 }}
           >
             Ask the Head Coach about your Week {weekNumber} plan.
           </Typography>
@@ -260,12 +260,10 @@ export default function HeadCoachDialogue({
                 maxWidth: '80%',
                 px: 2,
                 py: 1.5,
-                borderRadius: msg.role === 'user'
-                  ? '12px 12px 2px 12px'
-                  : '12px 12px 12px 2px',
-                bgcolor: msg.role === 'user' ? '#6366f1' : '#f8fafc',
-                color: msg.role === 'user' ? '#ffffff' : '#0f172a',
-                border: msg.role === 'user' ? 'none' : '1px solid #e2e8f0',
+                borderRadius: 0,
+                bgcolor: msg.role === 'user' ? '#18181b' : '#fafaf7',
+                color: msg.role === 'user' ? '#fafaf7' : '#18181b',
+                border: msg.role === 'user' ? 'none' : '1px solid #e4e4e0',
               }}
             >
               {msg.role === 'assistant' && (
@@ -274,7 +272,7 @@ export default function HeadCoachDialogue({
                   sx={{
                     display: 'block',
                     fontWeight: 700,
-                    color: '#64748b',
+                    color: '#71717a',
                     mb: 0.5,
                     fontSize: '0.6875rem',
                     textTransform: 'uppercase',
@@ -306,9 +304,9 @@ export default function HeadCoachDialogue({
                 maxWidth: '80%',
                 px: 2,
                 py: 1.5,
-                borderRadius: '12px 12px 12px 2px',
-                bgcolor: '#f8fafc',
-                border: '1px solid #e2e8f0',
+                borderRadius: 0,
+                bgcolor: '#fafaf7',
+                border: '1px solid #e4e4e0',
               }}
             >
               <Typography
@@ -316,7 +314,7 @@ export default function HeadCoachDialogue({
                 sx={{
                   display: 'block',
                   fontWeight: 700,
-                  color: '#64748b',
+                  color: '#71717a',
                   mb: 0.5,
                   fontSize: '0.6875rem',
                   textTransform: 'uppercase',
@@ -342,16 +340,16 @@ export default function HeadCoachDialogue({
               sx={{
                 px: 2,
                 py: 1.5,
-                borderRadius: '12px 12px 12px 2px',
-                bgcolor: '#f8fafc',
-                border: '1px solid #e2e8f0',
+                borderRadius: 0,
+                bgcolor: '#fafaf7',
+                border: '1px solid #e4e4e0',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 1,
               }}
             >
-              <CircularProgress size={14} sx={{ color: '#6366f1' }} />
-              <Typography variant="body2" sx={{ color: '#94a3b8' }}>
+              <CircularProgress size={14} sx={{ color: '#18181b' }} />
+              <Typography variant="body2" sx={{ color: '#a1a1aa' }}>
                 Coach is thinking...
               </Typography>
             </Box>
@@ -376,8 +374,8 @@ export default function HeadCoachDialogue({
           size="small"
           sx={{
             '& .MuiOutlinedInput-root': {
-              borderRadius: '10px',
-              '&.Mui-focused fieldset': { borderColor: '#6366f1' },
+              borderRadius: 0,
+              '&.Mui-focused fieldset': { borderColor: '#18181b' },
             },
           }}
         />
@@ -385,12 +383,13 @@ export default function HeadCoachDialogue({
           onClick={sendMessage}
           disabled={streaming || !input.trim()}
           sx={{
-            bgcolor: '#6366f1',
-            color: '#ffffff',
+            bgcolor: '#18181b',
+            color: '#fafaf7',
+            borderRadius: 0,
             width: 40,
             height: 40,
-            '&:hover': { bgcolor: '#4f46e5' },
-            '&.Mui-disabled': { bgcolor: '#e2e8f0', color: '#94a3b8' },
+            '&:hover': { bgcolor: '#3f3f46' },
+            '&.Mui-disabled': { bgcolor: '#e4e4e0', color: '#a1a1aa' },
           }}
         >
           <SendIcon fontSize="small" />

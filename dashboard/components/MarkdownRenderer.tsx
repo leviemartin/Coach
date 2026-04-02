@@ -74,7 +74,8 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
             sx={{
               bgcolor: 'action.hover',
               p: 2,
-              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'divider',
               overflow: 'auto',
               my: 1,
               fontSize: '0.875rem',
@@ -91,7 +92,8 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
           sx={{
             bgcolor: 'action.hover',
             px: 0.5,
-            borderRadius: 0.5,
+            border: '1px solid',
+            borderColor: 'divider',
             fontSize: '0.875rem',
             fontFamily: 'monospace',
           }}

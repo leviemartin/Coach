@@ -17,7 +17,7 @@ export default function HrZoneBar({ zones }: HrZoneBarProps) {
 
   return (
     <Box sx={{ mt: 1.5 }}>
-      <Box sx={{ display: 'flex', height: 20, borderRadius: 1, overflow: 'hidden' }}>
+      <Box sx={{ display: 'flex', height: 20, overflow: 'hidden' }}>
         {values.map((v, i) => {
           const pct = (v / total) * 100;
           if (pct < 1) return null;
@@ -28,7 +28,7 @@ export default function HrZoneBar({ zones }: HrZoneBarProps) {
       </Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
         {values.map((v, i) => (
-          <Typography key={i} sx={{ fontSize: '0.625rem', color: '#94a3b8' }}>
+          <Typography key={i} sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.625rem', color: 'text.secondary' }}>
             {ZONE_LABELS[i]}: {v}m
           </Typography>
         ))}

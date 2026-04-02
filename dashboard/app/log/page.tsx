@@ -314,10 +314,10 @@ export default function DailyLogPage() {
           <ChevronLeftIcon />
         </IconButton>
         <Box sx={{ textAlign: 'center', minWidth: 160 }}>
-          <Typography variant="h6" fontWeight={700}>
+          <Typography variant="h5">
             {dayName}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.75rem', color: 'text.secondary' }}>
             {dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
             {' \u00B7 '}
             Week {weekNumber}

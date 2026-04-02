@@ -1,6 +1,7 @@
 'use client';
 
 import { Box, Card, CardContent, Chip, Typography } from '@mui/material';
+import { typography, borders } from '@/lib/design-tokens';
 
 interface SleepDisruptionCardProps {
   value: string | null;
@@ -25,20 +26,16 @@ export default function SleepDisruptionCard({
     <Card
       variant="outlined"
       sx={{
-        bgcolor: '#f8fafc',
-        border: '1px solid #e2e8f0',
-        borderRadius: '8px',
+        bgcolor: 'background.paper',
+        border: '2px solid',
+        borderColor: 'divider',
       }}
     >
       <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
         <Typography
-          variant="caption"
           sx={{
+            ...typography.categoryLabel,
             display: 'block',
-            fontWeight: 600,
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
-            color: '#64748b',
             mb: 1,
           }}
         >
@@ -57,19 +54,17 @@ export default function SleepDisruptionCard({
                 sx={
                   isSelected
                     ? {
-                        bgcolor: '#fef3c7',
-                        borderColor: '#f59e0b',
+                        bgcolor: '#f59e0b18',
                         color: '#b45309',
                         fontWeight: 600,
-                        border: '1px solid #f59e0b',
-                        '&:hover': { bgcolor: '#fde68a' },
+                        border: `2px solid #f59e0b`,
+                        '&:hover': { bgcolor: '#f59e0b25' },
                       }
                     : {
-                        bgcolor: '#fff',
-                        borderColor: '#e2e8f0',
-                        color: '#374151',
-                        border: '1px solid #e2e8f0',
-                        '&:hover': { bgcolor: '#f1f5f9', borderColor: '#94a3b8' },
+                        bgcolor: 'background.paper',
+                        color: 'text.primary',
+                        border: `2px solid ${borders.soft}`,
+                        '&:hover': { bgcolor: 'action.hover', borderColor: borders.hard },
                       }
                 }
               />
@@ -79,7 +74,7 @@ export default function SleepDisruptionCard({
 
         <Typography
           variant="caption"
-          sx={{ display: 'block', color: '#94a3b8', mt: 1 }}
+          sx={{ display: 'block', color: 'text.secondary', mt: 1 }}
         >
           → saved to {previousDayName} night
         </Typography>

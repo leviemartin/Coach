@@ -21,11 +21,11 @@ import type { WeeklyReviewData } from '@/app/api/checkin/review/route';
 // ── Category chip styles ──────────────────────────────────────────────────────
 
 const CATEGORY_STYLES: Record<string, { bg: string; color: string }> = {
-  injury:   { bg: '#ffedd5', color: '#c2410c' },
-  sleep:    { bg: '#ede9fe', color: '#6d28d9' },
-  training: { bg: '#dbeafe', color: '#1d4ed8' },
-  life:     { bg: '#fef3c7', color: '#b45309' },
-  other:    { bg: '#f1f5f9', color: '#64748b' },
+  injury:   { bg: '#f9731618', color: '#ea580c' },
+  sleep:    { bg: '#8b5cf618', color: '#7c3aed' },
+  training: { bg: '#3b82f618', color: '#2563eb' },
+  life:     { bg: '#f59e0b18', color: '#d97706' },
+  other:    { bg: '#a1a1aa18', color: '#71717a' },
 };
 
 const PAIN_LABELS = ['None', 'Mild', 'Moderate', 'Stop'];
@@ -41,7 +41,7 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
         fontWeight: 600,
         textTransform: 'uppercase',
         letterSpacing: '1px',
-        color: '#94a3b8',
+        color: '#a1a1aa',
         mb: 1,
         display: 'block',
       }}
@@ -79,8 +79,8 @@ function ComplianceRow({
         value={pct}
         sx={{
           height: 5,
-          borderRadius: 3,
-          bgcolor: '#e2e8f0',
+          borderRadius: 0,
+          bgcolor: '#e4e4e0',
           '& .MuiLinearProgress-bar': { bgcolor: color },
         }}
       />
@@ -274,12 +274,12 @@ export default function WeeklyReview({
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             {sessions.map((s) => {
               const complianceColor =
-                s.compliancePct == null ? '#94a3b8'
+                s.compliancePct == null ? '#a1a1aa'
                 : s.compliancePct >= 80 ? semanticColors.recovery.good
                 : s.compliancePct >= 50 ? semanticColors.recovery.caution
                 : semanticColors.recovery.problem;
               return (
-                <Card key={`${s.date}-${s.sessionTitle}`} variant="outlined" sx={{ borderRadius: 2 }}>
+                <Card key={`${s.date}-${s.sessionTitle}`} variant="outlined" sx={{ borderRadius: 0 }}>
                   <CardContent sx={{ ...cardContentSx, py: '10px !important' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
                       <Box>
@@ -318,7 +318,7 @@ export default function WeeklyReview({
       {/* ── Compliance ────────────────────────────────────────────────── */}
       <Box>
         <SectionHeader>Protocol Compliance</SectionHeader>
-        <Card variant="outlined" sx={{ borderRadius: 2 }}>
+        <Card variant="outlined" sx={{ borderRadius: 0 }}>
           <CardContent sx={cardContentSx}>
             <ComplianceRow
               label="Workouts"
@@ -351,7 +351,7 @@ export default function WeeklyReview({
       {(energyValues.length > 0 || painValues.length > 0) && (
         <Box>
           <SectionHeader>Energy & Pain (7-day)</SectionHeader>
-          <Card variant="outlined" sx={{ borderRadius: 2 }}>
+          <Card variant="outlined" sx={{ borderRadius: 0 }}>
             <CardContent sx={cardContentSx}>
               <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                 {energyValues.length > 0 && (
@@ -398,8 +398,8 @@ export default function WeeklyReview({
                             sx={{
                               fontSize: '0.6875rem',
                               height: 20,
-                              bgcolor: p.level >= 2 ? '#ffedd5' : '#f1f5f9',
-                              color: p.level >= 2 ? '#c2410c' : '#64748b',
+                              bgcolor: p.level >= 2 ? '#f9731618' : '#a1a1aa18',
+                              color: p.level >= 2 ? '#ea580c' : '#71717a',
                             }}
                           />
                           {p.area && (
@@ -422,7 +422,7 @@ export default function WeeklyReview({
       {compliance.sleep_disruptions.length > 0 && (
         <Box>
           <SectionHeader>Sleep Disruptions</SectionHeader>
-          <Card variant="outlined" sx={{ borderRadius: 2 }}>
+          <Card variant="outlined" sx={{ borderRadius: 0 }}>
             <CardContent sx={cardContentSx}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
                 {compliance.sleep_disruptions.map((d) => (
@@ -436,8 +436,8 @@ export default function WeeklyReview({
                       sx={{
                         fontSize: '0.6875rem',
                         height: 20,
-                        bgcolor: '#ede9fe',
-                        color: '#6d28d9',
+                        bgcolor: '#8b5cf618',
+                        color: '#7c3aed',
                       }}
                     />
                   </Box>
@@ -452,7 +452,7 @@ export default function WeeklyReview({
       {taggedNotes.length > 0 && (
         <Box>
           <SectionHeader>Notes This Week</SectionHeader>
-          <Card variant="outlined" sx={{ borderRadius: 2 }}>
+          <Card variant="outlined" sx={{ borderRadius: 0 }}>
             <CardContent sx={cardContentSx}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 {Object.entries(notesByDate).map(([date, notes]) => (
@@ -495,7 +495,7 @@ export default function WeeklyReview({
       {/* ── Garmin ────────────────────────────────────────────────────── */}
       <Box>
         <SectionHeader>Garmin Data</SectionHeader>
-        <Card variant="outlined" sx={{ borderRadius: 2 }}>
+        <Card variant="outlined" sx={{ borderRadius: 0 }}>
           <CardContent sx={cardContentSx}>
             <GarminBadge
               status={garmin.status}

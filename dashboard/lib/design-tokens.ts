@@ -38,38 +38,51 @@ export const cardAccents = {
   protocols: semanticColors.protocols,
 } as const;
 
-/** Typography sizes for the card hierarchy */
+/** Brutalist border tokens */
+export const borders = {
+  hard: '#18181b',
+  soft: '#e4e4e0',
+  input: '#d4d4d0',
+  inputFocus: '#18181b',
+} as const;
+
+/** Typography sizes for the card hierarchy — all numeric data in JetBrains Mono */
 export const typography = {
-  heroNumber: { fontSize: '2.625rem', fontWeight: 800 },   // 42px
-  primaryMetric: { fontSize: '2rem', fontWeight: 800 },     // 32px
-  metricValue: { fontSize: '1.5rem', fontWeight: 700 },     // 24px
-  sectionTitle: { fontSize: '1.25rem', fontWeight: 700 },   // 20px
-  categoryLabel: {
-    fontSize: '0.6875rem',  // 11px
-    fontWeight: 600,
+  heroNumber: { fontFamily: '"JetBrains Mono", monospace', fontSize: '2.625rem', fontWeight: 800 },   // 42px
+  primaryMetric: { fontFamily: '"JetBrains Mono", monospace', fontSize: '2rem', fontWeight: 800 },     // 32px
+  metricValue: { fontFamily: '"JetBrains Mono", monospace', fontSize: '1.5rem', fontWeight: 700 },     // 24px
+  sectionTitle: {
+    fontFamily: '"Libre Franklin", sans-serif',
+    fontSize: '1.25rem',
+    fontWeight: 900,
     textTransform: 'uppercase' as const,
-    letterSpacing: '1px',
-    color: '#94a3b8',
+    letterSpacing: '-0.3px',
+  },   // 20px
+  categoryLabel: {
+    fontFamily: '"JetBrains Mono", monospace',
+    fontSize: '0.5625rem',  // 9px
+    fontWeight: 700,
+    textTransform: 'uppercase' as const,
+    letterSpacing: '2px',
+    color: '#71717a',  // text.secondary
   },
 } as const;
 
-/** @deprecated Legacy card style — borderRadius now 0 via theme. Kept for existing dashboard components. */
-export const cardBase = {
-  borderRadius: 0,
-  padding: '20px',
-} as const;
-
-/** Hero card style (Tier 1) — includes left accent border */
+/** Hero card style (Tier 1) — 3px hard border + left accent */
 export function heroCardSx(accentColor: string) {
   return {
-    borderRadius: cardBase.borderRadius,
+    borderRadius: 0,
+    border: `3px solid ${borders.hard}`,
     borderLeft: `4px solid ${accentColor}`,
+    boxShadow: 'none',
   };
 }
 
-/** Metric card style (Tier 3) — no accent border */
+/** Metric card style (Tier 3) — 3px hard border, no accent */
 export const metricCardSx = {
-  borderRadius: cardBase.borderRadius,
+  borderRadius: 0,
+  border: `3px solid ${borders.hard}`,
+  boxShadow: 'none',
 } as const;
 
 /** Section accent colors for the brutalist design language */
@@ -88,14 +101,6 @@ export const supersetColors: Record<string, { border: string; bg: string }> = {
   B: { border: '#7c3aed', bg: '#7c3aed15' },
   C: { border: '#ea580c', bg: '#ea580c15' },
   D: { border: '#b45309', bg: '#b4530915' },
-} as const;
-
-/** Brutalist border tokens */
-export const borders = {
-  hard: '#18181b',
-  soft: '#e4e4e0',
-  input: '#d4d4d0',
-  inputFocus: '#18181b',
 } as const;
 
 /** Status badge colors */

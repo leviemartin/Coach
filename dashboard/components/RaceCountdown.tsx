@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, Typography, LinearProgress, Box } from '@mui/material';
+import { Typography, Box } from '@mui/material';
 import type { Race } from '@/lib/types';
-import { semanticColors, typography } from '@/lib/design-tokens';
+import { borders } from '@/lib/design-tokens';
 
 const TRAINING_START = new Date('2025-12-29');
 
@@ -37,58 +37,105 @@ export default function RaceCountdown() {
     ? races.filter((r) => daysUntil(new Date(r.date)) > 0).sort((a, b) => a.date.localeCompare(b.date))
     : [];
 
-  // Use the furthest-out race for progress bar
   const furthestRace = upcomingRaces.length > 0 ? upcomingRaces[upcomingRaces.length - 1] : null;
   const overallProgress = furthestRace ? progressPercent(TRAINING_START, new Date(furthestRace.date)) : 0;
 
   return (
-    <Card variant="outlined" sx={{ bgcolor: 'background.paper' }}>
-      <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-        <Typography sx={typography.categoryLabel}>
-          RACE COUNTDOWN
+    <Box sx={{ border: `2px solid ${borders.hard}`, bgcolor: 'background.paper', p: 1.5 }}>
+      <Typography sx={{
+        fontFamily: '"JetBrains Mono", monospace',
+        fontSize: '9px',
+        fontWeight: 700,
+        textTransform: 'uppercase',
+        letterSpacing: '2px',
+        color: 'text.secondary',
+      }}>
+        RACE COUNTDOWN
+      </Typography>
+
+      {error ? (
+        <Typography sx={{
+          fontFamily: '"JetBrains Mono", monospace',
+          fontSize: '10px',
+          color: 'text.secondary',
+          mt: 1,
+        }}>
+          Race data unavailable
         </Typography>
-
-        {error ? (
-          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-            Race data unavailable
-          </Typography>
-        ) : (<>
-        {mounted && upcomingRaces.map((race) => {
-          const days = daysUntil(new Date(race.date));
-          const weeks = Math.floor(days / 7);
-          const remainDays = days % 7;
-          return (
-            <Box key={race.id} sx={{ mt: 1 }}>
-              <Typography variant="body2" fontWeight={500}>
-                {race.name}
-              </Typography>
-              <Typography sx={{ ...typography.metricValue, color: 'primary.main' }}>
-                {weeks}w {remainDays}d
-              </Typography>
-            </Box>
-          );
-        })}
-
-        {mounted && furthestRace && (
-          <Box sx={{ mt: 1 }}>
-            <LinearProgress
-              variant="determinate"
-              value={overallProgress}
-              sx={{ '& .MuiLinearProgress-bar': { backgroundColor: semanticColors.body } }}
-            />
-            <Typography variant="caption" color="text.secondary">
-              {Math.round(overallProgress)}% of journey
+      ) : (<>
+      {mounted && upcomingRaces.map((race) => {
+        const days = daysUntil(new Date(race.date));
+        const weeks = Math.floor(days / 7);
+        const remainDays = days % 7;
+        return (
+          <Box key={race.id} sx={{ mt: 1 }}>
+            <Typography sx={{
+              fontFamily: '"JetBrains Mono", monospace',
+              fontSize: '11px',
+              fontWeight: 500,
+            }}>
+              {race.name}
+            </Typography>
+            <Typography sx={{
+              fontFamily: '"JetBrains Mono", monospace',
+              fontSize: '20px',
+              fontWeight: 700,
+              letterSpacing: '-0.5px',
+              color: 'text.primary',
+              lineHeight: 1.2,
+            }}>
+              {weeks}w {remainDays}d
             </Typography>
           </Box>
-        )}
+        );
+      })}
 
-        {mounted && upcomingRaces.length === 0 && (
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            No upcoming races
+      {mounted && furthestRace && (
+        <Box sx={{ mt: 1 }}>
+          {/* Pip-style progress bar */}
+          <Box sx={{ display: 'flex', gap: '2px', mb: 0.5 }}>
+            {Array.from({ length: 10 }, (_, i) => {
+              const filled = overallProgress >= (i + 1) * 10;
+              const active = !filled && overallProgress >= i * 10;
+              return (
+                <Box
+                  key={i}
+                  sx={{
+                    flex: 1,
+                    height: 6,
+                    bgcolor: filled ? '#22c55e' : active ? borders.hard : borders.soft,
+                    ...(active && {
+                      outline: `1px solid ${borders.hard}`,
+                      outlineOffset: -1,
+                    }),
+                  }}
+                />
+              );
+            })}
+          </Box>
+          <Typography sx={{
+            fontFamily: '"JetBrains Mono", monospace',
+            fontSize: '9px',
+            fontWeight: 700,
+            letterSpacing: '1px',
+            color: 'text.secondary',
+          }}>
+            {Math.round(overallProgress)}% OF JOURNEY
           </Typography>
-        )}
-        </>)}
-      </CardContent>
-    </Card>
+        </Box>
+      )}
+
+      {mounted && upcomingRaces.length === 0 && (
+        <Typography sx={{
+          fontFamily: '"JetBrains Mono", monospace',
+          fontSize: '11px',
+          color: 'text.secondary',
+          mt: 1,
+        }}>
+          No upcoming races
+        </Typography>
+      )}
+      </>)}
+    </Box>
   );
 }

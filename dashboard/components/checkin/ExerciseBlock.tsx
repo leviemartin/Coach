@@ -27,14 +27,14 @@ export interface ExerciseGroup {
 // ─── Superset color map ───────────────────────────────────────────────────────
 
 const SUPERSET_COLORS: Record<string, { bg: string; text: string }> = {
-  A: { bg: '#dbeafe', text: '#1d4ed8' },
-  B: { bg: '#ede9fe', text: '#6d28d9' },
-  C: { bg: '#ffedd5', text: '#c2410c' },
-  D: { bg: '#fef3c7', text: '#b45309' },
+  A: { bg: '#3b82f618', text: '#2563eb' },
+  B: { bg: '#8b5cf618', text: '#7c3aed' },
+  C: { bg: '#f9731618', text: '#ea580c' },
+  D: { bg: '#f59e0b18', text: '#d97706' },
 };
 
 function getSupersetColor(letter: string) {
-  return SUPERSET_COLORS[letter.toUpperCase()] ?? { bg: '#f1f5f9', text: '#475569' };
+  return SUPERSET_COLORS[letter.toUpperCase()] ?? { bg: '#f0f0eb', text: '#71717a' };
 }
 
 // ─── Parser ───────────────────────────────────────────────────────────────────
@@ -239,8 +239,8 @@ export default function ExerciseBlock({ group }: ExerciseBlockProps) {
   const isWarmCool = group.type === 'warmup' || group.type === 'cooldown';
   const isCardio = group.type === 'cardio';
 
-  const borderColor = isCardio ? '#14b8a6' : '#e2e8f0';
-  const bgColor = isWarmCool ? '#fafbfc' : '#ffffff';
+  const borderColor = isCardio ? '#14b8a6' : '#e4e4e0';
+  const bgColor = isWarmCool ? '#fafaf7' : '#ffffff';
 
   return (
     <Box>
@@ -252,12 +252,12 @@ export default function ExerciseBlock({ group }: ExerciseBlockProps) {
             fontWeight: 600,
             textTransform: 'uppercase',
             letterSpacing: '1px',
-            color: '#64748b',
+            color: '#71717a',
           }}>
             {group.label}
           </Typography>
           {group.roundInfo && (
-            <Typography sx={{ fontSize: '0.6875rem', color: '#94a3b8', fontWeight: 400 }}>
+            <Typography sx={{ fontSize: '0.6875rem', color: '#a1a1aa', fontWeight: 400 }}>
               — {group.roundInfo}
             </Typography>
           )}
@@ -272,7 +272,7 @@ export default function ExerciseBlock({ group }: ExerciseBlockProps) {
             fontWeight: 600,
             textTransform: 'uppercase',
             letterSpacing: '1px',
-            color: '#64748b',
+            color: '#71717a',
           }}>
             Cardio
           </Typography>
@@ -283,7 +283,7 @@ export default function ExerciseBlock({ group }: ExerciseBlockProps) {
       <Box sx={{
         bgcolor: bgColor,
         border: `1px solid ${borderColor}`,
-        borderRadius: '8px',
+        borderRadius: 0,
         px: 2,
         py: 1.5,
         mb: 0.5,
@@ -297,11 +297,11 @@ export default function ExerciseBlock({ group }: ExerciseBlockProps) {
             {group.cardioText && (
               <Typography sx={{
                 fontSize: '0.75rem',
-                color: '#64748b',
+                color: '#71717a',
                 lineHeight: 1.8,
                 mt: group.exercises.length > 0 ? 0.5 : 0,
                 pt: group.exercises.length > 0 ? 0.5 : 0,
-                borderTop: group.exercises.length > 0 ? '1px solid #f1f5f9' : 'none',
+                borderTop: group.exercises.length > 0 ? '1px solid #e4e4e0' : 'none',
                 whiteSpace: 'pre-line',
               }}>
                 {group.cardioText}
@@ -340,7 +340,7 @@ function ExerciseRowItem({ exercise }: { exercise: ExerciseRow }) {
             justifyContent: 'center',
             width: 22,
             height: 22,
-            borderRadius: '4px',
+            borderRadius: 0,
             bgcolor: colors.bg,
             color: colors.text,
             fontSize: '0.6875rem',
@@ -350,18 +350,18 @@ function ExerciseRowItem({ exercise }: { exercise: ExerciseRow }) {
             {exercise.label}
           </Box>
         )}
-        <Typography sx={{ fontSize: '0.8125rem', color: '#0f172a' }}>
+        <Typography sx={{ fontSize: '0.8125rem', color: '#18181b' }}>
           {exercise.name}
         </Typography>
       </Box>
 
       {/* Detail with optional bold weight */}
       {exercise.detail && (
-        <Typography component="span" sx={{ fontSize: '0.75rem', color: '#64748b', flexShrink: 0, ml: 1 }}>
+        <Typography component="span" sx={{ fontSize: '0.75rem', color: '#71717a', flexShrink: 0, ml: 1 }}>
           {exercise.hasWeight ? (
             <>
               {exercise.textBefore}
-              <Box component="strong" sx={{ color: '#0f172a' }}>{exercise.weightPart}</Box>
+              <Box component="strong" sx={{ color: '#18181b' }}>{exercise.weightPart}</Box>
               {exercise.textAfter}
             </>
           ) : (
