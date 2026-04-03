@@ -6,7 +6,6 @@ import type { ExerciseBlock, Section } from '@/lib/types';
 import { formatDuration, formatRx } from '@/lib/format';
 import { borders } from '@/lib/design-tokens';
 import SectionDivider from '@/components/plan/SectionDivider';
-import WarmupCheckbox from '@/components/plan/WarmupCheckbox';
 import PipProgress from './PipProgress';
 import ExerciseNav from './ExerciseNav';
 import SetRowInput from './SetRowInput';
@@ -54,96 +53,10 @@ export default function SessionPage() {
     getCoachCue,
   } = useSession();
 
-  // ── Warm-up/cool-down toggle handler ───────────────────────────────────────
-
-  const handleWarmupToggle = (exerciseName: string) => {
-    if (!session) return;
-    const exSets = session.sets.filter((s) => s.exerciseName === exerciseName);
-    const allDoneLocal = exSets.length > 0 && exSets.every((s) => s.completed);
-    for (const s of exSets) {
-      handleUpdateSet(s.id!, s.actualWeightKg ?? s.prescribedWeightKg, s.actualReps ?? s.prescribedReps, !allDoneLocal);
-    }
-    const exCardio = session.cardio.filter((c) => c.exerciseName === exerciseName);
-    for (const c of exCardio) {
-      handleUpdateCardio(c.id!, allDoneLocal ? 0 : 1, !allDoneLocal);
-    }
-  };
-
   // ── Block rendering ────────────────────────────────────────────────────────
 
   function renderBlock(block: ExerciseBlock) {
     if (!session) return null;
-
-    // Warm-up / cool-down: simplified checkbox view
-    if (block.section === 'warm_up' || block.section === 'cool_down') {
-      if (block.kind === 'superset') {
-        return (
-          <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-            {block.exercises.map((ex) => {
-              const exSets = session.sets.filter((s) => s.exerciseName === ex.name);
-              const exCardio = session.cardio.filter((c) => c.exerciseName === ex.name);
-              const allSetsDone = exSets.length > 0 ? exSets.every((s) => s.completed) : exCardio.every((c) => c.completed);
-              const coachCue = getCoachCue(ex.name) ?? ex.coachCue;
-              const detail = ex.prescribedDurationS
-                ? formatDuration(ex.prescribedDurationS)
-                : exSets.length > 0
-                  ? `${exSets.length} set${exSets.length > 1 ? 's' : ''}`
-                  : '';
-              return (
-                <WarmupCheckbox
-                  key={ex.name}
-                  exerciseName={ex.name}
-                  detail={detail}
-                  coachCue={coachCue}
-                  completed={allSetsDone}
-                  onToggle={() => handleWarmupToggle(ex.name)}
-                  interactive
-                />
-              );
-            })}
-          </Box>
-        );
-      }
-
-      if (block.kind === 'cardio') {
-        const c = session.cardio.find((c) => c.exerciseName === block.exercise.name);
-        const coachCue = getCoachCue(block.exercise.name) ?? block.exercise.coachCue;
-        const detail = block.exercise.prescribedDurationMin
-          ? `${block.exercise.prescribedDurationMin}min`
-          : '';
-        return (
-          <WarmupCheckbox
-            exerciseName={block.exercise.name}
-            detail={detail}
-            coachCue={coachCue}
-            completed={c?.completed ?? false}
-            onToggle={() => handleWarmupToggle(block.exercise.name)}
-            interactive
-          />
-        );
-      }
-
-      // Single strength/timed/carry/mobility in warm-up/cool-down
-      const ex = block.exercise;
-      const exSets = session.sets.filter((s) => s.exerciseName === ex.name);
-      const allSetsDone = exSets.length > 0 && exSets.every((s) => s.completed);
-      const coachCue = getCoachCue(ex.name) ?? ex.coachCue;
-      const detail = ex.prescribedDurationS
-        ? formatDuration(ex.prescribedDurationS)
-        : exSets.length > 0
-          ? `${exSets.length} set${exSets.length > 1 ? 's' : ''}`
-          : '';
-      return (
-        <WarmupCheckbox
-          exerciseName={ex.name}
-          detail={detail}
-          coachCue={coachCue}
-          completed={allSetsDone}
-          onToggle={() => handleWarmupToggle(ex.name)}
-          interactive
-        />
-      );
-    }
 
     // Superset block
     if (block.kind === 'superset') {
