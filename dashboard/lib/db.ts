@@ -531,44 +531,75 @@ export function initTablesOn(db: Database.Database) {
     db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('dedup_sessions_v2', ?)").run(new Date().toISOString());
   }
 
-  // v3: Fix session_logs.date to match plan_items.assigned_date when they diverge
-  // (the surviving session from v2 kept the wrong date because it was created on a different day)
-  const migrated3 = db.prepare("SELECT value FROM settings WHERE key = 'fix_session_dates_v3'").get();
-  if (!migrated3) {
+  // v4: Fix session dates using day name when assigned_date is NULL
+  // v3 failed because plan_item.assigned_date was NULL — day is set via day name ("Tuesday"), not assigned_date.
+  // This migration computes the correct date from the week start + day name offset.
+  const migrated4 = db.prepare("SELECT value FROM settings WHERE key = 'fix_session_dates_v4'").get();
+  if (!migrated4) {
+    const EPOCH = new Date('2025-12-29T00:00:00Z').getTime(); // Monday, program start
+    const DAY_OFFSETS: Record<string, number> = {
+      Monday: 0, Tuesday: 1, Wednesday: 2, Thursday: 3, Friday: 4, Saturday: 5, Sunday: 6,
+    };
+
+    // Find sessions whose date doesn't match their plan_item's scheduled day
+    // Match by week_number + focus (title), use day name to compute correct date
     const mismatched = db.prepare(`
-      SELECT sl.id AS session_id, sl.date AS wrong_date, pi.assigned_date AS correct_date
+      SELECT sl.id AS session_id, sl.date AS current_date, sl.week_number,
+             pi.id AS plan_item_id, pi.day AS day_name
       FROM session_logs sl
       JOIN plan_items pi
         ON pi.week_number = sl.week_number
         AND pi.focus = sl.session_title
-        AND pi.assigned_date IS NOT NULL
-        AND pi.assigned_date != sl.date
-    `).all() as Array<{ session_id: number; wrong_date: string; correct_date: string }>;
+      WHERE pi.assigned_date IS NULL
+        AND sl.completed_at IS NOT NULL
+    `).all() as Array<{ session_id: number; current_date: string; week_number: number; plan_item_id: number; day_name: string }>;
 
     for (const m of mismatched) {
-      // Update session_logs date
-      db.prepare('UPDATE session_logs SET date = ? WHERE id = ?').run(m.correct_date, m.session_id);
+      const offset = DAY_OFFSETS[m.day_name];
+      if (offset === undefined) continue;
+      const weekStartMs = EPOCH + (m.week_number - 1) * 7 * 86400000;
+      const correctDate = new Date(weekStartMs + offset * 86400000).toISOString().split('T')[0];
 
-      // Clear linkage from wrong date's daily_log
-      db.prepare('UPDATE daily_logs SET session_log_id = NULL, session_summary = NULL, workout_completed = 0 WHERE date = ? AND session_log_id = ?')
-        .run(m.wrong_date, m.session_id);
+      if (correctDate === m.current_date) continue; // already correct
 
-      // Link to correct date's daily_log (create if missing)
-      const correctLog = db.prepare('SELECT id FROM daily_logs WHERE date = ?').get(m.correct_date) as { id: number } | undefined;
+      console.log(`[db] v4: moving session ${m.session_id} from ${m.current_date} to ${correctDate}`);
+
+      // 1. Update session_logs date
+      db.prepare('UPDATE session_logs SET date = ? WHERE id = ?').run(correctDate, m.session_id);
+
+      // 2. Link daily_log on correct date to this session + plan_item
+      const correctLog = db.prepare('SELECT id FROM daily_logs WHERE date = ?').get(correctDate) as { id: number } | undefined;
       if (correctLog) {
-        // Re-generate summary from session data
-        const summary = db.prepare('SELECT session_title, compliance_pct FROM session_logs WHERE id = ?')
-          .get(m.session_id) as { session_title: string; compliance_pct: number | null } | undefined;
-        const summaryText = summary ? `${summary.session_title} — ${summary.compliance_pct ?? 0}% compliance` : null;
-        db.prepare('UPDATE daily_logs SET session_log_id = ?, session_summary = ?, workout_completed = 1 WHERE date = ?')
-          .run(m.session_id, summaryText, m.correct_date);
+        db.prepare(`
+          UPDATE daily_logs SET session_log_id = ?, workout_plan_item_id = ?, workout_completed = 1
+          WHERE date = ?
+        `).run(m.session_id, m.plan_item_id, correctDate);
       }
+
+      // 3. Mark plan_item as completed
+      db.prepare("UPDATE plan_items SET status = 'completed', completed = 1, completed_at = ? WHERE id = ?")
+        .run(new Date().toISOString(), m.plan_item_id);
+    }
+
+    // 4. Clean up stale uncompleted sessions (started but never finished)
+    const stale = db.prepare(`
+      SELECT id FROM session_logs WHERE completed_at IS NULL
+    `).all() as Array<{ id: number }>;
+    for (const s of stale) {
+      db.prepare('DELETE FROM session_exercise_feedback WHERE session_log_id = ?').run(s.id);
+      db.prepare('DELETE FROM session_sets WHERE session_log_id = ?').run(s.id);
+      db.prepare('DELETE FROM session_cardio WHERE session_log_id = ?').run(s.id);
+      db.prepare('UPDATE daily_logs SET session_log_id = NULL WHERE session_log_id = ?').run(s.id);
+      db.prepare('DELETE FROM session_logs WHERE id = ?').run(s.id);
+    }
+    if (stale.length > 0) {
+      console.log(`[db] v4: deleted ${stale.length} stale uncompleted session(s)`);
     }
 
     if (mismatched.length > 0) {
-      console.log(`[db] fix_session_dates_v3: corrected date on ${mismatched.length} session(s)`);
+      console.log(`[db] fix_session_dates_v4: processed ${mismatched.length} session(s)`);
     }
-    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('fix_session_dates_v3', ?)").run(new Date().toISOString());
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('fix_session_dates_v4', ?)").run(new Date().toISOString());
   }
 }
 
