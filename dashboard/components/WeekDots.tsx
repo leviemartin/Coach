@@ -1,6 +1,7 @@
 'use client';
 
 import { Box, Typography } from '@mui/material';
+import { borders } from '@/lib/design-tokens';
 
 interface DayInfo {
   date: string;
@@ -15,10 +16,10 @@ interface WeekDotsProps {
 }
 
 const STATUS_COLORS: Record<DayInfo['status'], string> = {
-  complete: 'success.main',
-  partial: 'warning.main',
-  empty: 'action.disabled',
-  family: 'action.disabledBackground',
+  complete: '#f97316',
+  partial: '#f59e0b',
+  empty: '#d4d4d0',
+  family: '#e4e4e0',
 };
 
 export default function WeekDots({ days, currentDate, onDayClick }: WeekDotsProps) {
@@ -43,11 +44,13 @@ export default function WeekDots({ days, currentDate, onDayClick }: WeekDotsProp
             }}
           >
             <Typography
-              variant="caption"
               sx={{
+                fontFamily: '"JetBrains Mono", monospace',
                 fontWeight: isCurrent ? 700 : 400,
                 color: isCurrent ? 'text.primary' : 'text.secondary',
-                fontSize: { xs: '0.65rem', sm: '0.75rem' },
+                fontSize: { xs: '0.6rem', sm: '0.7rem' },
+                letterSpacing: '1px',
+                textTransform: 'uppercase',
               }}
             >
               {day.day}
@@ -56,12 +59,10 @@ export default function WeekDots({ days, currentDate, onDayClick }: WeekDotsProp
               sx={{
                 width: { xs: 14, sm: 18 },
                 height: { xs: 14, sm: 18 },
-                borderRadius: '50%',
+                borderRadius: 0,
                 bgcolor: STATUS_COLORS[day.status],
-                border: isCurrent ? 2 : 0,
-                borderColor: 'primary.main',
-                transition: 'transform 0.15s',
-                '&:hover': isFamily ? {} : { transform: 'scale(1.2)' },
+                border: isCurrent ? `2px solid ${borders.hard}` : 'none',
+                '&:hover': isFamily ? {} : { opacity: 0.7 },
               }}
             />
           </Box>

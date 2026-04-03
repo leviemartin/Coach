@@ -1,7 +1,7 @@
 'use client';
 
 import { Box, Typography } from '@mui/material';
-import { semanticColors } from '@/lib/design-tokens';
+import { borders } from '@/lib/design-tokens';
 
 interface DayProgressProps {
   checked: number;
@@ -10,91 +10,48 @@ interface DayProgressProps {
 }
 
 export default function DayProgress({ checked, total, streak }: DayProgressProps) {
-  const size = 80;
-  const strokeWidth = 6;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const pct = total > 0 ? checked / total : 0;
-  const offset = circumference * (1 - pct);
-  const isComplete = pct >= 1;
-  const arcColor = isComplete ? semanticColors.recovery.good : semanticColors.body;
-
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-      {/* Progress ring */}
-      <Box sx={{ flexShrink: 0, position: 'relative', width: size, height: size }}>
-        <svg width={size} height={size} style={{ display: 'block' }}>
-          {isComplete && (
-            <defs>
-              <filter id="glow">
-                <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />
-                <feMerge>
-                  <feMergeNode in="coloredBlur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            </defs>
-          )}
-          {/* Background circle */}
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="none"
-            stroke={arcColor}
-            strokeWidth={strokeWidth}
-            opacity={0.12}
+    <Box>
+      {/* Pip bar */}
+      <Box sx={{ display: 'flex', gap: '2px', mb: 1 }}>
+        {Array.from({ length: total }, (_, i) => (
+          <Box
+            key={i}
+            sx={{
+              flex: 1,
+              height: 6,
+              bgcolor: i < checked ? '#22c55e' : borders.soft,
+            }}
           />
-          {/* Progress arc */}
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="none"
-            stroke={arcColor}
-            strokeWidth={strokeWidth}
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            strokeDashoffset={offset}
-            transform={`rotate(-90 ${size / 2} ${size / 2})`}
-            filter={isComplete ? 'url(#glow)' : undefined}
-            style={{ transition: 'stroke-dashoffset 0.4s ease, stroke 0.4s ease' }}
-          />
-          {/* Center text */}
-          <text
-            x="50%"
-            y="50%"
-            dominantBaseline="central"
-            textAnchor="middle"
-            fontSize="14"
-            fontWeight="700"
-            fill="currentColor"
-          >
-            {checked}/{total}
-          </text>
-        </svg>
+        ))}
       </Box>
 
-      {/* Streak info */}
-      <Box>
-        {streak.current > 0 ? (
-          <Typography
-            variant="body2"
-            fontWeight={700}
-            sx={{ color: semanticColors.cardioIntervals, lineHeight: 1.3 }}
-          >
-            {streak.current} day streak
+      {/* Stats row */}
+      <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+          <Typography sx={{ fontFamily: '"JetBrains Mono", monospace', fontWeight: 800, fontSize: '1.25rem' }}>
+            {checked}/{total}
           </Typography>
-        ) : (
-          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.3 }}>
-            No active streak
+          <Typography sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.625rem', fontWeight: 700, color: '#71717a', textTransform: 'uppercase', letterSpacing: '2px' }}>
+            protocols
           </Typography>
-        )}
-        {streak.best > 0 && (
-          <Typography variant="caption" color="text.secondary">
-            Best: {streak.best} days
-          </Typography>
-        )}
+        </Box>
+        <Box sx={{ textAlign: 'right' }}>
+          {streak.current > 0 ? (
+            <Typography sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.75rem', fontWeight: 700, color: '#f97316' }}>
+              {streak.current}d streak
+            </Typography>
+          ) : (
+            <Typography sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.75rem', color: '#71717a' }}>
+              No streak
+            </Typography>
+          )}
+          {streak.best > 0 && (
+            <Typography sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.5625rem', fontWeight: 700, color: '#a1a1aa', textTransform: 'uppercase', letterSpacing: '2px' }}>
+              Best: {streak.best}d
+            </Typography>
+          )}
+        </Box>
       </Box>
     </Box>
   );

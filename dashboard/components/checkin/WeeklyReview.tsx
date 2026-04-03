@@ -146,7 +146,7 @@ function GarminBadge({
         sx={{
           width: 8,
           height: 8,
-          borderRadius: '50%',
+          borderRadius: 0,
           bgcolor: color,
           flexShrink: 0,
         }}

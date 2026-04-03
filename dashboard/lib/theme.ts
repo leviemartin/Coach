@@ -167,6 +167,32 @@ function buildThemeOptions(mode: 'light' | 'dark'): ThemeOptions {
           root: { borderRadius: 0, height: 6 },
         },
       },
+      MuiStepIcon: {
+        styleOverrides: {
+          root: {
+            borderRadius: 0,
+            '&.Mui-active': { color: c.primary },
+            '&.Mui-completed': { color: c.primary },
+          },
+        },
+      },
+      MuiStepConnector: {
+        styleOverrides: {
+          line: {
+            borderColor: c.divider,
+            borderTopWidth: 2,
+          },
+        },
+      },
+      MuiStepLabel: {
+        styleOverrides: {
+          label: {
+            fontFamily: '"JetBrains Mono", monospace',
+            fontSize: '0.6875rem',
+            fontWeight: 600,
+          },
+        },
+      },
       MuiTableCell: {
         styleOverrides: {
           root: { borderColor: c.divider, fontSize: '0.8125rem', fontFamily: '"JetBrains Mono", monospace' },

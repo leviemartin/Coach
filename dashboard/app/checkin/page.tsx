@@ -12,6 +12,7 @@ import {
 import { useRouter } from 'next/navigation';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
+import BrutalistStepIcon from '@/components/checkin/BrutalistStepIcon';
 import WeeklyReview from '@/components/checkin/WeeklyReview';
 import SubjectiveInputs from '@/components/checkin/SubjectiveInputs';
 import TriageQA from '@/components/checkin/TriageQA';
@@ -86,7 +87,7 @@ export default function CheckInPage() {
       <Stepper activeStep={activeStep} sx={{ mb: 4 }} alternativeLabel>
         {stepLabels.map((label) => (
           <Step key={label}>
-            <StepLabel>{label}</StepLabel>
+            <StepLabel StepIconComponent={BrutalistStepIcon}>{label}</StepLabel>
           </Step>
         ))}
       </Stepper>
