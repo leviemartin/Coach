@@ -121,6 +121,7 @@ export default function DailyLogPage() {
   const [totalTrainingSessions, setTotalTrainingSessions] = useState<number>(0);
   const [streak, setStreak] = useState<{ current: number; best: number }>({ current: 0, best: 0 });
   const [familyDates, setFamilyDates] = useState<string[]>([]);
+  const [weekPlanItems, setWeekPlanItems] = useState<Array<{ date: string; session_type: string; focus: string; status: string; completed: number }>>([]);
   const [weekLogs, setWeekLogs] = useState<WeekLog[]>([]);
   const [complianceTrend, setComplianceTrend] = useState<TrendPoint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -150,6 +151,7 @@ export default function DailyLogPage() {
         setTotalTrainingSessions(data.total_training_sessions ?? 0);
         setStreak(data.streak || { current: 0, best: 0 });
         setFamilyDates(data.family_dates || []);
+        setWeekPlanItems(data.week_plan_items || []);
       }
     } catch {
       // keep existing state
@@ -362,6 +364,7 @@ export default function DailyLogPage() {
           onNotesChange={handleNotesChange}
           onDayClick={setCurrentDate}
           isFamilyDay={isFamilyDay}
+          weekPlanItems={weekPlanItems}
         />
       </Box>
     </Box>

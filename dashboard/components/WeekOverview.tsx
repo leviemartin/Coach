@@ -94,32 +94,14 @@ export default function WeekOverview({
                 {day.dayName}
               </Typography>
 
-              {/* Session type */}
-              {day.sessionType && (
+              {/* Session focus (primary label) */}
+              {day.sessionFocus && (
                 <Typography
                   sx={{
                     fontSize: '0.55rem',
                     color: 'text.primary',
                     lineHeight: 1.3,
                     mt: 0.25,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                  title={day.sessionFocus ?? day.sessionType}
-                >
-                  {day.sessionType}
-                </Typography>
-              )}
-
-              {/* Session focus */}
-              {day.sessionFocus && (
-                <Typography
-                  sx={{
-                    fontSize: '0.5rem',
-                    color: 'text.secondary',
-                    lineHeight: 1.2,
-                    mt: 0.15,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',

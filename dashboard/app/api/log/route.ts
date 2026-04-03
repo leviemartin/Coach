@@ -56,6 +56,20 @@ export async function GET(request: Request) {
     (item) => !/rest|family/i.test(item.sessionType ?? '')
   ).length;
 
+  // Build resolved plan items with computed dates for WeekOverview
+  const weekStartMs = PROGRAM_EPOCH.getTime() + (weekNumber - 1) * 7 * MS_PER_DAY;
+  const weekPlanItems = planItems.map((item) => {
+    const offset = DAY_NAME_TO_OFFSET[item.day] ?? 0;
+    const resolvedDate = item.assignedDate || new Date(weekStartMs + offset * MS_PER_DAY).toISOString().split('T')[0];
+    return {
+      date: resolvedDate,
+      session_type: item.sessionType,
+      focus: item.focus || item.sessionType,
+      status: item.status,
+      completed: item.completed,
+    };
+  });
+
   const allLogs = getAllDailyLogs();
   const datesWithSessions = allLogs
     .filter(l => {
@@ -101,6 +115,7 @@ export async function GET(request: Request) {
     planned_session: plannedSession,
     uncompleted_sessions: uncompletedSessions,
     total_training_sessions: totalTrainingSessions,
+    week_plan_items: weekPlanItems,
     streak,
     family_dates: familyDates,
   });

@@ -96,6 +96,8 @@ export interface DailyLogProps {
   onDayClick?: (date: string) => void;
   /** Whether this date is a family day according to the plan */
   isFamilyDay?: boolean;
+  /** All plan items for the week with resolved dates */
+  weekPlanItems?: Array<{ date: string; session_type: string; focus: string; status: string; completed: number }>;
 }
 
 // ── Week date helpers ────────────────────────────────────────────────────────
@@ -126,57 +128,40 @@ function getWeekDatesForDate(dateStr: string): string[] {
 function buildWeekDays(
   date: string,
   weekLogs: WeekLog[],
-  plannedSession: PlannedSession | null,
-  uncompletedSessions: UncompletedSession[],
+  weekPlanItems: Array<{ date: string; session_type: string; focus: string; status: string; completed: number }>,
 ): WeekDay[] {
   const weekDates = getWeekDatesForDate(date);
 
   return weekDates.map((d, i) => {
     const dayName = DAY_ABBR[i];
-    const dayOfWeek = parseLocalDate(d).getDay(); // 0=Sun, 6=Sat
     const isToday = d === date;
 
-    // Determine session info: check planned session for this date
-    // uncompletedSessions have a `day` field (day name like "Monday")
-    // plannedSession is for the current date only
-    let sessionType: string | null = null;
-    let sessionFocus: string | null = null;
+    // Find plan item for this date (works for both swapped and unswapped)
+    const planItem = weekPlanItems.find((p) => p.date === d);
+    const sessionFocus = planItem?.focus ?? null;
 
-    if (d === date && plannedSession) {
-      sessionType = plannedSession.session_type;
-      sessionFocus = plannedSession.focus;
-    } else {
-      // Try to find from uncompletedSessions by day name
-      const dayFullNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-      const dayFullName = dayFullNames[dayOfWeek];
-      const uncompleted = uncompletedSessions.find((s) => s.day === dayFullName);
-      if (uncompleted) {
-        sessionType = uncompleted.session_type;
-        sessionFocus = uncompleted.focus;
-      }
+    // Family/rest detection
+    const isRestOrFamily = planItem != null && /rest|family/i.test(planItem.session_type);
+    if (isRestOrFamily) {
+      const isFamily = /family/i.test(planItem!.session_type);
+      return { date: d, dayName, sessionType: null, sessionFocus, status: isFamily ? 'family' as const : 'rest' as const };
     }
 
-    // Determine family/rest status from plan data, not hardcoded day
-    const isRestOrFamily = sessionType != null && /rest|family/i.test(sessionType);
-    if (isRestOrFamily && sessionType) {
-      const isFamily = /family/i.test(sessionType);
-      return { date: d, dayName, sessionType, sessionFocus, status: isFamily ? 'family' : 'rest' };
-    }
-
+    // Check if workout was actually completed on this date
     const wl = weekLogs.find((l) => l.date === d);
     if (wl?.workout_completed) {
-      return { date: d, dayName, sessionType, sessionFocus, status: 'done' };
+      return { date: d, dayName, sessionType: null, sessionFocus, status: 'done' as const };
     }
 
-    if (isToday) {
-      return { date: d, dayName, sessionType, sessionFocus, status: 'today' };
+    if (isToday && planItem) {
+      return { date: d, dayName, sessionType: null, sessionFocus, status: 'today' as const };
     }
 
-    if (!sessionType) {
-      return { date: d, dayName, sessionType: null, sessionFocus: null, status: 'rest' };
+    if (!planItem) {
+      return { date: d, dayName, sessionType: null, sessionFocus: null, status: 'rest' as const };
     }
 
-    return { date: d, dayName, sessionType, sessionFocus, status: 'pending' };
+    return { date: d, dayName, sessionType: null, sessionFocus, status: 'pending' as const };
   });
 }
 
@@ -198,12 +183,13 @@ export default function DailyLog({
   onNotesChange,
   onDayClick,
   isFamilyDay = false,
+  weekPlanItems = [],
 }: DailyLogProps) {
   const [formData, setFormData] = useState<LogData>(log);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [selectedPlanItemId, setSelectedPlanItemId] = useState<number | null>(null);
   const [swapMode, setSwapMode] = useState(false);
-  const [weekPlanItems, setWeekPlanItems] = useState<PlanItem[]>([]);
+  const [swapPlanItems, setSwapPlanItems] = useState<PlanItem[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fadeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -271,7 +257,7 @@ export default function DailyLog({
   const sessionsPlanned = totalTrainingSessions || (uncompletedSessions.length + sessionsCompleted);
 
   // ── Week overview days ───────────────────────────────────────────────────
-  const weekDays = buildWeekDays(date, weekLogs, plannedSession, uncompletedSessions);
+  const weekDays = buildWeekDays(date, weekLogs, weekPlanItems);
 
   // ── Day compliance (progress ring) ──────────────────────────────────────
   const hasPlannedSession = !!plannedSession || selectedPlanItemId != null;
@@ -315,7 +301,7 @@ export default function DailyLog({
     try {
       const res = await fetch(`/api/plan?week=${currentWeek}`);
       const data = await res.json();
-      setWeekPlanItems(data.items ?? []);
+      setSwapPlanItems(data.items ?? []);
     } catch {
       // Keep empty list on error — user can cancel
     }
@@ -446,7 +432,7 @@ export default function DailyLog({
       )}
       {!isSick && swapMode && (
         <SwapSessionPicker
-          weekItems={weekPlanItems}
+          weekItems={swapPlanItems}
           currentDate={date}
           suggestedItemId={plannedSession?.id ?? null}
           onSwap={handleSwap}
