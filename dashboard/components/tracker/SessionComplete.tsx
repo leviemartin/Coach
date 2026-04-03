@@ -51,7 +51,10 @@ export default function SessionComplete({
     };
   }, []);
 
+  const notesRequired = compliancePct != null && compliancePct < 100;
+
   const handleSubmit = () => {
+    if (notesRequired && !notes.trim()) return;
     setIsSubmitting(true);
     setShowUndoToast(true);
     undoTimerRef.current = setTimeout(() => {
@@ -71,12 +74,12 @@ export default function SessionComplete({
     <Box sx={{ maxWidth: 480, mx: 'auto', px: 2, py: 3 }}>
       {/* Header */}
       <Stack alignItems="center" spacing={1.5} mb={3}>
-        <CheckCircleIcon sx={{ color: '#22c55e', fontSize: 64 }} />
+        <CheckCircleIcon sx={{ color: notesRequired ? '#f59e0b' : '#22c55e', fontSize: 64 }} />
         <Typography variant="h5" fontWeight={800} textAlign="center">
-          Session Complete
+          {notesRequired ? 'Session Ended Early' : 'Session Complete'}
         </Typography>
         <Typography variant="body2" color="text.secondary" textAlign="center">
-          Good work. Log it and move on.
+          {notesRequired ? 'Log what you did and why you stopped.' : 'Good work. Log it and move on.'}
         </Typography>
       </Stack>
 
@@ -166,13 +169,15 @@ export default function SessionComplete({
 
       {/* Session notes */}
       <TextField
-        label="Add Session Notes"
+        label={notesRequired ? 'Why was the session cut short? (required)' : 'Add Session Notes'}
         multiline
         minRows={3}
         fullWidth
+        required={notesRequired}
+        error={notesRequired && notes.trim() === ''}
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
-        placeholder="How did it feel? Anything to flag for the coach?"
+        placeholder={notesRequired ? 'Explain what happened — time, energy, pain, etc.' : 'How did it feel? Anything to flag for the coach?'}
         sx={{
           mb: 2.5,
           '& .MuiOutlinedInput-root': {
@@ -185,7 +190,7 @@ export default function SessionComplete({
       <Button
         variant="contained"
         fullWidth
-        disabled={isSubmitting}
+        disabled={isSubmitting || (notesRequired && !notes.trim())}
         onClick={handleSubmit}
         sx={{
           minHeight: 52,

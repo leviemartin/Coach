@@ -4,6 +4,7 @@ import { Box, Typography, CircularProgress, Alert, Container, IconButton, Toolti
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import type { ExerciseBlock, Section } from '@/lib/types';
 import { formatDuration, formatRx } from '@/lib/format';
+import { borders } from '@/lib/design-tokens';
 import SectionDivider from '@/components/plan/SectionDivider';
 import WarmupCheckbox from '@/components/plan/WarmupCheckbox';
 import PipProgress from './PipProgress';
@@ -477,20 +478,26 @@ export default function SessionPage() {
         </Box>
       )}
 
-      {/* All-done banner */}
-      {allDone && !isComplete && !isEditMode && (
+      {/* Finish session banner — always visible (not just when allDone) */}
+      {!isComplete && !isEditMode && (
         <Box
           sx={{
             mx: 2.5,
             mb: 3,
             p: 2,
-            border: '2px solid #22c55e',
+            border: `2px solid ${allDone ? '#22c55e' : borders.hard}`,
             textAlign: 'center',
           }}
         >
-          <Typography sx={{ fontWeight: 700, color: '#22c55e', fontSize: '1rem' }}>
-            All exercises complete. Ready to log?
-          </Typography>
+          {allDone ? (
+            <Typography sx={{ fontWeight: 700, color: '#22c55e', fontSize: '1rem' }}>
+              All exercises complete. Ready to log?
+            </Typography>
+          ) : (
+            <Typography sx={{ fontWeight: 700, color: '#71717a', fontSize: '0.875rem' }}>
+              {progressCompleted}/{progressTotal} done — end early?
+            </Typography>
+          )}
           <Box
             component="button"
             onClick={() => markComplete()}
@@ -498,7 +505,7 @@ export default function SessionPage() {
               mt: 1.5,
               px: 3,
               py: 1,
-              backgroundColor: '#22c55e',
+              backgroundColor: allDone ? '#22c55e' : borders.hard,
               color: '#fff',
               fontWeight: 700,
               border: 'none',
@@ -507,7 +514,7 @@ export default function SessionPage() {
               fontFamily: '"JetBrains Mono", monospace',
               textTransform: 'uppercase',
               letterSpacing: '1px',
-              '&:hover': { backgroundColor: '#16a34a' },
+              '&:hover': { backgroundColor: allDone ? '#16a34a' : '#3f3f46' },
             }}
           >
             Finish Session
