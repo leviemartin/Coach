@@ -29,7 +29,7 @@ export function formatRx(sets: number | null, repsDisplay: string | null, durati
   } else if (repsDisplay) {
     parts.push(repsDisplay);
   }
-  if (laterality === 'unilateral_each') parts.push('/side');
-  if (laterality === 'alternating') parts.push('alt');
+  if (laterality === 'unilateral_each') parts.push('each side');
+  if (laterality === 'alternating') parts.push('alternating');
   return parts.join(' ');
 }

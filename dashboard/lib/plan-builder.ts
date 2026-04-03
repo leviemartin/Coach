@@ -36,7 +36,12 @@ export function buildPlanBuilderPrompt(
   prompt += `- Core stability 3x/week minimum\n`;
   prompt += `- Each exercise appears ONCE per session\n`;
   prompt += `- Warm-up section: 5-10 min general + activation\n`;
-  prompt += `- Cool-down section: 3-5 min light movement\n\n`;
+  prompt += `- Cool-down section: 3-5 min light movement\n`;
+  prompt += `- Laterality MUST be set correctly for every exercise:\n`;
+  prompt += `  - "bilateral" = both sides work together (Squat, Pull-Up, Plank)\n`;
+  prompt += `  - "unilateral_each" = full set per side, reps = count PER SIDE (Pallof Press, DB Row, Side Plank, Single-Arm Carry, Bulgarian Split Squat)\n`;
+  prompt += `  - "alternating" = alternate sides each rep, reps = TOTAL count across both sides (Dead Bugs, Bird Dogs, Walking Lunges, Box Step-ups)\n`;
+  prompt += `  - When in doubt: if the exercise involves one limb at a time, it is NOT bilateral\n\n`;
 
   if (fixInstructions) {
     prompt += `## FIXES REQUIRED\nThe Validator found these violations in your previous output. Fix them:\n${fixInstructions}\n\n`;
