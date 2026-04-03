@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { getTrainingWeek } from '@/lib/week';
+import { regenerateSessionSummary } from '@/lib/session-db';
 
 // Temporary diagnostic endpoint — remove after fixing session data
 export async function GET() {
@@ -27,4 +28,23 @@ export async function GET() {
   `).all();
 
   return NextResponse.json({ week, sessionLogs, dailyLogs, planItems, migrations }, { status: 200 });
+}
+
+// POST /api/debug — regenerate missing session summaries
+export async function POST() {
+  const db = getDb();
+
+  // Find daily_logs with session_log_id set but session_summary missing
+  const missing = db.prepare(`
+    SELECT dl.date, dl.session_log_id, sl.notes
+    FROM daily_logs dl
+    JOIN session_logs sl ON sl.id = dl.session_log_id
+    WHERE dl.session_log_id IS NOT NULL AND (dl.session_summary IS NULL OR dl.session_summary = '')
+  `).all() as Array<{ date: string; session_log_id: number; notes: string | null }>;
+
+  for (const m of missing) {
+    regenerateSessionSummary(m.session_log_id, m.notes ?? '');
+  }
+
+  return NextResponse.json({ regenerated: missing.length, sessions: missing.map(m => m.session_log_id) });
 }
