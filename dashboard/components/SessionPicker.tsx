@@ -52,6 +52,7 @@ export interface SessionPickerProps {
   sessionCompleted: boolean;
   sessionLogId: number | null;
   onSwap: () => void;
+  onMarkFamilyDone?: () => void;
 }
 
 // Group exercises by section for display
@@ -97,6 +98,7 @@ export default function SessionPicker({
   sessionCompleted,
   sessionLogId,
   onSwap,
+  onMarkFamilyDone,
 }: SessionPickerProps) {
   const [expanded, setExpanded] = useState(false);
 
@@ -116,17 +118,42 @@ export default function SessionPicker({
     />
   ) : null;
 
-  // No session planned
-  if (!plannedSession) {
+  // Family day or no session planned — show simple card with optional "Mark Done"
+  if (isFamilyDay || !plannedSession) {
+    const label = isFamilyDay ? 'FAMILY DAY' : 'REST DAY';
     return (
       <Card variant="outlined">
         <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: isFamilyDay && !sessionCompleted ? 1.5 : 0 }}>
             <Typography sx={{ ...designTypo.categoryLabel }}>
-              {isFamilyDay ? 'FAMILY DAY' : 'REST DAY'}
+              {label}
             </Typography>
             {completionChip}
           </Box>
+          {isFamilyDay && sessionCompleted && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 1 }}>
+              <CheckCircleIcon sx={{ color: '#22c55e', fontSize: 18 }} />
+              <Typography sx={{ color: '#22c55e', fontWeight: 700, fontSize: '0.8125rem', fontFamily: '"JetBrains Mono", monospace' }}>
+                DONE
+              </Typography>
+            </Box>
+          )}
+          {isFamilyDay && !sessionCompleted && onMarkFamilyDone && (
+            <Box
+              onClick={onMarkFamilyDone}
+              sx={{
+                border: `2px solid ${borders.hard}`,
+                py: 1,
+                textAlign: 'center',
+                cursor: 'pointer',
+                '&:hover': { bgcolor: '#18181b08' },
+              }}
+            >
+              <Typography sx={{ fontFamily: '"JetBrains Mono", monospace', fontWeight: 700, fontSize: '0.8125rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                Mark Family Day Done
+              </Typography>
+            </Box>
+          )}
         </CardContent>
       </Card>
     );

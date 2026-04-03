@@ -37,11 +37,9 @@ export default function WeekDots({ days, currentDate, onDayClick }: WeekDotsProp
               flexDirection: 'column',
               alignItems: 'center',
               gap: 0.5,
-              cursor: isFamily ? 'default' : 'pointer',
+              cursor: 'pointer',
             }}
-            onClick={() => {
-              if (!isFamily) onDayClick(day.date);
-            }}
+            onClick={() => onDayClick(day.date)}
           >
             <Typography
               sx={{
@@ -62,7 +60,7 @@ export default function WeekDots({ days, currentDate, onDayClick }: WeekDotsProp
                 borderRadius: 0,
                 bgcolor: STATUS_COLORS[day.status],
                 border: isCurrent ? `2px solid ${borders.hard}` : 'none',
-                '&:hover': isFamily ? {} : { opacity: 0.7 },
+                '&:hover': { opacity: 0.7 },
               }}
             />
           </Box>

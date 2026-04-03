@@ -225,11 +225,13 @@ export default function DailyLogPage() {
   const days = weekDates.map((date, i) => {
     const abbr = DAY_ABBR[i]; // Mon-Sun since weekDates starts on Monday
 
+    const wl = weekLogs.find((l) => l.date === date);
+
     if (familyDateSet.has(date)) {
+      // Family day: show as complete if marked done, otherwise family (gray)
+      if (wl?.workout_completed) return { date, day: abbr, status: 'complete' as const };
       return { date, day: abbr, status: 'family' as const };
     }
-
-    const wl = weekLogs.find((l) => l.date === date);
     if (!wl) return { date, day: abbr, status: 'empty' as const };
 
     // Check completeness: all non-sick applicable fields filled

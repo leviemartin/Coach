@@ -394,9 +394,14 @@ export default function DailyLog({
           sessionsCompleted={sessionsCompleted}
           sessionsPlanned={sessionsPlanned}
           isFamilyDay={isFamilyDay}
-          sessionCompleted={!!formData.session_summary}
+          sessionCompleted={!!formData.session_summary || (isFamilyDay && !!formData.workout_completed)}
           sessionLogId={formData.session_log_id}
           onSwap={handleOpenSwap}
+          onMarkFamilyDone={() => {
+            const next = { ...formData, workout_completed: 1 };
+            setFormData(next);
+            triggerSave(next, plannedSession?.id ?? null);
+          }}
         />
       )}
       {!isSick && swapMode && (
