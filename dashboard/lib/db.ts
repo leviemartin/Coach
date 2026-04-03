@@ -500,33 +500,35 @@ export function initTablesOn(db: Database.Database) {
   // Migration: add plan_exercise_id to session_exercise_feedback for robust linking
   try { db.exec(`ALTER TABLE session_exercise_feedback ADD COLUMN plan_exercise_id INTEGER`); } catch { /* exists */ }
 
-  // One-time cleanup: delete orphaned duplicate session_logs rows where a completed
-  // session with the same title exists in the same week (bug: session created on different
-  // day than original, causing duplicates). Keeps the completed version, deletes the 0% ghost.
-  const migrated = db.prepare("SELECT value FROM settings WHERE key = 'dedup_sessions_v1'").get();
-  if (!migrated) {
-    const orphans = db.prepare(`
+  // One-time cleanup: delete duplicate session_logs rows where multiple sessions with the
+  // same title exist in the same week (bug: session created on different day than original).
+  // Keeps the row with the highest compliance_pct, deletes the lower-scoring duplicate(s).
+  const migrated2 = db.prepare("SELECT value FROM settings WHERE key = 'dedup_sessions_v2'").get();
+  if (!migrated2) {
+    const dupes = db.prepare(`
       SELECT s1.id FROM session_logs s1
-      WHERE s1.completed_at IS NULL
-        AND EXISTS (
-          SELECT 1 FROM session_logs s2
-          WHERE s2.week_number = s1.week_number
-            AND s2.session_title = s1.session_title
-            AND s2.id != s1.id
-            AND s2.completed_at IS NOT NULL
-        )
+      WHERE EXISTS (
+        SELECT 1 FROM session_logs s2
+        WHERE s2.week_number = s1.week_number
+          AND s2.session_title = s1.session_title
+          AND s2.id != s1.id
+          AND (
+            COALESCE(s2.compliance_pct, 0) > COALESCE(s1.compliance_pct, 0)
+            OR (COALESCE(s2.compliance_pct, 0) = COALESCE(s1.compliance_pct, 0) AND s2.id > s1.id)
+          )
+      )
     `).all() as Array<{ id: number }>;
-    for (const o of orphans) {
+    for (const o of dupes) {
       db.prepare('DELETE FROM session_exercise_feedback WHERE session_log_id = ?').run(o.id);
       db.prepare('DELETE FROM session_sets WHERE session_log_id = ?').run(o.id);
       db.prepare('DELETE FROM session_cardio WHERE session_log_id = ?').run(o.id);
       db.prepare('UPDATE daily_logs SET session_log_id = NULL, session_summary = NULL WHERE session_log_id = ?').run(o.id);
       db.prepare('DELETE FROM session_logs WHERE id = ?').run(o.id);
     }
-    if (orphans.length > 0) {
-      console.log(`[db] dedup_sessions_v1: cleaned up ${orphans.length} orphaned session(s)`);
+    if (dupes.length > 0) {
+      console.log(`[db] dedup_sessions_v2: cleaned up ${dupes.length} duplicate session(s)`);
     }
-    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('dedup_sessions_v1', ?)").run(new Date().toISOString());
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('dedup_sessions_v2', ?)").run(new Date().toISOString());
   }
 }
 
