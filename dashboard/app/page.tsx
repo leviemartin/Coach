@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   Typography, Box, Button, Chip, IconButton, Tooltip,
-  Snackbar, Alert, Grid,
+  Alert, Grid,
 } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
 import { useRouter } from 'next/navigation';
@@ -14,6 +14,7 @@ import WeightJourney from '@/components/WeightJourney';
 import SleepBars from '@/components/SleepBars';
 import ComplianceRing from '@/components/ComplianceRing';
 import TodayAction from '@/components/TodayAction';
+import GarminSyncModal from '@/components/GarminSyncModal';
 import HrvTrend from '@/components/HrvTrend';
 import TrainingLoadFocus from '@/components/TrainingLoadFocus';
 import AcwrCard from '@/components/AcwrCard';
@@ -35,9 +36,7 @@ export default function DashboardHome() {
   const [periodization, setPeriodization] = useState<PeriodizationResponse | null>(null);
   const [planItems, setPlanItems] = useState<PlanItem[] | null>(null);
   const [selectedPhase, setSelectedPhase] = useState(1);
-  const [syncing, setSyncing] = useState(false);
-  const [syncResult, setSyncResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-  const syncAbortRef = useRef<AbortController | null>(null);
+  const [syncModalOpen, setSyncModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const isSunday = new Date().getDay() === 0;
@@ -73,37 +72,6 @@ export default function DashboardHome() {
     if (periodization) setSelectedPhase(periodization.currentPhase.number);
   }, [periodization]);
 
-  useEffect(() => {
-    return () => { syncAbortRef.current?.abort(); };
-  }, []);
-
-  const handleSync = async () => {
-    setSyncing(true);
-    setSyncResult(null);
-    const controller = new AbortController();
-    syncAbortRef.current = controller;
-    try {
-      const res = await fetch('/api/garmin/sync', { method: 'POST', signal: controller.signal });
-      const data = await res.json();
-      if (data.success) {
-        refreshSummary();
-        const hasFails = data.syncReport && data.syncReport.failed_calls > 0;
-        const msg = hasFails
-          ? `Synced (${data.syncReport.success_rate}% success — ${data.syncReport.failed_calls} API calls failed)`
-          : 'Garmin data synced';
-        setSyncResult({ type: hasFails ? 'error' : 'success', message: msg });
-      } else {
-        setSyncResult({ type: 'error', message: data.error || 'Sync failed' });
-      }
-    } catch (err) {
-      if ((err as Error).name !== 'AbortError') {
-        setSyncResult({ type: 'error', message: 'Could not reach sync endpoint' });
-      }
-    } finally {
-      setSyncing(false);
-    }
-  };
-
   const selectedPhaseData = periodization?.phases.find(p => p.number === selectedPhase);
 
   return (
@@ -124,18 +92,13 @@ export default function DashboardHome() {
         >
           Today&apos;s Log
         </Button>
-        <Tooltip title={syncing ? 'Syncing...' : 'Sync Garmin data'}>
+        <Tooltip title="Sync Garmin data">
           <IconButton
-            onClick={handleSync}
-            disabled={syncing}
+            onClick={() => setSyncModalOpen(true)}
             size="small"
             sx={{ borderRadius: 0, border: `2px solid ${borders.hard}`, width: 36, height: 36 }}
           >
-            <SyncIcon sx={{
-              fontSize: 18,
-              animation: syncing ? 'spin 1s linear infinite' : 'none',
-              '@keyframes spin': { '0%': { transform: 'rotate(0deg)' }, '100%': { transform: 'rotate(360deg)' } },
-            }} />
+            <SyncIcon sx={{ fontSize: 18 }} />
           </IconButton>
         </Tooltip>
       </Box>
@@ -263,12 +226,7 @@ export default function DashboardHome() {
         )}
       </Box>
 
-      <Snackbar open={syncResult !== null} autoHideDuration={4000} onClose={() => setSyncResult(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
-        <Alert severity={syncResult?.type === 'success' ? 'success' : 'error'} onClose={() => setSyncResult(null)} variant="filled">
-          {syncResult?.message}
-        </Alert>
-      </Snackbar>
+      <GarminSyncModal open={syncModalOpen} onClose={() => setSyncModalOpen(false)} />
     </Box>
   );
 }
