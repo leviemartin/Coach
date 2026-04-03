@@ -189,6 +189,10 @@ export default function SessionPage() {
             cardio={cardioState}
             coachCue={coachCue}
             onUpdateCardio={handleUpdateCardio}
+            selectedRpe={rpeFeedback[block.exercise.name] ?? null}
+            onRpeSelect={(rpe) => handleRpeSelect(block.exercise.name, rpe)}
+            notes={exerciseNotes[block.exercise.name] ?? ''}
+            onNotesChange={(n) => handleExerciseNotesChange(block.exercise.name, n)}
           />
         );
       }
@@ -201,6 +205,10 @@ export default function SessionPage() {
           coachCue={coachCue}
           workoutDescription={blocks.length === 1 ? session.workoutDescription : null}
           onUpdateCardio={handleUpdateCardio}
+          selectedRpe={rpeFeedback[block.exercise.name] ?? null}
+          onRpeSelect={(rpe) => handleRpeSelect(block.exercise.name, rpe)}
+          notes={exerciseNotes[block.exercise.name] ?? ''}
+          onNotesChange={(n) => handleExerciseNotesChange(block.exercise.name, n)}
         />
       );
     }

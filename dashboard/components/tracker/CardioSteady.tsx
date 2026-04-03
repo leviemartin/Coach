@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Box, Button, Card, CardContent, TextField, Typography } from '@mui/material';
 import { semanticColors } from '@/lib/design-tokens';
 import type { SessionCardioState } from '@/lib/types';
+import ExerciseRpe from './ExerciseRpe';
 
 interface CardioSteadyProps {
   exerciseName: string;
@@ -11,6 +12,10 @@ interface CardioSteadyProps {
   coachCue: string | null;
   workoutDescription?: string | null;
   onUpdateCardio: (cardioId: number, completedRounds: number, completed: boolean, actualDurationMin?: number | null) => void;
+  selectedRpe?: number | null;
+  onRpeSelect?: (rpe: number) => void;
+  notes?: string;
+  onNotesChange?: (notes: string) => void;
 }
 
 export default function CardioSteady({
@@ -19,6 +24,10 @@ export default function CardioSteady({
   coachCue,
   workoutDescription,
   onUpdateCardio,
+  selectedRpe,
+  onRpeSelect,
+  notes,
+  onNotesChange,
 }: CardioSteadyProps) {
   const [editDuration, setEditDuration] = useState(
     cardio.actualDurationMin?.toString() ?? cardio.prescribedDurationMin?.toString() ?? ''
@@ -165,6 +174,16 @@ export default function CardioSteady({
         >
           {cardio.completed ? 'Completed ✓' : 'Mark Complete ✓'}
         </Button>
+
+        {/* RPE + Notes after completion */}
+        {cardio.completed && onRpeSelect && (
+          <ExerciseRpe
+            selectedRpe={selectedRpe ?? null}
+            onSelect={onRpeSelect}
+            notes={notes}
+            onNotesChange={onNotesChange}
+          />
+        )}
       </CardContent>
     </Card>
   );

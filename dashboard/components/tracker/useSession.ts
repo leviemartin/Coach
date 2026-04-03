@@ -428,7 +428,7 @@ export function useSession() {
 
   // ── Update a cardio block (optimistic + POST) ─────────────────────────────
   const handleUpdateCardio = useCallback(
-    async (cardioId: number, completedRounds: number, completed: boolean, actualDurationMin?: number | null) => {
+    async (cardioId: number, completedRounds: number, completed: boolean, actualDurationMin?: number | null, roundData?: string | null) => {
       if (!session) return;
 
       setSession((prev) => {
@@ -437,7 +437,7 @@ export function useSession() {
           ...prev,
           cardio: prev.cardio.map((c) =>
             c.id === cardioId
-              ? { ...c, completedRounds, completed, actualDurationMin: actualDurationMin ?? c.actualDurationMin }
+              ? { ...c, completedRounds, completed, actualDurationMin: actualDurationMin ?? c.actualDurationMin, roundData: roundData ?? c.roundData }
               : c,
           ),
         };
@@ -447,7 +447,7 @@ export function useSession() {
         await fetch('/api/session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: 'cardio', cardioId, completedRounds, completed, actualDurationMin }),
+          body: JSON.stringify({ type: 'cardio', cardioId, completedRounds, completed, actualDurationMin, roundData }),
         });
       } catch (err) {
         console.error('Failed to persist cardio update:', err);

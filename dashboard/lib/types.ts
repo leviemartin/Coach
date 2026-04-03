@@ -503,6 +503,7 @@ export interface SessionCardioState {
   planExerciseId: number | null;
   intervalWorkSeconds: number | null;
   intervalRestSeconds: number | null;
+  roundData: string | null;
 }
 
 export interface ExerciseFeedback {

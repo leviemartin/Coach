@@ -490,6 +490,7 @@ export function initTablesOn(db: Database.Database) {
   try { db.exec(`ALTER TABLE session_cardio ADD COLUMN interval_work_seconds INTEGER`); } catch { /* exists */ }
   try { db.exec(`ALTER TABLE session_cardio ADD COLUMN interval_rest_seconds INTEGER`); } catch { /* exists */ }
   try { db.exec(`ALTER TABLE session_cardio ADD COLUMN exercise_order INTEGER`); } catch { /* exists */ }
+  try { db.exec(`ALTER TABLE session_cardio ADD COLUMN round_data TEXT`); } catch { /* exists */ }
 
   // Migration v11: prescribed_reps_display stores raw reps string ("8-10", "AMRAP")
   try { db.exec(`ALTER TABLE session_sets ADD COLUMN prescribed_reps_display TEXT`); } catch { /* exists */ }

@@ -213,7 +213,7 @@ export async function POST(request: Request) {
   }
 
   if (body.type === 'cardio') {
-    updateCardioRound(body.cardioId, body.completedRounds, body.completed, body.actualDurationMin);
+    updateCardioRound(body.cardioId, body.completedRounds, body.completed, body.actualDurationMin, body.roundData);
     return NextResponse.json({ success: true });
   }
 

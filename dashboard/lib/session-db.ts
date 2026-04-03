@@ -198,12 +198,13 @@ export function updateCardioRound(
   completedRounds: number,
   completed: boolean,
   actualDurationMin?: number | null,
+  roundData?: string | null,
   _db?: Database.Database,
 ): void {
   const db = _db ?? getDb();
   db.prepare(`
-    UPDATE session_cardio SET completed_rounds = ?, completed = ?, actual_duration_min = ? WHERE id = ?
-  `).run(completedRounds, completed ? 1 : 0, actualDurationMin ?? null, cardioId);
+    UPDATE session_cardio SET completed_rounds = ?, completed = ?, actual_duration_min = ?, round_data = ? WHERE id = ?
+  `).run(completedRounds, completed ? 1 : 0, actualDurationMin ?? null, roundData ?? null, cardioId);
 }
 
 export function getSessionSets(sessionId: number, _db?: Database.Database): SessionSetState[] {
@@ -246,7 +247,7 @@ export function getSessionCardio(sessionId: number, _db?: Database.Database): Se
            prescribed_duration_min, target_intensity, completed, actual_duration_min,
            section, rest_seconds, coach_cue, plan_exercise_id,
            interval_work_seconds, interval_rest_seconds,
-           COALESCE(exercise_order, id) AS exercise_order
+           COALESCE(exercise_order, id) AS exercise_order, round_data
     FROM session_cardio WHERE session_log_id = ? ORDER BY COALESCE(exercise_order, id), id
   `).all(sessionId) as Array<Record<string, unknown>>;
 
@@ -267,6 +268,7 @@ export function getSessionCardio(sessionId: number, _db?: Database.Database): Se
     planExerciseId: r.plan_exercise_id as number | null,
     intervalWorkSeconds: r.interval_work_seconds as number | null,
     intervalRestSeconds: r.interval_rest_seconds as number | null,
+    roundData: r.round_data as string | null,
   }));
 }
 
