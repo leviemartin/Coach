@@ -340,12 +340,6 @@ export default function DailyLog({
       <Accordion
         disableGutters
         elevation={0}
-        sx={{
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: '0 !important',
-          '&:before': { display: 'none' },
-        }}
       >
         <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ px: 2, py: 0.5, minHeight: 40 }}>
           <Typography variant="body2" fontWeight={600}>
