@@ -17,6 +17,7 @@ import SyncIcon from '@mui/icons-material/Sync';
 import { cardContentSx } from '@/lib/theme';
 import { semanticColors } from '@/lib/design-tokens';
 import type { WeeklyReviewData } from '@/app/api/checkin/review/route';
+import GarminSyncModal from '@/components/GarminSyncModal';
 
 // ── Category chip styles ──────────────────────────────────────────────────────
 
@@ -119,14 +120,12 @@ function GarminBadge({
   status,
   ageHours,
   hasData,
-  onSync,
-  syncing,
+  onOpenSyncModal,
 }: {
   status: 'fresh' | 'stale' | 'old';
   ageHours: number;
   hasData: boolean;
-  onSync: () => void;
-  syncing: boolean;
+  onOpenSyncModal: () => void;
 }) {
   const color =
     !hasData ? semanticColors.recovery.problem
@@ -157,12 +156,11 @@ function GarminBadge({
       <Button
         size="small"
         variant="outlined"
-        startIcon={syncing ? <CircularProgress size={12} /> : <SyncIcon sx={{ fontSize: 14 }} />}
-        onClick={onSync}
-        disabled={syncing}
+        startIcon={<SyncIcon sx={{ fontSize: 14 }} />}
+        onClick={onOpenSyncModal}
         sx={{ ml: 'auto', fontSize: '0.75rem', py: 0.25, px: 1 }}
       >
-        {syncing ? 'Syncing...' : 'Sync'}
+        Sync
       </Button>
     </Box>
   );
@@ -186,8 +184,7 @@ export default function WeeklyReview({
   const [data, setData] = useState<WeeklyReviewData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [syncing, setSyncing] = useState(false);
-  const [syncError, setSyncError] = useState<string | null>(null);
+  const [syncModalOpen, setSyncModalOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -208,23 +205,6 @@ export default function WeeklyReview({
   useEffect(() => {
     load();
   }, [load]);
-
-  const handleSync = async () => {
-    setSyncing(true);
-    setSyncError(null);
-    try {
-      const res = await fetch('/api/garmin/sync', { method: 'POST' });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || `HTTP ${res.status}`);
-      }
-      await load();
-    } catch (err) {
-      setSyncError(err instanceof Error ? err.message : 'Sync failed');
-    } finally {
-      setSyncing(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -501,14 +481,8 @@ export default function WeeklyReview({
               status={garmin.status}
               ageHours={garmin.ageHours}
               hasData={garmin.hasData}
-              onSync={handleSync}
-              syncing={syncing}
+              onOpenSyncModal={() => setSyncModalOpen(true)}
             />
-            {syncError && (
-              <Alert severity="error" sx={{ mt: 1.5 }}>
-                {syncError}
-              </Alert>
-            )}
           </CardContent>
         </Card>
       </Box>
@@ -528,6 +502,8 @@ export default function WeeklyReview({
           size="small"
         />
       </Box>
+
+      <GarminSyncModal open={syncModalOpen} onClose={() => setSyncModalOpen(false)} />
     </Box>
   );
 }
