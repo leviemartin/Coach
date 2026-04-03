@@ -154,7 +154,11 @@ function buildThemeOptions(mode: 'light' | 'dark'): ThemeOptions {
       },
       MuiAccordion: {
         styleOverrides: {
-          root: { borderRadius: 0, '&:before': { display: 'none' } },
+          root: {
+            borderRadius: 0,
+            border: `3px solid ${c.primary}`,
+            '&:before': { display: 'none' },
+          },
         },
         defaultProps: { disableGutters: true, elevation: 0 },
       },

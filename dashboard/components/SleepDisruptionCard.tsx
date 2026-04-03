@@ -25,11 +25,7 @@ export default function SleepDisruptionCard({
   return (
     <Card
       variant="outlined"
-      sx={{
-        bgcolor: 'background.paper',
-        border: '2px solid',
-        borderColor: 'divider',
-      }}
+      sx={{ bgcolor: 'background.paper' }}
     >
       <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
         <Typography
