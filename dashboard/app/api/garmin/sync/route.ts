@@ -1,110 +1,39 @@
 import { NextResponse } from 'next/server';
-import { loadTokens, saveTokens } from '@/lib/garmin-tokens';
-import { connectApi } from '@/lib/garmin-api';
-import { buildExport } from '@/lib/garmin-extract';
-import { GARMIN_DATA_PATH, GARMIN_TOKEN_DIR } from '@/lib/constants';
+import { GARMIN_DATA_PATH } from '@/lib/constants';
 import fs from 'fs';
-import path from 'path';
 
-let syncing = false;
+interface SyncStatus {
+  last_synced: string | null;
+  freshness: 'green' | 'amber' | 'red';
+  hours_ago: number | null;
+  auto_sync_schedule: string;
+}
 
-export async function POST() {
-  if (syncing) {
-    return NextResponse.json(
-      { success: false, error: 'Sync already in progress' },
-      { status: 409 },
-    );
-  }
+export async function GET(): Promise<NextResponse<SyncStatus>> {
+  let lastSynced: string | null = null;
+  let hoursAgo: number | null = null;
+  let freshness: SyncStatus['freshness'] = 'red';
 
-  syncing = true;
   try {
-    const tokens = loadTokens(GARMIN_TOKEN_DIR);
-    if (!tokens) {
-      return NextResponse.json(
-        { success: false, error: 'auth_required' },
-        { status: 401 },
-      );
+    const raw = fs.readFileSync(GARMIN_DATA_PATH, 'utf-8');
+    const data = JSON.parse(raw);
+    const generatedAt = data._meta?.generated_at;
+    if (generatedAt) {
+      lastSynced = generatedAt;
+      const ageMs = Date.now() - new Date(generatedAt).getTime();
+      hoursAgo = Math.round((ageMs / (1000 * 60 * 60)) * 10) / 10;
+      if (hoursAgo < 4) freshness = 'green';
+      else if (hoursAgo < 12) freshness = 'amber';
+      else freshness = 'red';
     }
-
-    let currentOAuth2 = tokens.oauth2;
-
-    // Validate tokens with a lightweight API call before running the full export.
-    // This call is NOT wrapped in safeCall, so auth errors surface immediately.
-    let displayName: string;
-    try {
-      const probe = await connectApi(
-        '/userprofile-service/socialProfile',
-        tokens.oauth1,
-        currentOAuth2,
-        GARMIN_TOKEN_DIR,
-      );
-      currentOAuth2 = probe.oauth2;
-      displayName = probe.data?.displayName ?? probe.data?.userName ?? '';
-    } catch {
-      return NextResponse.json(
-        { success: false, error: 'auth_required' },
-        { status: 401 },
-      );
-    }
-
-    const apiFn = async (apiPath: string) => {
-      const result = await connectApi(
-        apiPath,
-        tokens.oauth1,
-        currentOAuth2,
-        GARMIN_TOKEN_DIR,
-      );
-      currentOAuth2 = result.oauth2;
-      return result.data;
-    };
-
-    const exportData = await buildExport(apiFn, displayName);
-
-    const dir = path.dirname(GARMIN_DATA_PATH);
-    fs.mkdirSync(dir, { recursive: true });
-    const exportJson = JSON.stringify(exportData, null, 2);
-    fs.writeFileSync(GARMIN_DATA_PATH, exportJson);
-
-    // Archive to dated file (garmin_YYYY-MM-DD.json)
-    const archiveDir = path.join(dir, 'archive');
-    fs.mkdirSync(archiveDir, { recursive: true });
-    const today = new Date().toISOString().split('T')[0];
-    let archiveName = `garmin_${today}.json`;
-    if (fs.existsSync(path.join(archiveDir, archiveName))) {
-      for (let seq = 2; seq <= 99; seq++) {
-        archiveName = `garmin_${today}_${seq}.json`;
-        if (!fs.existsSync(path.join(archiveDir, archiveName))) break;
-      }
-    }
-    fs.writeFileSync(path.join(archiveDir, archiveName), exportJson);
-
-    saveTokens(GARMIN_TOKEN_DIR, tokens.oauth1, currentOAuth2);
-
-    // Read the sync report from the export data
-    const syncReport = exportData._sync_report ?? null;
-
-    return NextResponse.json({
-      success: true,
-      message: syncReport && syncReport.failed_calls > 0
-        ? `Synced with ${syncReport.failed_calls} failed API calls (${syncReport.success_rate}% success)`
-        : 'Garmin data synced successfully',
-      syncReport,
-    });
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'Unknown error';
-
-    if (msg.includes('401') || msg.includes('Authentication')) {
-      return NextResponse.json(
-        { success: false, error: 'auth_required' },
-        { status: 401 },
-      );
-    }
-
-    return NextResponse.json(
-      { success: false, error: `Garmin sync failed: ${msg}` },
-      { status: 500 },
-    );
-  } finally {
-    syncing = false;
+  } catch {
+    // No data file or invalid JSON — leave defaults
   }
+
+  return NextResponse.json({
+    last_synced: lastSynced,
+    freshness,
+    hours_ago: hoursAgo,
+    auto_sync_schedule: 'Sunday 19:30',
+  });
 }
