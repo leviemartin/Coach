@@ -429,12 +429,16 @@ export default function SessionPage() {
         </Box>
       )}
 
-      {/* Finish session banner — always visible (not just when allDone) */}
+      {/* Exercise navigation */}
+      {!isEditMode && <ExerciseNav items={navItems} onSelect={setCurrentBlockIndex} />}
+
+      {/* Finish session — below nav, requires deliberate scroll */}
       {!isComplete && !isEditMode && (
         <Box
           sx={{
             mx: 2.5,
             mb: 3,
+            mt: 3,
             p: 2,
             border: `2px solid ${allDone ? '#22c55e' : borders.hard}`,
             textAlign: 'center',
@@ -472,9 +476,6 @@ export default function SessionPage() {
           </Box>
         </Box>
       )}
-
-      {/* Exercise navigation */}
-      {!isEditMode && <ExerciseNav items={navItems} onSelect={setCurrentBlockIndex} />}
     </Container>
   );
 }
