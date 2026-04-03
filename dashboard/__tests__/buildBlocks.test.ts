@@ -24,6 +24,7 @@ function makeSet(overrides: Partial<SessionSetState> = {}): SessionSetState {
     coachCue: null,
     planExerciseId: null,
     exerciseType: null,
+    laterality: 'bilateral',
     ...overrides,
   };
 }

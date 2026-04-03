@@ -485,6 +485,7 @@ export interface SessionSetState {
   coachCue: string | null;
   planExerciseId: number | null;
   exerciseType: ExerciseType | null;
+  laterality: 'bilateral' | 'unilateral_each' | 'alternating';
 }
 
 export interface SessionCardioState {

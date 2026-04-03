@@ -565,26 +565,12 @@ export function useSession() {
       return comp.completed;
     });
 
-  // ── Auto-advance block when current block becomes complete ─────────────────
-  // Delay: don't auto-advance supersets until RPE is entered for all exercises,
-  // to give the user time to rate each exercise. Singles advance immediately.
-  useEffect(() => {
-    if (!session || blocks.length === 0) return;
-    const block = blocks[currentBlockIndex];
-    if (!block) return;
-    const currentComp = blockCompletion(block, session.sets, session.cardio);
-    if (!currentComp.completed || currentBlockIndex >= blocks.length - 1) return;
-
-    // For supersets, wait until RPE is entered for all exercises in the group
-    if (block.kind === 'superset') {
-      const allRpeEntered = block.exercises.every(
-        (ex) => rpeFeedback[ex.name] != null,
-      );
-      if (!allRpeEntered) return;
+  // ── Manual block advancement (no auto-advance) ────────────────────────────
+  const advanceBlock = useCallback(() => {
+    if (currentBlockIndex < blocks.length - 1) {
+      setCurrentBlockIndex((i) => i + 1);
     }
-
-    setCurrentBlockIndex((i) => i + 1);
-  }, [session, blocks, currentBlockIndex, rpeFeedback]);
+  }, [currentBlockIndex, blocks.length]);
 
   // ── Helper: get coach cue for an exercise ─────────────────────────────────
   const getCoachCue = useCallback(
@@ -625,6 +611,7 @@ export function useSession() {
     handleSaveEdits,
     handleUndoComplete,
     setCurrentBlockIndex,
+    advanceBlock,
     setIsComplete,
     markComplete,
     setEditNotes,

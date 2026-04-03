@@ -518,6 +518,30 @@ export function initTablesOn(db: Database.Database) {
     console.error('[db] v12 backfill failed:', err);
   }
 
+  // Migration v13: laterality on session_sets (bilateral, unilateral_each, alternating)
+  try { db.exec(`ALTER TABLE session_sets ADD COLUMN laterality TEXT DEFAULT 'bilateral'`); } catch { /* exists */ }
+
+  // Backfill laterality from plan_exercises for existing rows
+  try {
+    const needsLateralityBackfill = db.prepare(
+      `SELECT COUNT(*) AS cnt FROM session_sets WHERE (laterality IS NULL OR laterality = 'bilateral') AND plan_exercise_id IS NOT NULL`
+    ).get() as { cnt: number };
+    if (needsLateralityBackfill.cnt > 0) {
+      db.exec(`
+        UPDATE session_sets
+        SET laterality = (
+          SELECT pe.laterality FROM plan_exercises pe WHERE pe.id = session_sets.plan_exercise_id
+        )
+        WHERE plan_exercise_id IS NOT NULL AND (
+          SELECT pe.laterality FROM plan_exercises pe WHERE pe.id = session_sets.plan_exercise_id
+        ) != 'bilateral'
+      `);
+      console.log(`[db] v13: backfilled laterality for session_sets rows`);
+    }
+  } catch (err) {
+    console.error('[db] v13 laterality backfill failed:', err);
+  }
+
   // Migration: add notes column to session_exercise_feedback
   try { db.exec(`ALTER TABLE session_exercise_feedback ADD COLUMN notes TEXT`); } catch { /* exists */ }
 

@@ -118,8 +118,8 @@ export function createSessionFromPlanExercises(
     INSERT INTO session_sets
     (session_log_id, exercise_name, exercise_order, superset_group, set_number,
      prescribed_weight_kg, prescribed_reps, prescribed_duration_s, completed, is_modified,
-     section, rest_seconds, coach_cue, plan_exercise_id, prescribed_reps_display, exercise_type)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?)
+     section, rest_seconds, coach_cue, plan_exercise_id, prescribed_reps_display, exercise_type, laterality)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   const insertCardio = db.prepare(`
@@ -157,7 +157,7 @@ export function createSessionFromPlanExercises(
           ex.weightKg, isNaN(repsNum ?? NaN) ? null : repsNum,
           ex.durationSeconds,
           ex.section, ex.restSeconds, ex.coachCue, ex.id ?? null,
-          repsDisplay, ex.type,
+          repsDisplay, ex.type, ex.laterality ?? 'bilateral',
         );
       }
     }
@@ -215,7 +215,7 @@ export function getSessionSets(sessionId: number, _db?: Database.Database): Sess
            prescribed_weight_kg, prescribed_reps, prescribed_reps_display,
            actual_weight_kg, actual_reps,
            completed, is_modified, prescribed_duration_s, actual_duration_s,
-           section, rest_seconds, coach_cue, plan_exercise_id, exercise_type
+           section, rest_seconds, coach_cue, plan_exercise_id, exercise_type, laterality
     FROM session_sets WHERE session_log_id = ? ORDER BY exercise_order, set_number
   `).all(sessionId) as Array<Record<string, unknown>>;
 
@@ -239,6 +239,7 @@ export function getSessionSets(sessionId: number, _db?: Database.Database): Sess
     planExerciseId: r.plan_exercise_id as number | null,
     prescribedRepsDisplay: r.prescribed_reps_display as string | null,
     exerciseType: (r.exercise_type as string | null) as import('./types').ExerciseType | null,
+    laterality: (r.laterality as string | 'bilateral') as 'bilateral' | 'unilateral_each' | 'alternating',
   }));
 }
 

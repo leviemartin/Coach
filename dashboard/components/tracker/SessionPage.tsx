@@ -47,6 +47,7 @@ export default function SessionPage() {
     handleSaveEdits,
     handleUndoComplete,
     setCurrentBlockIndex,
+    advanceBlock,
     markComplete,
     setEditNotes,
     resetSession,
@@ -69,7 +70,10 @@ export default function SessionPage() {
         name: ex.name,
         type: ex.type,
         sets: session.sets.filter((s) => s.exerciseName === ex.name),
+        prescribedRepsDisplay: ex.prescribedRepsDisplay,
+        prescribedWeightKg: ex.prescribedWeightKg,
         prescribedDurationS: ex.prescribedDurationS,
+        laterality: ex.laterality,
         coachCue: getCoachCue(ex.name) ?? ex.coachCue,
         rpe: rpeFeedback[ex.name] ?? null,
         notes: exerciseNotes[ex.name] ?? '',
@@ -363,6 +367,32 @@ export default function SessionPage() {
                 <SectionDivider section={blocks[currentBlockIndex].section as Section} />
               )}
               {renderBlock(blocks[currentBlockIndex])}
+
+              {/* Manual advance button */}
+              {currentBlockIndex < blocks.length - 1 && (
+                <Box sx={{ px: 2.5, mt: 2 }}>
+                  <Box
+                    component="button"
+                    onClick={advanceBlock}
+                    sx={{
+                      width: '100%',
+                      py: 1.25,
+                      border: `2px solid ${borders.hard}`,
+                      backgroundColor: 'transparent',
+                      color: borders.hard,
+                      fontFamily: '"JetBrains Mono", monospace',
+                      fontSize: '0.8125rem',
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      letterSpacing: '1px',
+                      cursor: 'pointer',
+                      '&:hover': { backgroundColor: '#f0f0eb' },
+                    }}
+                  >
+                    Next Exercise →
+                  </Box>
+                </Box>
+              )}
             </>
           )}
         </Box>

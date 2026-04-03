@@ -134,7 +134,7 @@ export function buildBlocksFromSets(
       restSeconds,
       coachCue: first.coachCue,
       planExerciseId: first.planExerciseId,
-      laterality: 'bilateral',
+      laterality: first.laterality ?? 'bilateral',
     };
     normalizedExercises.push({ norm, section });
   }

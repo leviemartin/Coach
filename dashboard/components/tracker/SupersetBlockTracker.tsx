@@ -3,7 +3,7 @@ import { Box, Typography } from '@mui/material';
 import type { SessionSetState, ExerciseType } from '@/lib/types';
 import { supersetGroupLetter } from '@/lib/buildBlocks';
 import { supersetColors } from '@/lib/design-tokens';
-import { formatDuration } from '@/lib/format';
+import { formatDuration, formatRx } from '@/lib/format';
 import SetRowInput from './SetRowInput';
 import ExerciseRpe from './ExerciseRpe';
 
@@ -11,7 +11,10 @@ interface SupersetExercise {
   name: string;
   type: ExerciseType;
   sets: SessionSetState[];
+  prescribedRepsDisplay: string | null;
+  prescribedWeightKg: number | null;
   prescribedDurationS: number | null;
+  laterality: string;
   coachCue: string | null;
   rpe: number | null;
   notes: string;
@@ -64,6 +67,17 @@ export default function SupersetBlockTracker({ groupId, exercises, restSeconds, 
               fontFamily: '"Libre Franklin", sans-serif', fontSize: '1rem', fontWeight: 800,
               textTransform: 'uppercase', letterSpacing: '0.5px', mb: 0.25,
             }}>{ex.name}</Typography>
+            {(() => {
+              const rxLine = formatRx(ex.sets.length, ex.prescribedRepsDisplay, ex.prescribedDurationS, ex.laterality);
+              return rxLine ? (
+                <Typography sx={{
+                  fontFamily: '"JetBrains Mono", monospace', fontSize: '0.75rem', color: '#71717a', mb: 0.5,
+                }}>
+                  {rxLine}
+                  {ex.prescribedWeightKg != null && ex.prescribedWeightKg > 0 && ` @ ${ex.prescribedWeightKg}kg`}
+                </Typography>
+              ) : null;
+            })()}
             {ex.coachCue && (
               <Typography sx={{
                 fontSize: '0.75rem', fontStyle: 'italic', color: '#b45309', mb: 1.5,
