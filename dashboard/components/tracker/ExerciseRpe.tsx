@@ -39,7 +39,7 @@ export default function ExerciseRpe({ selectedRpe, onSelect, notes, onNotesChang
               sx={{
                 flex: 1,
                 py: 0.75,
-                borderRadius: '6px',
+                borderRadius: 0,
                 textAlign: 'center',
                 cursor: 'pointer',
                 border: '1px solid',
@@ -79,7 +79,7 @@ export default function ExerciseRpe({ selectedRpe, onSelect, notes, onNotesChang
           maxRows={3}
           sx={{
             mt: 1,
-            '& .MuiOutlinedInput-root': { borderRadius: '8px', fontSize: '0.8125rem' },
+            '& .MuiOutlinedInput-root': { borderRadius: 0, fontSize: '0.8125rem' },
             '& .MuiOutlinedInput-input': { py: 0.75, px: 1 },
           }}
         />

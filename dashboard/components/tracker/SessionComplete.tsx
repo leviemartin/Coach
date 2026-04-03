@@ -113,7 +113,7 @@ export default function SessionComplete({
       {weightChanges.length > 0 && (
         <Card
           variant="outlined"
-          sx={{ borderRadius: '12px', borderColor: '#f59e0b', mb: 2 }}
+          sx={{ borderRadius: 0, borderColor: '#f59e0b', mb: 2 }}
         >
           <CardContent sx={{ pb: '12px !important' }}>
             <Stack direction="row" alignItems="center" spacing={1} mb={1.5}>
@@ -149,7 +149,7 @@ export default function SessionComplete({
       {ceilingCheck && (
         <Card
           variant="outlined"
-          sx={{ borderRadius: '12px', borderColor: '#22c55e', mb: 2 }}
+          sx={{ borderRadius: 0, borderColor: '#22c55e', mb: 2 }}
         >
           <CardContent sx={{ pb: '12px !important' }}>
             <Stack direction="row" alignItems="flex-start" spacing={1}>
@@ -181,7 +181,7 @@ export default function SessionComplete({
         sx={{
           mb: 2.5,
           '& .MuiOutlinedInput-root': {
-            borderRadius: '12px',
+            borderRadius: 0,
           },
         }}
       />
@@ -194,7 +194,7 @@ export default function SessionComplete({
         onClick={handleSubmit}
         sx={{
           minHeight: 52,
-          borderRadius: '10px',
+          borderRadius: 0,
           fontWeight: 700,
           fontSize: '1rem',
           backgroundColor: isSubmitting ? '#94a3b8' : '#22c55e',
@@ -216,7 +216,7 @@ export default function SessionComplete({
         }
         sx={{
           '& .MuiSnackbarContent-root': {
-            borderRadius: '10px',
+            borderRadius: 0,
             fontWeight: 600,
           },
         }}
@@ -237,7 +237,7 @@ function StatCard({
   return (
     <Card
       variant="outlined"
-      sx={{ borderRadius: '12px', textAlign: 'center' }}
+      sx={{ borderRadius: 0, textAlign: 'center' }}
     >
       <CardContent sx={{ py: 1.5, px: 1, pb: '12px !important' }}>
         <Typography

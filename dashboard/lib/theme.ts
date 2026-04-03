@@ -115,9 +115,18 @@ function buildThemeOptions(mode: 'light' | 'dark'): ThemeOptions {
             borderRadius: 0,
             border: `3px solid ${c.primary}`,
             backgroundImage: 'none',
+            boxShadow: 'none',
           },
         },
         defaultProps: { elevation: 0 },
+        variants: [
+          {
+            props: { variant: 'outlined' },
+            style: {
+              border: `3px solid ${c.primary}`,
+            },
+          },
+        ],
       },
       MuiPaper: {
         styleOverrides: {

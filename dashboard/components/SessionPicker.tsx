@@ -119,7 +119,7 @@ export default function SessionPicker({
   // No session planned
   if (!plannedSession) {
     return (
-      <Card variant="outlined" sx={{ borderRadius: 0, border: `2px solid ${borders.soft}` }}>
+      <Card variant="outlined">
         <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Typography sx={{ ...designTypo.categoryLabel }}>
@@ -137,7 +137,7 @@ export default function SessionPicker({
   const hasExercises = exercises.length > 0;
 
   return (
-    <Card variant="outlined" sx={{ borderRadius: 0, border: `2px solid ${borders.hard}` }}>
+    <Card variant="outlined">
       <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
         {/* Header */}
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>

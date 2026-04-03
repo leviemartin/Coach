@@ -26,7 +26,7 @@ export default function SupersetBlock({ groupLetter, exercises }: SupersetBlockP
   return (
     <Box sx={{
       border: `1px solid ${colors.border}`,
-      borderRadius: '8px',
+      borderRadius: 0,
       bgcolor: colors.bg,
       px: 1.5,
       py: 1,
