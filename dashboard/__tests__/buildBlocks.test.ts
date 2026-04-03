@@ -23,6 +23,7 @@ function makeSet(overrides: Partial<SessionSetState> = {}): SessionSetState {
     restSeconds: 90,
     coachCue: null,
     planExerciseId: null,
+    exerciseType: null,
     ...overrides,
   };
 }
@@ -44,6 +45,7 @@ function makeCardio(overrides: Partial<SessionCardioState> = {}): SessionCardioS
     planExerciseId: null,
     intervalWorkSeconds: 20,
     intervalRestSeconds: 100,
+    roundData: null,
     ...overrides,
   };
 }
@@ -125,6 +127,33 @@ describe('buildBlocksFromSets', () => {
     expect(blocks).toHaveLength(1);
     if (blocks[0].kind === 'superset') {
       expect(blocks[0].restSeconds).toBe(90);
+    }
+  });
+
+  it('uses stored exerciseType for carry instead of defaulting to strength', () => {
+    const sets = [
+      makeSet({ exerciseName: 'Farmer Carry', exerciseOrder: 5, section: 'accessory', planExerciseId: 50, exerciseType: 'carry', prescribedReps: 40, prescribedRepsDisplay: '40m', prescribedWeightKg: 24, setNumber: 1 }),
+      makeSet({ exerciseName: 'Farmer Carry', exerciseOrder: 5, section: 'accessory', planExerciseId: 50, exerciseType: 'carry', prescribedReps: 40, prescribedRepsDisplay: '40m', prescribedWeightKg: 24, setNumber: 2 }),
+      makeSet({ exerciseName: 'Farmer Carry', exerciseOrder: 5, section: 'accessory', planExerciseId: 50, exerciseType: 'carry', prescribedReps: 40, prescribedRepsDisplay: '40m', prescribedWeightKg: 24, setNumber: 3 }),
+    ];
+    const blocks = buildBlocksFromSets(sets, []);
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].kind).toBe('single');
+    if (blocks[0].kind === 'single') {
+      expect(blocks[0].exercise.type).toBe('carry');
+      expect(blocks[0].exercise.sets).toBe(3);
+    }
+  });
+
+  it('falls back to inference when exerciseType is null (legacy)', () => {
+    // A carry without stored type would incorrectly infer as strength
+    const sets = [
+      makeSet({ exerciseName: 'Farmer Carry', exerciseOrder: 5, section: 'accessory', prescribedReps: 40, prescribedWeightKg: 24, exerciseType: null }),
+    ];
+    const blocks = buildBlocksFromSets(sets, []);
+    if (blocks[0].kind === 'single') {
+      // Without stored type, inference defaults to strength (the known bug for legacy data)
+      expect(blocks[0].exercise.type).toBe('strength');
     }
   });
 
@@ -285,6 +314,18 @@ describe('buildBlocksFromPlan', () => {
     expect(blocks[0].section).toBe('warm_up');
     expect(blocks[1].section).toBe('activation');
     expect(blocks[2].section).toBe('main_work');
+  });
+
+  it('preserves carry type from plan exercises', () => {
+    const exercises: PlanExercise[] = [
+      makePlanExercise({ id: 1, exerciseName: 'Farmer Carry', type: 'carry', reps: '40m', weightKg: 24, sets: 3, section: 'accessory' }),
+    ];
+    const blocks = buildBlocksFromPlan(exercises);
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].kind).toBe('single');
+    if (blocks[0].kind === 'single') {
+      expect(blocks[0].exercise.type).toBe('carry');
+    }
   });
 
   it('defaults laterality to bilateral when not specified', () => {

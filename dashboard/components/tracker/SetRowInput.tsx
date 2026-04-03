@@ -108,6 +108,7 @@ export default function SetRowInput({ set, exerciseType, durationSecondsFromExer
               {showWeight && isBW && 'BW'}
               {showWeight && showReps && ' × '}
               {showReps && set.actualReps != null && `${set.actualReps}`}
+              {showWeight && showDuration && !showReps && ' · '}
               {showDuration && set.actualDurationS != null && `${formatDuration(set.actualDurationS)}`}
             </Typography>
           </Box>

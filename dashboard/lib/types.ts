@@ -484,6 +484,7 @@ export interface SessionSetState {
   restSeconds: number | null;
   coachCue: string | null;
   planExerciseId: number | null;
+  exerciseType: ExerciseType | null;
 }
 
 export interface SessionCardioState {

@@ -495,6 +495,29 @@ export function initTablesOn(db: Database.Database) {
   // Migration v11: prescribed_reps_display stores raw reps string ("8-10", "AMRAP")
   try { db.exec(`ALTER TABLE session_sets ADD COLUMN prescribed_reps_display TEXT`); } catch { /* exists */ }
 
+  // Migration v12: exercise_type stores the plan exercise type (strength, carry, timed, mobility)
+  // so buildBlocksFromSets doesn't need fragile inference
+  try { db.exec(`ALTER TABLE session_sets ADD COLUMN exercise_type TEXT`); } catch { /* exists */ }
+
+  // Backfill exercise_type from plan_exercises for existing rows
+  try {
+    const needsBackfill = db.prepare(
+      `SELECT COUNT(*) AS cnt FROM session_sets WHERE exercise_type IS NULL AND plan_exercise_id IS NOT NULL`
+    ).get() as { cnt: number };
+    if (needsBackfill.cnt > 0) {
+      db.exec(`
+        UPDATE session_sets
+        SET exercise_type = (
+          SELECT pe.type FROM plan_exercises pe WHERE pe.id = session_sets.plan_exercise_id
+        )
+        WHERE exercise_type IS NULL AND plan_exercise_id IS NOT NULL
+      `);
+      console.log(`[db] v12: backfilled exercise_type for ${needsBackfill.cnt} session_sets row(s)`);
+    }
+  } catch (err) {
+    console.error('[db] v12 backfill failed:', err);
+  }
+
   // Migration: add notes column to session_exercise_feedback
   try { db.exec(`ALTER TABLE session_exercise_feedback ADD COLUMN notes TEXT`); } catch { /* exists */ }
 
