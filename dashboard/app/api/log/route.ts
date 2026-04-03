@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDailyLog, upsertDailyLog, getPlanItems, getAllDailyLogs, getUncompletedSessionsForWeek, getDailyNotes } from '@/lib/db';
+import { getPlanExercises } from '@/lib/plan-db';
 import { getWeekForDate, getDayName, getDayAbbrev, findPlanItemForDate, computeStreak, getPreviousDate } from '@/lib/daily-log';
 import { PROGRAM_EPOCH } from '@/lib/week';
 import type { PlanItem } from '@/lib/types';
@@ -112,7 +113,22 @@ export async function GET(request: Request) {
     },
     sleep_disruption_for_last_night: sleepDisruptionForLastNight,
     daily_notes: dailyNotes,
-    planned_session: plannedSession,
+    planned_session: plannedSession ? {
+      ...plannedSession,
+      exercises: plannedSession.hasStructuredExercises && plannedSession.id
+        ? getPlanExercises(plannedSession.id).map((e) => ({
+            name: e.exerciseName,
+            section: e.section,
+            sets: e.sets,
+            reps: e.reps,
+            weightKg: e.weightKg,
+            durationSeconds: e.durationSeconds,
+            type: e.type,
+            supersetGroup: e.supersetGroup,
+            coachCue: e.coachCue,
+          }))
+        : [],
+    } : null,
     uncompleted_sessions: uncompletedSessions,
     total_training_sessions: totalTrainingSessions,
     week_plan_items: weekPlanItems,

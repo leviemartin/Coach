@@ -5,19 +5,15 @@ import {
   Box,
   Card,
   CardContent,
-  Checkbox,
   Chip,
   Collapse,
-  FormControlLabel,
-  Radio,
-  RadioGroup,
   Typography,
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { useRouter } from 'next/navigation';
-import { getComplianceColor } from '@/lib/compliance';
+import Link from 'next/link';
+import { borders, typography as designTypo } from '@/lib/design-tokens';
 
 export interface UncompletedSession {
   id: number;
@@ -27,64 +23,107 @@ export interface UncompletedSession {
   workout_plan?: string | null;
 }
 
+interface PlanExercise {
+  name: string;
+  section: string;
+  sets: number | null;
+  reps: string | null;
+  weightKg: number | null;
+  durationSeconds: number | null;
+  type: string;
+  supersetGroup: string | null;
+  coachCue: string | null;
+}
+
 export interface PlannedSession {
   id?: number;
   session_type: string;
   focus: string;
   workout_plan?: string;
+  exercises?: PlanExercise[];
 }
 
 export interface SessionPickerProps {
   date: string;
   plannedSession: PlannedSession | null;
-  uncompletedSessions: UncompletedSession[];
-  workoutCompleted: number;
   sessionsCompleted: number;
   sessionsPlanned: number;
   isFamilyDay?: boolean;
-  onUpdate: (completed: number, planItemId: number | null) => void;
+  sessionCompleted: boolean;
+  sessionLogId: number | null;
+  onSwap: () => void;
+}
+
+// Group exercises by section for display
+function groupBySection(exercises: PlanExercise[]): Map<string, PlanExercise[]> {
+  const map = new Map<string, PlanExercise[]>();
+  for (const ex of exercises) {
+    const section = ex.section || 'main_work';
+    if (!map.has(section)) map.set(section, []);
+    map.get(section)!.push(ex);
+  }
+  return map;
+}
+
+const SECTION_LABELS: Record<string, string> = {
+  warm_up: 'WARM-UP',
+  activation: 'ACTIVATION',
+  main_work: 'MAIN WORK',
+  accessory: 'ACCESSORY',
+  finisher: 'FINISHER',
+  cool_down: 'COOL-DOWN',
+};
+
+function formatRx(ex: PlanExercise): string {
+  const parts: string[] = [];
+  if (ex.sets) parts.push(`${ex.sets}`);
+  if (ex.reps) parts.push(`×${ex.reps}`);
+  if (ex.durationSeconds) {
+    const dur = ex.durationSeconds >= 60
+      ? `${Math.round(ex.durationSeconds / 60)}min`
+      : `${ex.durationSeconds}s`;
+    parts.push(dur);
+  }
+  if (ex.weightKg != null && ex.weightKg > 0) parts.push(`@ ${ex.weightKg}kg`);
+  return parts.join(' ') || '';
 }
 
 export default function SessionPicker({
   date,
   plannedSession,
-  uncompletedSessions,
-  workoutCompleted,
   sessionsCompleted,
   sessionsPlanned,
   isFamilyDay = false,
-  onUpdate,
+  sessionCompleted,
+  sessionLogId,
+  onSwap,
 }: SessionPickerProps) {
-  const router = useRouter();
+  const [expanded, setExpanded] = useState(false);
 
-  // Default: show other sessions expanded if there's no planned session but others exist
-  const [showOthers, setShowOthers] = useState(!plannedSession && uncompletedSessions.length > 0);
-
-  // Which session is selected in the radio list (by id)
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-
-  const complianceColor = getComplianceColor(sessionsCompleted, sessionsPlanned);
-
-  // Completion chip for the week
   const completionChip = sessionsPlanned > 0 ? (
     <Chip
       label={`${sessionsCompleted}/${sessionsPlanned}`}
       size="small"
-      color={complianceColor}
       variant="outlined"
-      sx={{ fontWeight: 600 }}
+      sx={{
+        fontWeight: 700,
+        fontFamily: '"JetBrains Mono", monospace',
+        fontSize: '0.75rem',
+        borderColor: sessionsCompleted >= sessionsPlanned ? '#22c55e' : borders.soft,
+        color: sessionsCompleted >= sessionsPlanned ? '#16a34a' : '#71717a',
+        borderRadius: 0,
+      }}
     />
   ) : null;
 
-  // All sessions done this week
-  if (sessionsPlanned > 0 && uncompletedSessions.length === 0 && !plannedSession) {
+  // No session planned
+  if (!plannedSession) {
     return (
-      <Card variant="outlined">
-        <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <CheckCircleIcon color="success" fontSize="small" />
-            <Typography variant="body2" color="success.main" fontWeight={600}>
-              All sessions done this week
+      <Card variant="outlined" sx={{ borderRadius: 0, border: `2px solid ${borders.soft}` }}>
+        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography sx={{ ...designTypo.categoryLabel }}>
+              {isFamilyDay ? 'FAMILY DAY' : 'REST DAY'}
             </Typography>
             {completionChip}
           </Box>
@@ -93,152 +132,141 @@ export default function SessionPicker({
     );
   }
 
-  // No plan at all (no planned session, no uncompleted sessions)
-  if (!plannedSession && uncompletedSessions.length === 0) {
-    return (
-      <Card variant="outlined">
-        <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-            <Chip
-              label={isFamilyDay ? 'Family Day' : 'No plan this week'}
-              size="small"
-              color={isFamilyDay ? 'secondary' : 'default'}
-              variant="outlined"
-            />
-            {sessionsPlanned === 0 && (
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ cursor: 'pointer', textDecoration: 'underline' }}
-                onClick={() => router.push('/checkin')}
-              >
-                Run check-in →
-              </Typography>
-            )}
-          </Box>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Determine which plan_item_id is active
-  // If a radio selection exists, use that; otherwise use the planned session's id
-  const activePlanItemId = selectedId ?? plannedSession?.id ?? null;
-
-  const handleCompletionChange = (checked: boolean) => {
-    onUpdate(checked ? 1 : 0, activePlanItemId);
-  };
-
-  const handleRadioChange = (id: number) => {
-    setSelectedId(id);
-    // If already checked, re-save with new plan item id
-    if (workoutCompleted) {
-      onUpdate(1, id);
-    }
-  };
-
-  // The session to display at the top
-  const activeSession: PlannedSession | UncompletedSession | null =
-    selectedId != null
-      ? uncompletedSessions.find((s) => s.id === selectedId) ?? plannedSession
-      : plannedSession;
+  const exercises = plannedSession.exercises ?? [];
+  const sectionGroups = groupBySection(exercises);
+  const hasExercises = exercises.length > 0;
 
   return (
-    <Card variant="outlined">
-      <CardContent>
+    <Card variant="outlined" sx={{ borderRadius: 0, border: `2px solid ${borders.hard}` }}>
+      <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
+        {/* Header */}
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-          <Typography variant="subtitle2" color="text.secondary">
-            {"Today's Session"}
+          <Typography sx={{ ...designTypo.categoryLabel }}>
+            {"TODAY'S SESSION"}
           </Typography>
           {completionChip}
         </Box>
 
-        {/* Active session display */}
-        {activeSession && (
-          <Box sx={{ mb: 1.5 }}>
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1 }}>
-              <Chip label={activeSession.session_type} size="small" color="primary" />
-              <Chip label={activeSession.focus} size="small" variant="outlined" />
-            </Box>
-            {activeSession.workout_plan && (
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                {activeSession.workout_plan}
-              </Typography>
-            )}
+        {/* Session name — clickable to expand exercises */}
+        <Box
+          onClick={() => hasExercises && setExpanded((v) => !v)}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            cursor: hasExercises ? 'pointer' : 'default',
+            mb: 1,
+          }}
+        >
+          <Typography sx={{
+            fontFamily: '"Libre Franklin", sans-serif',
+            fontWeight: 800,
+            fontSize: '1.125rem',
+            textTransform: 'uppercase',
+            letterSpacing: '-0.3px',
+            flex: 1,
+          }}>
+            {plannedSession.focus}
+          </Typography>
+          {hasExercises && (
+            expanded ? <ExpandLessIcon sx={{ color: '#71717a' }} /> : <ExpandMoreIcon sx={{ color: '#71717a' }} />
+          )}
+        </Box>
+
+        {/* Status indicator */}
+        {sessionCompleted && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1.5 }}>
+            <CheckCircleIcon sx={{ color: '#22c55e', fontSize: 18 }} />
+            <Typography sx={{ color: '#22c55e', fontWeight: 700, fontSize: '0.8125rem', fontFamily: '"JetBrains Mono", monospace' }}>
+              COMPLETED
+            </Typography>
           </Box>
         )}
 
-        {/* Completion checkbox */}
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={!!workoutCompleted}
-              onChange={(e) => handleCompletionChange(e.target.checked)}
-            />
-          }
-          label={
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography variant="body2">Session completed</Typography>
-              {activeSession && (
-                <Chip label={activeSession.focus} size="small" variant="outlined" sx={{ fontSize: '0.7rem' }} />
-              )}
+        {/* Expandable exercise list */}
+        {hasExercises && (
+          <Collapse in={expanded}>
+            <Box sx={{ mt: 1, mb: 1.5, borderTop: `1px solid ${borders.soft}`, pt: 1.5 }}>
+              {Array.from(sectionGroups.entries()).map(([section, exs]) => (
+                <Box key={section} sx={{ mb: 1.5 }}>
+                  <Typography sx={{
+                    ...designTypo.categoryLabel,
+                    fontSize: '0.5rem',
+                    mb: 0.75,
+                  }}>
+                    {SECTION_LABELS[section] ?? section.toUpperCase()}
+                  </Typography>
+                  {exs.map((ex, i) => (
+                    <Box key={i} sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mb: 0.5, pl: 0.5 }}>
+                      {ex.supersetGroup && (
+                        <Typography sx={{ fontSize: '0.625rem', fontWeight: 700, color: '#7c3aed', fontFamily: '"JetBrains Mono", monospace' }}>
+                          {ex.supersetGroup}
+                        </Typography>
+                      )}
+                      <Typography sx={{ fontSize: '0.8125rem', fontWeight: 700, fontFamily: '"Libre Franklin", sans-serif', textTransform: 'uppercase', flex: 1 }}>
+                        {ex.name}
+                      </Typography>
+                      <Typography sx={{ fontSize: '0.75rem', color: '#71717a', fontFamily: '"JetBrains Mono", monospace', whiteSpace: 'nowrap' }}>
+                        {formatRx(ex)}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
+              ))}
             </Box>
-          }
-        />
+          </Collapse>
+        )}
 
-        {/* Collapsible other sessions */}
-        {uncompletedSessions.length > 0 && (
-          <Box sx={{ mt: 1.5 }}>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.5,
+        {/* Action buttons */}
+        <Box sx={{ display: 'flex', gap: 1.5, mt: 1 }}>
+          {sessionCompleted ? (
+            <Link href={`/session?edit=true&sessionLogId=${sessionLogId}`} style={{ textDecoration: 'none', flex: 1 }}>
+              <Box sx={{
+                border: `2px solid ${borders.hard}`,
+                py: 1,
+                textAlign: 'center',
                 cursor: 'pointer',
-                color: 'text.secondary',
-                userSelect: 'none',
+                '&:hover': { bgcolor: '#18181b08' },
+              }}>
+                <Typography sx={{ fontFamily: '"JetBrains Mono", monospace', fontWeight: 700, fontSize: '0.8125rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                  Edit Session →
+                </Typography>
+              </Box>
+            </Link>
+          ) : (
+            <Link href={plannedSession.id ? `/session?planItemId=${plannedSession.id}` : '/session'} style={{ textDecoration: 'none', flex: 1 }}>
+              <Box sx={{
+                bgcolor: borders.hard,
+                color: '#fafaf7',
+                py: 1,
+                textAlign: 'center',
+                cursor: 'pointer',
+                '&:hover': { bgcolor: '#3f3f46' },
+              }}>
+                <Typography sx={{ fontFamily: '"JetBrains Mono", monospace', fontWeight: 700, fontSize: '0.8125rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'inherit' }}>
+                  Start Session →
+                </Typography>
+              </Box>
+            </Link>
+          )}
+          {!sessionCompleted && (
+            <Box
+              onClick={onSwap}
+              sx={{
+                border: `2px solid ${borders.hard}`,
+                py: 1,
+                px: 2,
+                textAlign: 'center',
+                cursor: 'pointer',
+                '&:hover': { bgcolor: '#18181b08' },
               }}
-              onClick={() => setShowOthers((v) => !v)}
             >
-              <Typography variant="caption">
-                {showOthers ? 'Hide other sessions' : 'Show other sessions'}
+              <Typography sx={{ fontFamily: '"JetBrains Mono", monospace', fontWeight: 700, fontSize: '0.8125rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                Swap
               </Typography>
-              {showOthers ? (
-                <ExpandLessIcon fontSize="small" />
-              ) : (
-                <ExpandMoreIcon fontSize="small" />
-              )}
             </Box>
-
-            <Collapse in={showOthers}>
-              <RadioGroup
-                value={selectedId?.toString() ?? ''}
-                onChange={(e) => handleRadioChange(Number(e.target.value))}
-                sx={{ mt: 1 }}
-              >
-                {uncompletedSessions.map((session) => (
-                  <FormControlLabel
-                    key={session.id}
-                    value={session.id.toString()}
-                    control={<Radio size="small" />}
-                    label={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                        <Typography variant="body2" fontWeight={500}>
-                          {session.day}
-                        </Typography>
-                        <Chip label={session.session_type} size="small" color="primary" variant="outlined" />
-                        <Typography variant="caption" color="text.secondary">
-                          {session.focus}
-                        </Typography>
-                      </Box>
-                    }
-                    sx={{ alignItems: 'flex-start', mt: 0.5 }}
-                  />
-                ))}
-              </RadioGroup>
-            </Collapse>
-          </Box>
-        )}
+          )}
+        </Box>
       </CardContent>
     </Card>
   );

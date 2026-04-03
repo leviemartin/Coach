@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import Link from 'next/link';
 import {
   Accordion,
   AccordionDetails,
@@ -15,7 +14,6 @@ import {
   Typography,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import BedtimeCard from './BedtimeCard';
 import TaggedNotes from './TaggedNotes';
 import type { DailyNote } from './TaggedNotes';
@@ -31,7 +29,6 @@ import ComplianceSparkline from './ComplianceSparkline';
 import WeekOverview from './WeekOverview';
 import type { WeekDay } from './WeekOverview';
 import { computeDayCompliance, computeWeekCompliancePct, isBedtimeCompliant } from '@/lib/compliance';
-import { semanticColors } from '@/lib/design-tokens';
 import type { UncompletedSession } from './SessionPicker';
 import type { WeekTallies } from './DailyChecklist';
 import type { PlanItem } from '@/lib/types';
@@ -283,13 +280,6 @@ export default function DailyLog({
   );
 
   // ── SessionPicker callbacks ─────────────────────────────────────────────
-  const handleSessionUpdate = (completed: number, planItemId: number | null) => {
-    setSelectedPlanItemId(planItemId);
-    const next = { ...formData, workout_completed: completed };
-    setFormData(next);
-    triggerSave(next, planItemId);
-  };
-
   // ── Checklist callback ──────────────────────────────────────────────────
   const handleChecklistUpdate = (field: string, value: number) => {
     update({ [field]: value });
@@ -407,28 +397,13 @@ export default function DailyLog({
         <SessionPicker
           date={date}
           plannedSession={plannedSession}
-          uncompletedSessions={uncompletedSessions}
-          workoutCompleted={formData.workout_completed}
           sessionsCompleted={sessionsCompleted}
           sessionsPlanned={sessionsPlanned}
           isFamilyDay={isFamilyDay}
-          onUpdate={handleSessionUpdate}
+          sessionCompleted={!!formData.session_summary}
+          sessionLogId={formData.session_log_id}
+          onSwap={handleOpenSwap}
         />
-      )}
-      {!isSick && !swapMode && (plannedSession || uncompletedSessions.length > 0) && (
-        <Box>
-          <Typography
-            variant="caption"
-            sx={{
-              color: semanticColors.body,
-              cursor: 'pointer',
-              '&:hover': { opacity: 0.7 },
-            }}
-            onClick={handleOpenSwap}
-          >
-            Swap session →
-          </Typography>
-        </Box>
       )}
       {!isSick && swapMode && (
         <SwapSessionPicker
@@ -440,39 +415,7 @@ export default function DailyLog({
         />
       )}
 
-      {/* 4b. Start Session / Session completed link */}
-      {!isSick && (plannedSession || selectedPlanItemId != null || formData.workout_completed) && (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {formData.workout_completed ? (
-            <>
-              <CheckCircleIcon sx={{ color: semanticColors.recovery.good, fontSize: 18 }} />
-              <Typography variant="body2" sx={{ color: semanticColors.recovery.good, fontWeight: 600 }}>
-                Session completed
-              </Typography>
-            </>
-          ) : (
-            <Link href={`/session${(selectedPlanItemId ?? plannedSession?.id) ? `?planItemId=${selectedPlanItemId ?? plannedSession?.id}` : ''}`} style={{ textDecoration: 'none' }}>
-              <Typography
-                variant="body2"
-                fontWeight={600}
-                sx={{
-                  color: 'text.primary',
-                  border: '2px solid',
-                  borderColor: 'text.primary',
-                  px: 1.5,
-                  py: 0.5,
-                  display: 'inline-block',
-                  '&:hover': { opacity: 0.8 },
-                }}
-              >
-                Start Session →
-              </Typography>
-            </Link>
-          )}
-        </Box>
-      )}
-
-      {/* 4c. SessionSummaryCard (after session completed) */}
+      {/* 4b. SessionSummaryCard (after session completed) */}
       {!isSick && formData.session_summary && (
         <SessionSummaryCard
           sessionSummary={formData.session_summary}
