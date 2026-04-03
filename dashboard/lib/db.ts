@@ -530,6 +530,46 @@ export function initTablesOn(db: Database.Database) {
     }
     db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('dedup_sessions_v2', ?)").run(new Date().toISOString());
   }
+
+  // v3: Fix session_logs.date to match plan_items.assigned_date when they diverge
+  // (the surviving session from v2 kept the wrong date because it was created on a different day)
+  const migrated3 = db.prepare("SELECT value FROM settings WHERE key = 'fix_session_dates_v3'").get();
+  if (!migrated3) {
+    const mismatched = db.prepare(`
+      SELECT sl.id AS session_id, sl.date AS wrong_date, pi.assigned_date AS correct_date
+      FROM session_logs sl
+      JOIN plan_items pi
+        ON pi.week_number = sl.week_number
+        AND pi.focus = sl.session_title
+        AND pi.assigned_date IS NOT NULL
+        AND pi.assigned_date != sl.date
+    `).all() as Array<{ session_id: number; wrong_date: string; correct_date: string }>;
+
+    for (const m of mismatched) {
+      // Update session_logs date
+      db.prepare('UPDATE session_logs SET date = ? WHERE id = ?').run(m.correct_date, m.session_id);
+
+      // Clear linkage from wrong date's daily_log
+      db.prepare('UPDATE daily_logs SET session_log_id = NULL, session_summary = NULL, workout_completed = 0 WHERE date = ? AND session_log_id = ?')
+        .run(m.wrong_date, m.session_id);
+
+      // Link to correct date's daily_log (create if missing)
+      const correctLog = db.prepare('SELECT id FROM daily_logs WHERE date = ?').get(m.correct_date) as { id: number } | undefined;
+      if (correctLog) {
+        // Re-generate summary from session data
+        const summary = db.prepare('SELECT session_title, compliance_pct FROM session_logs WHERE id = ?')
+          .get(m.session_id) as { session_title: string; compliance_pct: number | null } | undefined;
+        const summaryText = summary ? `${summary.session_title} — ${summary.compliance_pct ?? 0}% compliance` : null;
+        db.prepare('UPDATE daily_logs SET session_log_id = ?, session_summary = ?, workout_completed = 1 WHERE date = ?')
+          .run(m.session_id, summaryText, m.correct_date);
+      }
+    }
+
+    if (mismatched.length > 0) {
+      console.log(`[db] fix_session_dates_v3: corrected date on ${mismatched.length} session(s)`);
+    }
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('fix_session_dates_v3', ?)").run(new Date().toISOString());
+  }
 }
 
 // Settings
