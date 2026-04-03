@@ -525,6 +525,21 @@ export function useSession() {
     setCompleteResult(null);
   }, []);
 
+  // ── Mark session as complete (computes compliance from current state) ──────
+  const markComplete = useCallback(() => {
+    if (!session) return;
+    const doneSets = session.sets.filter((s) => s.completed).length;
+    const doneCardio = session.cardio.filter((c) => c.completed).length;
+    const total = session.sets.length + session.cardio.length;
+    const done = doneSets + doneCardio;
+    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+    const changes = session.sets
+      .filter((s) => s.actualWeightKg != null && s.prescribedWeightKg != null && s.actualWeightKg !== s.prescribedWeightKg)
+      .map((s) => ({ exercise: s.exerciseName, set: s.setNumber, from: s.prescribedWeightKg, to: s.actualWeightKg }));
+    setCompleteResult({ compliancePct: pct, weightChanges: changes, ceilingCheck: null });
+    setIsComplete(true);
+  }, [session]);
+
   // ── Reset session ──────────────────────────────────────────────────────────
   const resetSession = useCallback(() => {
     const planItemId = searchParams.get('planItemId');
@@ -611,6 +626,7 @@ export function useSession() {
     handleUndoComplete,
     setCurrentBlockIndex,
     setIsComplete,
+    markComplete,
     setEditNotes,
     resetSession,
     getCoachCue,

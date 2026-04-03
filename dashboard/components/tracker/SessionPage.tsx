@@ -47,7 +47,7 @@ export default function SessionPage() {
     handleSaveEdits,
     handleUndoComplete,
     setCurrentBlockIndex,
-    setIsComplete,
+    markComplete,
     setEditNotes,
     resetSession,
     getCoachCue,
@@ -493,7 +493,7 @@ export default function SessionPage() {
           </Typography>
           <Box
             component="button"
-            onClick={() => setIsComplete(true)}
+            onClick={() => markComplete()}
             sx={{
               mt: 1.5,
               px: 3,
