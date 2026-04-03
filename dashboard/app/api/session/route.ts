@@ -3,7 +3,7 @@ import { getPlanItems, getPlanItemById } from '@/lib/db';
 import { getPlanExercises } from '@/lib/plan-db';
 import { getTrainingWeek } from '@/lib/week';
 import { parseWorkoutPlan } from '@/lib/workout-parser';
-import { createSession, createSessionFromPlanExercises, getActiveSession, getSessionSets, getSessionCardio, updateSet, updateCardioRound, deleteSession, getExerciseFeedback } from '@/lib/session-db';
+import { createSession, createSessionFromPlanExercises, getActiveSession, getExistingWeekSession, getSessionSets, getSessionCardio, updateSet, updateCardioRound, deleteSession, getExerciseFeedback } from '@/lib/session-db';
 import type { PlanItem } from '@/lib/types';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -159,6 +159,18 @@ export async function GET(request: Request) {
       { sessionId: null, message: 'No workout planned' },
       { status: 404 },
     );
+  }
+
+  // --- Check if session already exists in this week (prevent duplicates across days) ---
+  const existingWeekSession = getExistingWeekSession(
+    weekNumber,
+    targetItem.focus || targetItem.sessionType,
+  );
+  if (existingWeekSession) {
+    // Session already exists for this title this week — return it instead of creating a duplicate
+    const sets = getSessionSets(existingWeekSession.id);
+    const cardio = getSessionCardio(existingWeekSession.id);
+    return buildSessionResponse(targetItem, existingWeekSession.id, sets, cardio, true);
   }
 
   // --- Create a new session ---

@@ -14,10 +14,13 @@ export function createSession(
   const db = _db ?? getDb();
   const weekNumber = getTrainingWeek();
 
-  // Check if a session already exists for this date+title (avoid FK-breaking REPLACE)
+  // Check if a session already exists for this date+title OR same title in same week
   const existing = db.prepare(`
     SELECT id FROM session_logs WHERE date = ? AND session_title = ?
-  `).get(date, sessionTitle) as { id: number } | undefined;
+  `).get(date, sessionTitle) as { id: number } | undefined
+    ?? db.prepare(`
+    SELECT id FROM session_logs WHERE week_number = ? AND session_title = ?
+  `).get(weekNumber, sessionTitle) as { id: number } | undefined;
 
   let sessionId: number;
   if (existing) {
@@ -87,9 +90,13 @@ export function createSessionFromPlanExercises(
   const db = _db ?? getDb();
   const weekNumber = getTrainingWeek();
 
+  // Check if a session already exists for this date+title OR same title in same week
   const existing = db.prepare(`
     SELECT id FROM session_logs WHERE date = ? AND session_title = ?
-  `).get(date, sessionTitle) as { id: number } | undefined;
+  `).get(date, sessionTitle) as { id: number } | undefined
+    ?? db.prepare(`
+    SELECT id FROM session_logs WHERE week_number = ? AND session_title = ?
+  `).get(weekNumber, sessionTitle) as { id: number } | undefined;
 
   let sessionId: number;
   if (existing) {
@@ -526,6 +533,20 @@ export function getActiveSession(date: string, sessionTitle?: string): { id: num
   }
 
   return row ? { id: row.id, sessionTitle: row.session_title } : null;
+}
+
+export function getExistingWeekSession(
+  weekNumber: number,
+  sessionTitle: string,
+  _db?: Database.Database,
+): { id: number; date: string; completed: boolean } | null {
+  const db = _db ?? getDb();
+  const row = db.prepare(`
+    SELECT id, date, completed_at FROM session_logs
+    WHERE week_number = ? AND session_title = ?
+    ORDER BY completed_at DESC NULLS FIRST LIMIT 1
+  `).get(weekNumber, sessionTitle) as { id: number; date: string; completed_at: string | null } | undefined;
+  return row ? { id: row.id, date: row.date, completed: !!row.completed_at } : null;
 }
 
 export function getWeekSessionIds(weekNumber: number, _db?: Database.Database): number[] {
