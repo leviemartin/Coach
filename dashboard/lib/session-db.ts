@@ -426,11 +426,14 @@ export function completeSession(sessionId: number, notes: string, _db?: Database
       feedback,
     );
 
+    // Session counts as completed workout if compliance >= 50%
+    const workoutCompleted = compliancePct >= 50 ? 1 : 0;
+
     const existingLog = getDailyLog(sessionRow.date, db);
     if (existingLog) {
       db.prepare(`
-        UPDATE daily_logs SET workout_completed = 1, session_summary = ?, session_log_id = ? WHERE date = ?
-      `).run(summaryText, sessionId, sessionRow.date);
+        UPDATE daily_logs SET workout_completed = ?, session_summary = ?, session_log_id = ? WHERE date = ?
+      `).run(workoutCompleted, summaryText, sessionId, sessionRow.date);
     } else {
       // Find the plan item for this date using the same DB handle (important for tests)
       const weekNum = getWeekForDate(sessionRow.date);
@@ -446,7 +449,7 @@ export function completeSession(sessionId: number, notes: string, _db?: Database
       upsertDailyLog({
         date: sessionRow.date,
         week_number: weekNum,
-        workout_completed: 1,
+        workout_completed: workoutCompleted,
         workout_plan_item_id: planRow?.id ?? null,
         core_work_done: 0,
         rug_protocol_done: 0,

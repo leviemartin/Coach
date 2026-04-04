@@ -124,6 +124,7 @@ export default function DailyLogPage() {
   const [weekPlanItems, setWeekPlanItems] = useState<Array<{ date: string; session_type: string; focus: string; status: string; completed: number }>>([]);
   const [weekLogs, setWeekLogs] = useState<WeekLog[]>([]);
   const [complianceTrend, setComplianceTrend] = useState<TrendPoint[]>([]);
+  const [sessionCompliancePct, setSessionCompliancePct] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   const weekNumber = getWeekNumber(currentDate);
@@ -152,6 +153,7 @@ export default function DailyLogPage() {
         setStreak(data.streak || { current: 0, best: 0 });
         setFamilyDates(data.family_dates || []);
         setWeekPlanItems(data.week_plan_items || []);
+        setSessionCompliancePct(data.session_compliance_pct ?? null);
       }
     } catch {
       // keep existing state
@@ -367,6 +369,7 @@ export default function DailyLogPage() {
           onDayClick={setCurrentDate}
           isFamilyDay={isFamilyDay}
           weekPlanItems={weekPlanItems}
+          sessionCompliancePct={sessionCompliancePct}
         />
       </Box>
     </Box>

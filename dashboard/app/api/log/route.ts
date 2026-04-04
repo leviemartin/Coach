@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDailyLog, upsertDailyLog, getPlanItems, getAllDailyLogs, getUncompletedSessionsForWeek, getDailyNotes } from '@/lib/db';
+import { getDb, getDailyLog, upsertDailyLog, getPlanItems, getAllDailyLogs, getUncompletedSessionsForWeek, getDailyNotes } from '@/lib/db';
 import { getPlanExercises } from '@/lib/plan-db';
 import { getWeekForDate, getDayName, getDayAbbrev, findPlanItemForDate, computeStreak, getPreviousDate } from '@/lib/daily-log';
 import { PROGRAM_EPOCH } from '@/lib/week';
@@ -88,6 +88,14 @@ export async function GET(request: Request) {
 
   const dailyNotes = log ? getDailyNotes(log.id) : [];
 
+  // Look up compliance % from session_logs if a session is linked
+  let sessionCompliancePct: number | null = null;
+  if (log?.session_log_id) {
+    const db = getDb();
+    const sessionRow = db.prepare('SELECT compliance_pct FROM session_logs WHERE id = ?').get(log.session_log_id) as { compliance_pct: number | null } | undefined;
+    sessionCompliancePct = sessionRow?.compliance_pct ?? null;
+  }
+
   const prevDate = getPreviousDate(date);
   const prevLog = getDailyLog(prevDate);
   const sleepDisruptionForLastNight = prevLog?.sleep_disruption ?? null;
@@ -111,6 +119,7 @@ export async function GET(request: Request) {
       session_summary: null,
       session_log_id: null,
     },
+    session_compliance_pct: sessionCompliancePct,
     sleep_disruption_for_last_night: sleepDisruptionForLastNight,
     daily_notes: dailyNotes,
     planned_session: plannedSession ? {

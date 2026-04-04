@@ -95,6 +95,8 @@ export interface DailyLogProps {
   isFamilyDay?: boolean;
   /** All plan items for the week with resolved dates */
   weekPlanItems?: Array<{ date: string; session_type: string; focus: string; status: string; completed: number }>;
+  /** Session compliance percentage from session_logs */
+  sessionCompliancePct?: number | null;
 }
 
 // ── Week date helpers ────────────────────────────────────────────────────────
@@ -181,6 +183,7 @@ export default function DailyLog({
   onDayClick,
   isFamilyDay = false,
   weekPlanItems = [],
+  sessionCompliancePct,
 }: DailyLogProps) {
   const [formData, setFormData] = useState<LogData>(log);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
@@ -396,6 +399,7 @@ export default function DailyLog({
           isFamilyDay={isFamilyDay}
           sessionCompleted={!!formData.session_summary || (isFamilyDay && !!formData.workout_completed)}
           sessionLogId={formData.session_log_id}
+          compliancePct={sessionCompliancePct ?? null}
           onSwap={handleOpenSwap}
           onMarkFamilyDone={() => {
             const next = { ...formData, workout_completed: 1 };

@@ -649,6 +649,40 @@ export function initTablesOn(db: Database.Database) {
     }
     db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('fix_session_dates_v4', ?)").run(new Date().toISOString());
   }
+
+  // One-time fix: session 71 (Zone 2 Base + Grip) was created with UTC date 2026-04-03
+  // but actually started at 01:00 CEST on 2026-04-04. Move it to the correct date.
+  const fixTz = db.prepare("SELECT value FROM settings WHERE key = 'fix_session_71_tz'").get();
+  if (!fixTz) {
+    const s71 = db.prepare('SELECT id FROM session_logs WHERE id = 71').get();
+    if (s71) {
+      db.transaction(() => {
+        // 1. Move session 71 to correct date
+        db.prepare("UPDATE session_logs SET date = '2026-04-04' WHERE id = 71").run();
+
+        // 2. Regenerate Lower Power + Core summary for April 3 (session 69)
+        const s69 = db.prepare('SELECT id, compliance_pct FROM session_logs WHERE id = 69').get() as { id: number; compliance_pct: number } | undefined;
+        if (s69) {
+          db.prepare("UPDATE daily_logs SET session_log_id = 69, workout_completed = 1 WHERE date = '2026-04-03'").run();
+        }
+
+        // 3. Write Zone 2 data to April 4 daily_log
+        db.prepare(`
+          UPDATE daily_logs SET workout_completed = 1, session_log_id = 71, workout_plan_item_id = 145
+          WHERE date = '2026-04-04'
+        `).run();
+
+        // 4. Mark plan_item 145 as completed
+        db.prepare("UPDATE plan_items SET status = 'completed', completed = 1, completed_at = ? WHERE id = 145")
+          .run(new Date().toISOString());
+
+        db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('fix_session_71_tz', ?)").run(new Date().toISOString());
+      })();
+      console.log('[db] fix_session_71_tz: moved session 71 from 2026-04-03 to 2026-04-04');
+    } else {
+      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('fix_session_71_tz', 'skipped')").run();
+    }
+  }
 }
 
 // Settings

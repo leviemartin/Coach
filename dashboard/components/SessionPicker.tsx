@@ -51,6 +51,7 @@ export interface SessionPickerProps {
   isFamilyDay?: boolean;
   sessionCompleted: boolean;
   sessionLogId: number | null;
+  compliancePct: number | null;
   onSwap: () => void;
   onMarkFamilyDone?: () => void;
 }
@@ -97,6 +98,7 @@ export default function SessionPicker({
   isFamilyDay = false,
   sessionCompleted,
   sessionLogId,
+  compliancePct,
   onSwap,
   onMarkFamilyDone,
 }: SessionPickerProps) {
@@ -205,7 +207,7 @@ export default function SessionPicker({
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1.5 }}>
             <CheckCircleIcon sx={{ color: '#22c55e', fontSize: 18 }} />
             <Typography sx={{ color: '#22c55e', fontWeight: 700, fontSize: '0.8125rem', fontFamily: '"JetBrains Mono", monospace' }}>
-              COMPLETED
+              COMPLETED{compliancePct != null && compliancePct < 100 ? ` · ${compliancePct}%` : ''}
             </Typography>
           </Box>
         )}

@@ -60,7 +60,9 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const planItemIdParam = searchParams.get('planItemId');
 
-  const today = new Date().toISOString().split('T')[0];
+  // Use client's local date when provided (avoids UTC timezone mismatch)
+  const localDate = searchParams.get('localDate');
+  const today = localDate || new Date().toISOString().split('T')[0];
   const weekNumber = getTrainingWeek();
 
   // --- Resolve the target plan item ---

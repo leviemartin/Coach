@@ -269,8 +269,11 @@ export function useSession() {
         const params = new URLSearchParams();
         if (planItemId) params.set('planItemId', planItemId);
         if (reset) params.set('reset', reset);
+        // Send browser's local date to avoid UTC timezone mismatch on server
+        const localDate = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+        params.set('localDate', localDate);
         const qs = params.toString();
-        const url = qs ? `/api/session?${qs}` : '/api/session';
+        const url = `/api/session?${qs}`;
         const res = await fetch(url);
         if (!res.ok) {
           if (res.status === 404) {
