@@ -252,8 +252,13 @@ export default function DailyLog({
     hydration: weekLogs.filter((l) => l.hydration_tracked).length,
   };
 
-  // ── Sessions completed/planned ──────────────────────────────────────────
-  const sessionsCompleted = weekLogs.filter((l) => l.workout_completed === 1).length;
+  // ── Sessions completed/planned (exclude family/rest days) ───────────────
+  const familyRestDates = new Set(
+    weekPlanItems
+      .filter((p) => /rest|family/i.test(p.session_type))
+      .map((p) => p.date)
+  );
+  const sessionsCompleted = weekLogs.filter((l) => l.workout_completed === 1 && !familyRestDates.has(l.date)).length;
   const sessionsPlanned = totalTrainingSessions || (uncompletedSessions.length + sessionsCompleted);
 
   // ── Week overview days ───────────────────────────────────────────────────
