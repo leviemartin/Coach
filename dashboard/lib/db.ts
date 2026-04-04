@@ -660,11 +660,8 @@ export function initTablesOn(db: Database.Database) {
         // 1. Move session 71 to correct date
         db.prepare("UPDATE session_logs SET date = '2026-04-04' WHERE id = 71").run();
 
-        // 2. Regenerate Lower Power + Core summary for April 3 (session 69)
-        const s69 = db.prepare('SELECT id, compliance_pct FROM session_logs WHERE id = 69').get() as { id: number; compliance_pct: number } | undefined;
-        if (s69) {
-          db.prepare("UPDATE daily_logs SET session_log_id = 69, workout_completed = 1 WHERE date = '2026-04-03'").run();
-        }
+        // 2. Fix April 3: link to session 69, clear stale Zone 2 summary so debug POST regenerates it
+        db.prepare("UPDATE daily_logs SET session_log_id = 69, workout_completed = 1, session_summary = NULL WHERE date = '2026-04-03'").run();
 
         // 3. Write Zone 2 data to April 4 daily_log
         db.prepare(`
@@ -682,6 +679,14 @@ export function initTablesOn(db: Database.Database) {
     } else {
       db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('fix_session_71_tz', 'skipped')").run();
     }
+  }
+
+  // Fix: clear stale Zone 2 summary from April 3 so debug POST regenerates from session 69
+  const fixSummary = db.prepare("SELECT value FROM settings WHERE key = 'fix_session_69_summary'").get();
+  if (!fixSummary) {
+    db.prepare("UPDATE daily_logs SET session_summary = NULL WHERE date = '2026-04-03' AND session_log_id = 69").run();
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('fix_session_69_summary', ?)").run(new Date().toISOString());
+    console.log('[db] fix_session_69_summary: cleared stale summary for April 3');
   }
 }
 
