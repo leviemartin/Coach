@@ -28,6 +28,36 @@ export default function CheckInResultsPage() {
   const [planModifiedByDialogue, setPlanModifiedByDialogue] = useState(false);
   const [currentSynthesis, setCurrentSynthesis] = useState('');
   const startedRef = useRef(false);
+  const planFetchedRef = useRef(false);
+
+  // Fetch plan when synthesis completes — separate from SSE loop to avoid blocking re-render
+  useEffect(() => {
+    if (phase !== 'done' || planFetchedRef.current) return;
+    planFetchedRef.current = true;
+
+    (async () => {
+      try {
+        const planRes = await fetch('/api/plan');
+        if (planRes.ok) {
+          const planData = await planRes.json();
+          if (planData.items?.length > 0) {
+            setPlanItems(planData.items);
+            setPlanExercises(planData.exercises || {});
+          } else {
+            // Fallback: parse from synthesis text
+            const stored = sessionStorage.getItem('checkin_synthesis');
+            if (stored) {
+              const weekNum = getPlanWeekNumber();
+              const parsed = parseScheduleTable(stored, weekNum);
+              if (parsed.length > 0) setPlanItems(parsed);
+            }
+          }
+        }
+      } catch {
+        // Non-fatal — Lock In button still visible without plan preview
+      }
+    })();
+  }, [phase]);
 
   useEffect(() => {
     if (startedRef.current) return;
@@ -120,30 +150,14 @@ export default function CheckInResultsPage() {
                   setSynthesis((prev) => prev + data.text);
                   break;
                 case 'synthesis_complete':
-                  setPhase('done');
                   try {
                     sessionStorage.setItem('checkin_synthesis', data.fullText);
                   } catch {
                     // ignore storage errors
                   }
-                  // Fetch structured plan (items + exercises) from DB
-                  try {
-                    const planRes = await fetch('/api/plan');
-                    if (planRes.ok) {
-                      const planData = await planRes.json();
-                      if (planData.items?.length > 0) {
-                        setPlanItems(planData.items);
-                        setPlanExercises(planData.exercises || {});
-                      } else {
-                        // Fallback: parse from synthesis text
-                        const weekNum = getPlanWeekNumber();
-                        const parsed = parseScheduleTable(data.fullText || '', weekNum);
-                        if (parsed.length > 0) setPlanItems(parsed);
-                      }
-                    }
-                  } catch {
-                    // Non-fatal — plan preview simply won't render
-                  }
+                  // Set phase LAST and don't await inside the SSE loop —
+                  // plan fetch happens in a separate useEffect to avoid blocking re-render
+                  setPhase('done');
                   break;
                 case 'error':
                   setError(data.message);
@@ -228,6 +242,28 @@ export default function CheckInResultsPage() {
             sx={{ px: 6, py: 1.5, fontSize: '1.1rem' }}
           >
             Lock In
+          </Button>
+        </Box>
+      )}
+
+      {/* Fallback: always show Lock In when synthesis text exists, even if phase state is stuck */}
+      {phase !== 'done' && synthesis.length > 200 && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4, gap: 2 }}>
+          <Button
+            variant="contained"
+            size="large"
+            onClick={handleLockIn}
+            sx={{ px: 6, py: 1.5, fontSize: '1.1rem' }}
+          >
+            Lock In
+          </Button>
+          <Button
+            variant="outlined"
+            size="large"
+            onClick={handleDiscuss}
+            sx={{ px: 4, py: 1.5 }}
+          >
+            Discuss with Coach
           </Button>
         </Box>
       )}
