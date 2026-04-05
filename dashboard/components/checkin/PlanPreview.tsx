@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Box, Typography, Chip, Button, Divider } from '@mui/material';
+import { Box, Typography, Chip, Button, Divider, CircularProgress } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import type { PlanItem, PlanExercise } from '@/lib/types';
@@ -36,9 +36,10 @@ interface PlanPreviewProps {
   weekNumber: number;
   onLockIn: () => void;
   onDiscuss?: () => void;
+  loading?: boolean;
 }
 
-export default function PlanPreview({ items, exercises, weekNumber, onLockIn, onDiscuss }: PlanPreviewProps) {
+export default function PlanPreview({ items, exercises, weekNumber, onLockIn, onDiscuss, loading }: PlanPreviewProps) {
   if (!items || items.length === 0) return null;
 
   const dateRange = weekDateRange(items);
@@ -90,8 +91,26 @@ export default function PlanPreview({ items, exercises, weekNumber, onLockIn, on
         />
       </Box>
 
+      {loading && (
+        <Box sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 1.5,
+          py: 3,
+          my: 2,
+          border: '3px solid #e4e4e0',
+          bgcolor: '#fafaf7',
+        }}>
+          <CircularProgress size={18} sx={{ color: '#18181b' }} />
+          <Typography variant="body2" sx={{ color: '#71717a', fontWeight: 600 }}>
+            Rebuilding plan...
+          </Typography>
+        </Box>
+      )}
+
       {/* Day cards */}
-      <Box>
+      <Box sx={{ opacity: loading ? 0.4 : 1, transition: 'opacity 0.3s' }}>
         {items.map((item) => (
           <PlanDayCard
             key={item.id ?? item.dayOrder}
@@ -114,6 +133,7 @@ export default function PlanPreview({ items, exercises, weekNumber, onLockIn, on
           <Button
             variant="outlined"
             onClick={onDiscuss}
+            disabled={loading}
             startIcon={<ChatBubbleOutlineIcon />}
             sx={{
               borderColor: '#18181b',
@@ -132,6 +152,7 @@ export default function PlanPreview({ items, exercises, weekNumber, onLockIn, on
             variant="contained"
             size="large"
             onClick={onLockIn}
+            disabled={loading}
             startIcon={<LockIcon />}
             sx={{
               bgcolor: '#22c55e',
