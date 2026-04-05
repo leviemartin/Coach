@@ -1,6 +1,6 @@
 import { readAgentPersona } from './state';
 import { getClient } from './agents';
-import { OPUS_MODEL } from './constants';
+import { OPUS_MODEL, DEFAULT_MODEL } from './constants';
 import type { AgentOutput } from './types';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -176,23 +176,15 @@ export async function* streamDialogueAfterToolResult(
   toolResultContent: string,
 ): AsyncGenerator<DialogueStreamEvent> {
   const client = getClient();
-  const systemPrompt = buildSystemPrompt();
-  const messages = buildDialogueMessages(request);
 
-  // Add context about the tool result so the model can confirm
-  messages.push({
-    role: 'assistant',
-    content: '[Plan has been updated]',
-  });
-  messages.push({
-    role: 'user',
-    content: `The plan has been rebuilt and saved: ${toolResultContent}. Confirm the changes briefly.`,
-  });
+  // Lightweight confirmation — only send the last exchange + result, not full specialist context
+  const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [
+    { role: 'user', content: `You are the Head Coach. The athlete requested plan changes. ${toolResultContent}. Confirm the changes briefly in your strict, analytical tone. 1-2 sentences max.` },
+  ];
 
   const stream = client.messages.stream({
-    model: OPUS_MODEL,
-    max_tokens: 1000,
-    system: systemPrompt,
+    model: DEFAULT_MODEL, // Sonnet — fast confirmation, no need for Opus
+    max_tokens: 300,
     messages,
   });
 

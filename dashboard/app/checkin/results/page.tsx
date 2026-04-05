@@ -15,6 +15,37 @@ interface SpecialistOutput {
   error: string | null;
 }
 
+// ── Session cache helpers ─────────────────────────────────────────────────
+
+const CACHE_KEY = 'checkin_results_cache';
+
+interface CheckinCache {
+  specialists: SpecialistOutput[];
+  synthesis: string;
+  phase: string;
+}
+
+function saveCache(data: CheckinCache) {
+  try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch { /* ignore */ }
+}
+
+function loadCache(): CheckinCache | null {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CheckinCache;
+    // Only restore if the checkin reached at least synthesis_complete
+    if (parsed.phase !== 'synthesis_complete' && parsed.phase !== 'done') return null;
+    return parsed;
+  } catch { return null; }
+}
+
+function clearCache() {
+  try { sessionStorage.removeItem(CACHE_KEY); } catch { /* ignore */ }
+}
+
+// ── Component ─────────────────────────────────────────────────────────────
+
 export default function CheckInResultsPage() {
   const router = useRouter();
   const [specialists, setSpecialists] = useState<SpecialistOutput[]>([]);
@@ -26,18 +57,16 @@ export default function CheckInResultsPage() {
   const [planExercises, setPlanExercises] = useState<Record<number, PlanExercise[]>>({});
   const [showDialogue, setShowDialogue] = useState(false);
   const [planRebuilding, setPlanRebuilding] = useState(false);
-  // Compute week number once on client to avoid server/client mismatch (React 418)
   const [weekNumber, setWeekNumber] = useState<number | null>(null);
   const startedRef = useRef(false);
   const planFetchedRef = useRef(false);
   const synthesisTextRef = useRef('');
 
-  // Compute week number on client only (avoids hydration mismatch)
   useEffect(() => {
     setWeekNumber(getPlanWeekNumber());
   }, []);
 
-  // Fetch plan when pipeline completes
+  // Fetch plan when pipeline completes (or on cache restore)
   useEffect(() => {
     if (phase !== 'done' || planFetchedRef.current) return;
     planFetchedRef.current = true;
@@ -53,7 +82,7 @@ export default function CheckInResultsPage() {
           }
         }
       } catch {
-        // Non-fatal — Lock In button still visible without plan preview
+        // Non-fatal
       }
     })();
   }, [phase]);
@@ -61,6 +90,17 @@ export default function CheckInResultsPage() {
   useEffect(() => {
     if (startedRef.current) return;
     startedRef.current = true;
+
+    // Try to restore from cache first (survives page refresh)
+    const cached = loadCache();
+    if (cached) {
+      setSpecialists(cached.specialists);
+      setSynthesis(cached.synthesis);
+      synthesisTextRef.current = cached.synthesis;
+      setPhase(cached.phase);
+      // Plan will be fetched by the phase useEffect above
+      return;
+    }
 
     let raw: string | null = null;
     try {
@@ -87,6 +127,8 @@ export default function CheckInResultsPage() {
   }, []);
 
   async function runCheckIn(payload: Record<string, unknown>) {
+    const collectedSpecialists: SpecialistOutput[] = [];
+
     try {
       const response = await fetch('/api/checkin', {
         method: 'POST',
@@ -139,29 +181,36 @@ export default function CheckInResultsPage() {
                   if (data.message) setStatusMessage(data.message);
                   break;
                 case 'specialist':
-                  setSpecialists((prev) => [...prev, data]);
+                  collectedSpecialists.push(data);
+                  setSpecialists([...collectedSpecialists]);
                   break;
                 case 'synthesis_chunk':
                   synthesisTextRef.current += data.text;
                   setSynthesis(synthesisTextRef.current);
                   break;
                 case 'synthesis_done':
-                  // Synthesis text is complete — Discuss button can activate now
                   try {
                     sessionStorage.setItem('checkin_synthesis', data.fullText);
-                  } catch {
-                    // ignore storage errors
-                  }
+                  } catch { /* ignore */ }
                   setPhase('synthesis_complete');
+                  // Cache results so refresh doesn't re-run
+                  saveCache({
+                    specialists: collectedSpecialists,
+                    synthesis: data.fullText,
+                    phase: 'synthesis_complete',
+                  });
                   break;
                 case 'synthesis_complete':
-                  // Full pipeline done (plan built + data saved)
                   try {
                     sessionStorage.setItem('checkin_synthesis', data.fullText);
-                  } catch {
-                    // ignore storage errors
-                  }
+                  } catch { /* ignore */ }
                   setPhase('done');
+                  // Update cache to done
+                  saveCache({
+                    specialists: collectedSpecialists,
+                    synthesis: synthesisTextRef.current,
+                    phase: 'done',
+                  });
                   break;
                 case 'error':
                   setError(data.message);
@@ -193,6 +242,11 @@ export default function CheckInResultsPage() {
     } catch {
       // Non-fatal
     }
+
+    // Clear cache — checkin is complete
+    clearCache();
+    try { sessionStorage.removeItem('checkin_form_data'); } catch { /* ignore */ }
+    try { sessionStorage.removeItem('checkin_synthesis'); } catch { /* ignore */ }
 
     router.push('/log');
   };
