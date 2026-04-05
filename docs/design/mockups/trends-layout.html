@@ -1,0 +1,249 @@
+<h2>Trends Page — Desktop Layout</h2>
+<p class="subtitle">Multi-metric analytics with cross-correlation insights. Time ranges: 7d / 30d / 90d / 6mo / 1y / Journey.</p>
+
+<div class="mockup">
+  <div class="mockup-header">Trends — Desktop View</div>
+  <div class="mockup-body" style="background:#f5f5f0; padding:20px; font-family:'DM Sans',sans-serif; color:#18181b;">
+
+    <!-- Time Range Selector -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <div style="font-family:'Libre Franklin',sans-serif; font-size:20px; font-weight:900; text-transform:uppercase; letter-spacing:-0.5px;">TRENDS</div>
+      <div style="display:flex; gap:0;">
+        <button style="border:3px solid #18181b; border-right:none; background:#fafaf7; padding:6px 14px; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; letter-spacing:1px; cursor:pointer;">7D</button>
+        <button style="border:3px solid #18181b; border-right:none; background:#18181b; color:#fafaf7; padding:6px 14px; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; letter-spacing:1px; cursor:pointer;">30D</button>
+        <button style="border:3px solid #18181b; border-right:none; background:#fafaf7; padding:6px 14px; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; letter-spacing:1px; cursor:pointer;">90D</button>
+        <button style="border:3px solid #18181b; border-right:none; background:#fafaf7; padding:6px 14px; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; letter-spacing:1px; cursor:pointer;">6MO</button>
+        <button style="border:3px solid #18181b; border-right:none; background:#fafaf7; padding:6px 14px; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; letter-spacing:1px; cursor:pointer;">1Y</button>
+        <button style="border:3px solid #18181b; background:#fafaf7; padding:6px 14px; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; letter-spacing:1px; cursor:pointer;">JOURNEY</button>
+      </div>
+    </div>
+
+    <!-- AI Insights Banner -->
+    <div style="border:3px solid #3b82f6; background:#eff6ff; padding:16px 20px; margin-bottom:20px;">
+      <div style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#3b82f6; margin-bottom:6px;">COACHING INSIGHT</div>
+      <div style="font-family:'DM Sans',sans-serif; font-size:13px; line-height:1.5;">Your deadlift RPE drops by <strong>0.8 points</strong> on weeks where you average <strong>&gt;7 hours sleep</strong> AND hit <strong>&gt;170g protein</strong>. This happened 4 out of the last 6 qualifying weeks. <span style="font-family:'JetBrains Mono',monospace; font-size:10px; color:#3b82f6; cursor:pointer;">VIEW CORRELATION &rarr;</span></div>
+    </div>
+
+    <!-- Primary Charts Row -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+
+      <!-- Body Composition -->
+      <div style="border:3px solid #18181b; background:#fafaf7; padding:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#71717a;">BODY COMPOSITION</div>
+          <div style="display:flex; gap:12px; font-family:'JetBrains Mono',monospace; font-size:9px;">
+            <span><span style="display:inline-block; width:8px; height:3px; background:#18181b; vertical-align:middle; margin-right:4px;"></span>WEIGHT</span>
+            <span><span style="display:inline-block; width:8px; height:3px; background:#3b82f6; vertical-align:middle; margin-right:4px;"></span>MUSCLE</span>
+            <span><span style="display:inline-block; width:8px; height:3px; background:#ef4444; vertical-align:middle; margin-right:4px;"></span>FAT %</span>
+          </div>
+        </div>
+        <!-- Chart Area -->
+        <div style="height:160px; border-bottom:2px solid #e4e4e0; border-left:2px solid #e4e4e0; position:relative; display:flex; align-items:flex-end; padding:0 4px;">
+          <!-- Simulated weight trend line (descending) -->
+          <svg viewBox="0 0 400 140" style="width:100%; height:100%;" preserveAspectRatio="none">
+            <polyline points="0,20 60,25 120,30 180,40 240,50 300,55 360,65 400,70" fill="none" stroke="#18181b" stroke-width="3"/>
+            <polyline points="0,90 60,88 120,87 180,86 240,85 300,84 360,83 400,82" fill="none" stroke="#3b82f6" stroke-width="2" stroke-dasharray="4,4"/>
+            <polyline points="0,50 60,52 120,55 180,60 240,63 300,65 360,68 400,72" fill="none" stroke="#ef4444" stroke-width="2" stroke-dasharray="4,4"/>
+          </svg>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-top:8px;">
+          <div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:9px; color:#71717a;">CURRENT</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700;">96.2 kg</div>
+          </div>
+          <div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:9px; color:#71717a;">TARGET</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700;">89.0 kg</div>
+          </div>
+          <div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:9px; color:#71717a;">TREND</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; color:#22c55e;">-0.6 kg/wk</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sleep & Recovery -->
+      <div style="border:3px solid #18181b; background:#fafaf7; padding:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#71717a;">SLEEP & RECOVERY</div>
+          <div style="display:flex; gap:12px; font-family:'JetBrains Mono',monospace; font-size:9px;">
+            <span><span style="display:inline-block; width:8px; height:3px; background:#18181b; vertical-align:middle; margin-right:4px;"></span>SLEEP</span>
+            <span><span style="display:inline-block; width:8px; height:3px; background:#22c55e; vertical-align:middle; margin-right:4px;"></span>HRV</span>
+          </div>
+        </div>
+        <div style="height:160px; border-bottom:2px solid #e4e4e0; border-left:2px solid #e4e4e0; position:relative;">
+          <svg viewBox="0 0 400 140" style="width:100%; height:100%;" preserveAspectRatio="none">
+            <polyline points="0,80 60,70 120,90 180,60 240,50 300,65 360,45 400,40" fill="none" stroke="#18181b" stroke-width="3"/>
+            <polyline points="0,100 60,95 120,105 180,85 240,75 300,80 360,70 400,65" fill="none" stroke="#22c55e" stroke-width="2" stroke-dasharray="4,4"/>
+          </svg>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-top:8px;">
+          <div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:9px; color:#71717a;">SLEEP AVG</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700;">71</div>
+          </div>
+          <div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:9px; color:#71717a;">HRV AVG</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700;">42 ms</div>
+          </div>
+          <div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:9px; color:#71717a;">BEDTIME AVG</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; color:#f59e0b;">23:42</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Secondary Charts Row -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+
+      <!-- Strength Progression -->
+      <div style="border:3px solid #18181b; background:#fafaf7; padding:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#71717a;">STRENGTH PROGRESSION</div>
+          <select style="border:2px solid #18181b; background:#fafaf7; padding:4px 8px; font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:700;">
+            <option>ALL LIFTS</option>
+            <option>UPPER PUSH</option>
+            <option>UPPER PULL</option>
+            <option>LOWER</option>
+          </select>
+        </div>
+        <div style="height:140px; border-bottom:2px solid #e4e4e0; border-left:2px solid #e4e4e0;">
+          <svg viewBox="0 0 400 120" style="width:100%; height:100%;" preserveAspectRatio="none">
+            <polyline points="0,100 60,95 120,85 180,80 240,70 300,65 360,55 400,50" fill="none" stroke="#18181b" stroke-width="3"/>
+          </svg>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:12px;">
+          <div style="border:2px solid #e4e4e0; padding:8px; text-align:center;">
+            <div style="font-family:'JetBrains Mono',monospace; font-size:9px; color:#71717a;">BENCH</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700;">72.5 kg</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:9px; color:#22c55e;">+7.5</div>
+          </div>
+          <div style="border:2px solid #e4e4e0; padding:8px; text-align:center;">
+            <div style="font-family:'JetBrains Mono',monospace; font-size:9px; color:#71717a;">DEADLIFT</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700;">100 kg</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:9px; color:#22c55e;">+15</div>
+          </div>
+          <div style="border:2px solid #e4e4e0; padding:8px; text-align:center;">
+            <div style="font-family:'JetBrains Mono',monospace; font-size:9px; color:#71717a;">PULL-UPS</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700;">4 reps</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:9px; color:#22c55e;">+2</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nutrition & Compliance -->
+      <div style="border:3px solid #18181b; background:#fafaf7; padding:20px;">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#71717a; margin-bottom:16px;">NUTRITION</div>
+        <div style="height:140px; border-bottom:2px solid #e4e4e0; border-left:2px solid #e4e4e0;">
+          <!-- Stacked area style for macros -->
+          <svg viewBox="0 0 400 120" style="width:100%; height:100%;" preserveAspectRatio="none">
+            <polyline points="0,40 60,45 120,35 180,42 240,38 300,44 360,36 400,40" fill="none" stroke="#18181b" stroke-width="3"/>
+            <line x1="0" y1="38" x2="400" y2="38" stroke="#ef4444" stroke-width="1" stroke-dasharray="6,4"/>
+          </svg>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-top:8px;">
+          <div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:9px; color:#71717a;">CALORIES AVG</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700;">2,280</div>
+          </div>
+          <div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:9px; color:#71717a;">PROTEIN AVG</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700;">172g</div>
+          </div>
+          <div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:9px; color:#ef4444;">TARGET</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700;">180g</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Training Load -->
+    <div style="border:3px solid #18181b; background:#fafaf7; padding:20px; margin-bottom:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#71717a;">TRAINING LOAD & HR ZONES</div>
+        <div style="display:flex; gap:12px; font-family:'JetBrains Mono',monospace; font-size:9px;">
+          <span><span style="display:inline-block; width:8px; height:3px; background:#18181b; vertical-align:middle; margin-right:4px;"></span>ACWR</span>
+          <span style="color:#22c55e;">0.8-1.3 OPTIMAL</span>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:2fr 1fr; gap:16px;">
+        <div style="height:100px; border-bottom:2px solid #e4e4e0; border-left:2px solid #e4e4e0; position:relative;">
+          <!-- ACWR with optimal band -->
+          <svg viewBox="0 0 400 80" style="width:100%; height:100%;" preserveAspectRatio="none">
+            <rect x="0" y="20" width="400" height="30" fill="#dcfce7" opacity="0.5"/>
+            <polyline points="0,45 60,40 120,35 180,30 240,28 300,32 360,35 400,30" fill="none" stroke="#18181b" stroke-width="3"/>
+          </svg>
+        </div>
+        <!-- HR Zone Distribution -->
+        <div>
+          <div style="margin-bottom:6px;">
+            <div style="display:flex; justify-content:space-between; font-family:'JetBrains Mono',monospace; font-size:9px;"><span>Z1</span><span>12%</span></div>
+            <div style="background:#e4e4e0; height:6px;"><div style="background:#71717a; height:6px; width:12%;"></div></div>
+          </div>
+          <div style="margin-bottom:6px;">
+            <div style="display:flex; justify-content:space-between; font-family:'JetBrains Mono',monospace; font-size:9px;"><span>Z2</span><span>38%</span></div>
+            <div style="background:#e4e4e0; height:6px;"><div style="background:#22c55e; height:6px; width:38%;"></div></div>
+          </div>
+          <div style="margin-bottom:6px;">
+            <div style="display:flex; justify-content:space-between; font-family:'JetBrains Mono',monospace; font-size:9px;"><span>Z3</span><span>25%</span></div>
+            <div style="background:#e4e4e0; height:6px;"><div style="background:#f59e0b; height:6px; width:25%;"></div></div>
+          </div>
+          <div style="margin-bottom:6px;">
+            <div style="display:flex; justify-content:space-between; font-family:'JetBrains Mono',monospace; font-size:9px;"><span>Z4</span><span>18%</span></div>
+            <div style="background:#e4e4e0; height:6px;"><div style="background:#f97316; height:6px; width:18%;"></div></div>
+          </div>
+          <div>
+            <div style="display:flex; justify-content:space-between; font-family:'JetBrains Mono',monospace; font-size:9px;"><span>Z5</span><span>7%</span></div>
+            <div style="background:#e4e4e0; height:6px;"><div style="background:#ef4444; height:6px; width:7%;"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Behavior Insights -->
+    <div style="border:3px solid #18181b; background:#fafaf7; padding:20px;">
+      <div style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#71717a; margin-bottom:16px;">BEHAVIOR INSIGHTS</div>
+      <div style="font-family:'JetBrains Mono',monospace; font-size:10px; color:#71717a; margin-bottom:12px;">Correlations discovered from your data (minimum 4 qualifying data points)</div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div style="border:2px solid #22c55e; background:#f0fdf4; padding:12px;">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; color:#22c55e; margin-bottom:4px;">POSITIVE CORRELATION</div>
+          <div style="font-family:'DM Sans',sans-serif; font-size:12px; line-height:1.4;">Bedtime before 23:00 &rarr; <strong>+8 points</strong> next-day sleep score</div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:9px; color:#71717a; margin-top:4px;">Based on 18 data points over 30 days</div>
+        </div>
+        <div style="border:2px solid #22c55e; background:#f0fdf4; padding:12px;">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; color:#22c55e; margin-bottom:4px;">POSITIVE CORRELATION</div>
+          <div style="font-family:'DM Sans',sans-serif; font-size:12px; line-height:1.4;">Protein &gt;170g + Sleep &gt;7h &rarr; <strong>-0.8 RPE</strong> on compound lifts</div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:9px; color:#71717a; margin-top:4px;">Based on 6 qualifying weeks</div>
+        </div>
+        <div style="border:2px solid #ef4444; background:#fef2f2; padding:12px;">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; color:#ef4444; margin-bottom:4px;">NEGATIVE CORRELATION</div>
+          <div style="font-family:'DM Sans',sans-serif; font-size:12px; line-height:1.4;">Kid sleep disruptions &gt;2x/week &rarr; <strong>-12 points</strong> readiness score</div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:9px; color:#71717a; margin-top:4px;">Based on 8 data points over 30 days</div>
+        </div>
+        <div style="border:2px solid #3b82f6; background:#eff6ff; padding:12px;">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; color:#3b82f6; margin-bottom:4px;">EMERGING PATTERN</div>
+          <div style="font-family:'DM Sans',sans-serif; font-size:12px; line-height:1.4;">Mobility work compliance &rarr; lower back pain reduction (tracking...)</div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:9px; color:#71717a; margin-top:4px;">3 data points — needs more data to confirm</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<h3 style="margin-top:32px;">Key Design Decisions</h3>
+
+<div class="section">
+  <p><strong>AI Coaching Insight banner</strong> at the top — proactive, data-grounded insight from the coaching team. This is the differentiator nobody else has. Rotates based on what the coaches find most relevant right now.</p>
+
+  <p><strong>Time ranges include "Journey"</strong> — shows the full span from journey start to now. No other platform does this. Gives athletes the "big picture" view of their entire training arc.</p>
+
+  <p><strong>Chart selection is dynamic per athlete.</strong> An OCR racer sees Body Comp, Sleep, Strength, Nutrition, Training Load, Behavior Insights. A marathon runner might see Mileage, Pace Progression, Sleep, Nutrition, HR Zone Distribution, Behavior Insights. The coaching team determines which charts matter.</p>
+
+  <p><strong>Behavior Insights Engine</strong> at the bottom — the WHOOP killer feature done better. Multi-variable correlations with confidence levels. Positive, negative, and emerging patterns. This is where the daily log + wearable + session data becomes genuinely actionable intelligence.</p>
+
+  <p><strong>Strength progression</strong> shows ceiling history with category filtering. Athletes can see their entire progressive overload journey.</p>
+</div>
