@@ -25,8 +25,7 @@ export default function CheckInResultsPage() {
   const [planItems, setPlanItems] = useState<PlanItem[]>([]);
   const [planExercises, setPlanExercises] = useState<Record<number, PlanExercise[]>>({});
   const [showDialogue, setShowDialogue] = useState(false);
-  const [planModifiedByDialogue, setPlanModifiedByDialogue] = useState(false);
-  const [currentSynthesis, setCurrentSynthesis] = useState('');
+  const [planRebuilding, setPlanRebuilding] = useState(false);
   // Compute week number once on client to avoid server/client mismatch (React 418)
   const [weekNumber, setWeekNumber] = useState<number | null>(null);
   const startedRef = useRef(false);
@@ -185,18 +184,6 @@ export default function CheckInResultsPage() {
   const handleLockIn = async () => {
     const wk = weekNumber ?? getPlanWeekNumber();
 
-    if (planModifiedByDialogue && planItems.length > 0) {
-      try {
-        await fetch('/api/plan', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ weekNumber: wk, items: planItems }),
-        });
-      } catch {
-        // Non-fatal
-      }
-    }
-
     try {
       await fetch('/api/plan/lock', {
         method: 'POST',
@@ -210,10 +197,14 @@ export default function CheckInResultsPage() {
     router.push('/log');
   };
 
-  const handlePlanUpdate = (items: PlanItem[], updatedSynthesis: string) => {
+  const handlePlanUpdate = (items: PlanItem[], exercises: Record<number, PlanExercise[]>) => {
     setPlanItems(items);
-    setCurrentSynthesis(updatedSynthesis);
-    setPlanModifiedByDialogue(true);
+    setPlanExercises(exercises);
+    setPlanRebuilding(false);
+  };
+
+  const handlePlanRebuilding = () => {
+    setPlanRebuilding(true);
   };
 
   const handleDiscuss = () => {
@@ -261,6 +252,7 @@ export default function CheckInResultsPage() {
           weekNumber={weekNumber}
           onLockIn={handleLockIn}
           onDiscuss={handleDiscuss}
+          loading={planRebuilding}
         />
       )}
 
@@ -290,10 +282,11 @@ export default function CheckInResultsPage() {
       {synthesisReady && showDialogue && weekNumber != null && (
         <HeadCoachDialogue
           specialistOutputs={specialists}
-          synthesis={currentSynthesis || synthesis}
+          synthesis={synthesis}
           weekNumber={weekNumber}
           onLockIn={handleLockIn}
           onPlanUpdate={handlePlanUpdate}
+          onPlanRebuilding={handlePlanRebuilding}
         />
       )}
     </Box>
