@@ -12,23 +12,24 @@ export const SectionEnum = z.enum([
   'warm_up', 'activation', 'main_work', 'accessory', 'finisher', 'cool_down',
 ]);
 
+// Use z.coerce.number() for numeric fields — LLMs sometimes output "300" instead of 300
 export const ExerciseItemSchema = z.object({
-  order: z.number().int().min(0),
+  order: z.coerce.number().int().min(0),
   exerciseName: z.string().min(1),
   supersetGroup: z.string().max(2).nullish(),
   type: ExerciseTypeEnum,
-  sets: z.number().int().min(1).nullish(),
-  reps: z.union([z.number().int().min(1), z.string().min(1), z.null(), z.undefined()]),
-  weightKg: z.number().nullish(),
-  durationSeconds: z.number().int().min(1).nullish(),
-  restSeconds: z.number().int().min(0).nullish(),
+  sets: z.coerce.number().int().min(1).nullish(),
+  reps: z.union([z.coerce.number().int().min(1), z.string().min(1), z.null(), z.undefined()]),
+  weightKg: z.coerce.number().nullish(),
+  durationSeconds: z.coerce.number().int().min(1).nullish(),
+  restSeconds: z.coerce.number().int().min(0).nullish(),
   tempo: z.string().nullish(),
   laterality: LateralityEnum.default('bilateral'),
   coachCue: z.string().nullish(),
-  rounds: z.number().int().min(1).nullish(),
+  rounds: z.coerce.number().int().min(1).nullish(),
   targetIntensity: z.string().nullish(),
-  intervalWorkSeconds: z.number().int().min(1).nullish(),
-  intervalRestSeconds: z.number().int().min(1).nullish(),
+  intervalWorkSeconds: z.coerce.number().int().min(1).nullish(),
+  intervalRestSeconds: z.coerce.number().int().min(1).nullish(),
 });
 
 // ── Section ──────────────────────────────────────────────────────────────
@@ -50,13 +51,13 @@ export const SessionTypeEnum = z.enum([
 ]);
 
 export const SessionPlanSchema = z.object({
-  dayOrder: z.number().int().min(1),
+  dayOrder: z.coerce.number().int().min(1),
   suggestedDay: z.string().min(1),
   sessionType: SessionTypeEnum,
   focus: z.string().min(1),
-  estimatedDurationMin: z.number().int().min(0),
+  estimatedDurationMin: z.coerce.number().int().min(0),
   sections: z.array(ExerciseSectionSchema),
-  sequenceOrder: z.number().int().min(1),
+  sequenceOrder: z.coerce.number().int().min(1),
   sequenceGroup: z.string().nullish(),
   sequenceNotes: z.string().nullish(),
   coachNotes: z.string().nullish(),
