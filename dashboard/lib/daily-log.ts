@@ -77,7 +77,6 @@ export interface WeekSummary {
   week_number: number;
   days_logged: number;
   workouts: { completed: number; planned: number };
-  core: { done: number; target: number };
   rug_protocol: { done: number; total: number };
   vampire: {
     compliant: number;
@@ -110,7 +109,6 @@ export function computeWeekSummary(weekNumber: number): WeekSummary {
   const workoutsCompleted = logs.filter((l: DailyLog) =>
     l.workout_completed && !(l.workout_plan_item_id != null && familyRestPlanItemIds.has(l.workout_plan_item_id))
   ).length;
-  const coreDone = logs.filter((l: DailyLog) => l.core_work_done).length;
   const rugDone = logs.filter((l: DailyLog) => l.rug_protocol_done).length;
   const hydrationTracked = logs.filter((l: DailyLog) => l.hydration_tracked).length;
   const kitchenHit = logs.filter((l: DailyLog) => l.kitchen_cutoff_hit).length;
@@ -167,7 +165,6 @@ export function computeWeekSummary(weekNumber: number): WeekSummary {
     week_number: weekNumber,
     days_logged: logs.length,
     workouts: { completed: workoutsCompleted, planned: trainingPlanItems.length },
-    core: { done: coreDone, target: 3 },
     rug_protocol: { done: rugDone, total: 7 },
     vampire: { compliant: compliantCount, total: 7, avg_bedtime: avgBedtime, daily: vampireDaily },
     hydration: { tracked: hydrationTracked, total: 7 },
@@ -293,7 +290,6 @@ export function formatWeekSummaryForAgents(summary: WeekSummary): string {
   let md = `## Daily Log Summary (Week ${summary.week_number})\n`;
   md += `- Days logged: ${summary.days_logged}/7\n`;
   md += `- Workouts completed: ${summary.workouts.completed}/${summary.workouts.planned}\n`;
-  md += `- Core work: ${summary.core.done}/${summary.core.target} target days\n`;
   md += `- Rug Protocol: ${summary.rug_protocol.done}/7 days\n`;
 
   md += `- Vampire Protocol: ${summary.vampire.compliant}/7 compliant`;

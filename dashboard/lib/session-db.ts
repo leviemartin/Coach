@@ -451,7 +451,6 @@ export function completeSession(sessionId: number, notes: string, _db?: Database
         week_number: weekNum,
         workout_completed: workoutCompleted,
         workout_plan_item_id: planRow?.id ?? null,
-        core_work_done: 0,
         rug_protocol_done: 0,
         vampire_bedtime: null,
         hydration_tracked: 0,

@@ -18,7 +18,6 @@ const PRIORITIES: Priority[] = [
   { label: 'Anaerobic Deficit', status: 'active', detail: 'Rower 20s/>300W/1:40 rest' },
   { label: 'Hydration Tracking', status: 'critical', detail: 'Zero compliance — every week until started' },
   { label: 'Zandvoort Prep', status: 'monitoring', detail: '~8 weeks out — walk-to-jog progression' },
-  { label: 'Baker\'s Cyst', status: 'monitoring', detail: 'Pain-free — physio before Phase 2' },
 ];
 
 const STATUS_COLORS: Record<string, 'error' | 'warning' | 'info'> = {

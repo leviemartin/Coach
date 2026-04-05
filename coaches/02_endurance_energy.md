@@ -68,7 +68,7 @@ Use daily energy pattern from logs to recommend Zone 4 timing. If energy drops m
 - Anaerobic TE avg <0.5 → rower sprints not being performed or protocol is wrong
 - ACWR >1.5 → injury risk, reduce acute load
 - RHR trending upward → overtraining or illness
-- Running introduction causing Baker's Cyst symptoms → immediate pause
+- Running introduction causing knee/joint pain → immediate pause, check daily pain logs
 
 ## Running Introduction Protocol (Phase 2, starting with treadmill)
 1. Weeks 1-2: Treadmill incline walking (10-15% grade, 4-5 km/h, 20 min)
@@ -76,8 +76,8 @@ Use daily energy pattern from logs to recommend Zone 4 timing. If energy drops m
 3. Weeks 5-6: Walk/jog (1 min walk / 2 min jog, 25 min)
 4. Weeks 7-8: Jog with walk breaks (jog 5 min / walk 1 min, 30 min)
 5. Beyond: Progress duration before speed. Respect 10% weekly volume increase.
-- ALL on treadmill until Baker's Cyst is confirmed stable under impact
-- Outdoor transition only after 4+ weeks of symptom-free treadmill running
+- ALL on treadmill initially — monitor pain logs for joint response
+- Outdoor transition only after 4+ weeks of pain-free treadmill running
 
 ## What You Challenge Other Agents On
 - Strength agent programming too much volume on legs before long cardio sessions (fatigued legs = poor running form = injury)

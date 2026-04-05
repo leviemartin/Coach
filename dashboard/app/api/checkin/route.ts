@@ -114,11 +114,15 @@ export async function POST(request: Request) {
           send('synthesis_chunk', { text: chunk });
         }
 
+        // Notify frontend that synthesis is done — Discuss button can activate now
+        send('synthesis_done', { fullText: fullSynthesis });
+
         // Phase 3: Plan Builder + Validator
-        send('status', { phase: 'plan_builder', message: 'Building structured plan...' });
+        send('status', { phase: 'plan_builder', message: 'Building structured training plan...' });
 
         const weekNumber = getPlanWeekNumber();
         const MAX_RETRIES = 2;
+        send('status', { phase: 'plan_builder', message: 'AI is generating your week plan — this takes 1-2 minutes...' });
         let planResult = await runPlanBuilder(fullSynthesis, sharedContext, weekNumber);
         let violations: PlanViolation[] = [];
 
@@ -127,7 +131,7 @@ export async function POST(request: Request) {
           let retries = 0;
           while (violations.length > 0 && retries < MAX_RETRIES) {
             retries++;
-            send('status', { phase: 'plan_builder', message: `Fixing ${violations.length} violations (attempt ${retries + 1})...` });
+            send('status', { phase: 'plan_builder', message: `Fixing ${violations.length} plan violation${violations.length > 1 ? 's' : ''} (attempt ${retries + 1})...` });
             const fixInstructions = formatViolationsForFix(violations);
             planResult = await runPlanBuilder(fullSynthesis, sharedContext, weekNumber, fixInstructions);
             if (planResult.success) {
@@ -148,18 +152,19 @@ export async function POST(request: Request) {
 
         const today = new Date().toISOString().split('T')[0];
         const ceilings = readCeilings();
+        const currentWeek = getTrainingWeek();
 
         // Build weekly log content
         const specialistSection = specialistOutputs
           .map((o) => `## ${o.label}\n${o.error ? `**ERROR:** ${o.error}` : o.content}`)
           .join('\n\n');
-        const logContent = `# Week ${weekNumber} Check-In — ${today}\n\n${specialistSection}\n\n## Synthesis Coach\n${fullSynthesis}`;
+        const logContent = `# Week ${currentWeek} Check-In — ${today}\n\n${specialistSection}\n\n## Synthesis Coach\n${fullSynthesis}`;
 
-        // Write weekly log file
-        writeWeeklyLog(weekNumber, today, logContent);
+        // Write weekly log file (belongs to the training week being reviewed)
+        writeWeeklyLog(currentWeek, today, logContent);
 
         // Append to training history
-        appendTrainingHistory(`## Week ${weekNumber} — ${today}\n\nCheck-in completed. See weekly_logs/ for full details.`);
+        appendTrainingHistory(`## Week ${currentWeek} — ${today}\n\nCheck-in completed. See weekly_logs/ for full details.`);
 
         // Persist structured plan
         let planItemCount = 0;
@@ -173,7 +178,6 @@ export async function POST(request: Request) {
         const garminSummary = garmin.data ? extractExtendedSummary(garmin.data) : null;
 
         // Build weekly metrics — auto-calculate from daily logs when possible
-        const currentWeek = getTrainingWeek();
         const weekSummary = computeWeekSummary(currentWeek);
         const hasLogData = weekSummary.days_logged > 0;
 
@@ -240,7 +244,7 @@ export async function POST(request: Request) {
           : null;
 
         const metrics: WeeklyMetrics = {
-          weekNumber,
+          weekNumber: currentWeek,
           checkInDate: today,
           weightKg: garminSummary?.weight ?? null,
           bodyFatPct: garminSummary?.bodyFat ?? null,
@@ -267,7 +271,6 @@ export async function POST(request: Request) {
           sessionsCompleted: hasLogData
             ? weekSummary.workouts.completed
             : (legacyFormData?.sessionsCompleted ?? null),
-          bakerCystPain: legacyFormData?.bakerCystPain ?? null,
           pullupCount: null,
           perceivedReadiness,
           planSatisfaction,
@@ -293,11 +296,11 @@ export async function POST(request: Request) {
         };
         upsertWeeklyMetrics(metrics);
 
-        // Save ceiling history
+        // Save ceiling history (snapshot belongs to the current training week)
         const ceilingEntries: CeilingEntry[] = Object.entries(ceilings.ceilings)
           .filter(([, v]) => typeof v === 'number')
           .map(([exercise, weight]) => ({
-            weekNumber,
+            weekNumber: currentWeek,
             date: today,
             exercise,
             weightKg: weight as number,
@@ -307,13 +310,13 @@ export async function POST(request: Request) {
         }
 
         // Keep ceilings.json week in sync for external tools
-        ceilings.week = weekNumber;
+        ceilings.week = currentWeek;
         ceilings.last_updated = today;
         writeCeilings(ceilings);
 
         send('synthesis_complete', {
           fullText: fullSynthesis,
-          weekNumber,
+          weekNumber: currentWeek,
           planItemCount,
           violations: violations.map(v => ({ rule: v.rule, session: v.sessionFocus, message: v.message })),
         });

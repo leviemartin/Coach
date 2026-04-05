@@ -296,7 +296,6 @@ export function validatePlanRules(plan: WeekPlan): PlanViolation[] {
   checkPullupsInUpper(sessions, violations);
   checkLoadedExerciseNeedsWeight(sessions, violations);
   checkNoDuplicateExercise(sessions, violations);
-  checkCore3xWeek(sessions, violations);
 
   return violations;
 }

@@ -25,7 +25,6 @@ function makeCompliance(overrides: Partial<WeekSummary> = {}): WeekSummary {
     week_number: 12,
     days_logged: 5,
     workouts: { completed: 3, planned: 4 },
-    core: { done: 2, target: 3 },
     rug_protocol: { done: 4, total: 7 },
     vampire: { compliant: 3, total: 7, avg_bedtime: null, daily: [] },
     hydration: { tracked: 2, total: 7 },

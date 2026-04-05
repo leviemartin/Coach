@@ -70,7 +70,7 @@ describe('computeDayCompliance', () => {
       hydration_tracked: 1,
       vampire_bedtime: '22:00',
       // other items should be ignored
-      core_work_done: 1,
+
       rug_protocol_done: 1,
       kitchen_cutoff_hit: 1,
     });
@@ -126,7 +126,7 @@ describe('computeDayCompliance', () => {
 describe('computeWeekCompliancePct', () => {
   it('returns 100 for a perfect week (5 rest days all complete)', () => {
     const log = makeLog({
-      core_work_done: 1,
+
       rug_protocol_done: 1,
       vampire_bedtime: '22:00',
       hydration_tracked: 1,
@@ -139,7 +139,7 @@ describe('computeWeekCompliancePct', () => {
 
   it('returns 100 for a perfect week with training days', () => {
     const restLog = makeLog({
-      core_work_done: 1,
+
       rug_protocol_done: 1,
       vampire_bedtime: '22:00',
       hydration_tracked: 1,
@@ -147,7 +147,7 @@ describe('computeWeekCompliancePct', () => {
     });
     const trainLog = makeLog({
       workout_completed: 1,
-      core_work_done: 1,
+
       rug_protocol_done: 1,
       vampire_bedtime: '22:00',
       hydration_tracked: 1,
@@ -162,7 +162,7 @@ describe('computeWeekCompliancePct', () => {
     // 4 normal rest days (4 items each) + 1 sick day (2 items)
     // All complete → 4*4 + 2 = 18 total, 18 checked → 100%
     const normalLog = makeLog({
-      core_work_done: 1,
+
       rug_protocol_done: 1,
       vampire_bedtime: '22:00',
       hydration_tracked: 1,
@@ -256,7 +256,7 @@ function makeStreakLog(date: string, overrides: Partial<DayComplianceInput> = {}
   return {
     date,
     workout_completed: 0,
-    core_work_done: 1,
+
     rug_protocol_done: 1,
     vampire_bedtime: '22:00',
     hydration_tracked: 1,
@@ -274,7 +274,7 @@ function compliantLog(date: string): StreakLogEntry {
 // Non-compliant rest-day log (pct = 0/5 = 0%)
 function nonCompliantLog(date: string): StreakLogEntry {
   return makeStreakLog(date, {
-    core_work_done: 0,
+
     rug_protocol_done: 0,
     vampire_bedtime: null,
     hydration_tracked: 0,
@@ -294,9 +294,9 @@ describe('computeWeekSummary new fields', () => {
   it('populates energy_levels from non-null logs', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(dbMock.getDailyLogsByWeek).mockReturnValue([
-      { date: '2026-03-17', workout_completed: 0, core_work_done: 0, rug_protocol_done: 0, vampire_bedtime: null, hydration_tracked: 0, kitchen_cutoff_hit: 0, is_sick_day: 0, notes: null, energy_level: 3, pain_level: null, pain_area: null, sleep_disruption: null, session_summary: null, session_log_id: null },
-      { date: '2026-03-18', workout_completed: 0, core_work_done: 0, rug_protocol_done: 0, vampire_bedtime: null, hydration_tracked: 0, kitchen_cutoff_hit: 0, is_sick_day: 0, notes: null, energy_level: null, pain_level: null, pain_area: null, sleep_disruption: null, session_summary: null, session_log_id: null },
-      { date: '2026-03-19', workout_completed: 0, core_work_done: 0, rug_protocol_done: 0, vampire_bedtime: null, hydration_tracked: 0, kitchen_cutoff_hit: 0, is_sick_day: 0, notes: null, energy_level: 5, pain_level: null, pain_area: null, sleep_disruption: null, session_summary: null, session_log_id: null },
+      { date: '2026-03-17', workout_completed: 0, rug_protocol_done: 0, vampire_bedtime: null, hydration_tracked: 0, kitchen_cutoff_hit: 0, is_sick_day: 0, notes: null, energy_level: 3, pain_level: null, pain_area: null, sleep_disruption: null, session_summary: null, session_log_id: null },
+      { date: '2026-03-18', workout_completed: 0, rug_protocol_done: 0, vampire_bedtime: null, hydration_tracked: 0, kitchen_cutoff_hit: 0, is_sick_day: 0, notes: null, energy_level: null, pain_level: null, pain_area: null, sleep_disruption: null, session_summary: null, session_log_id: null },
+      { date: '2026-03-19', workout_completed: 0, rug_protocol_done: 0, vampire_bedtime: null, hydration_tracked: 0, kitchen_cutoff_hit: 0, is_sick_day: 0, notes: null, energy_level: 5, pain_level: null, pain_area: null, sleep_disruption: null, session_summary: null, session_log_id: null },
     ] as any);
 
     const summary = computeWeekSummary(12);
@@ -309,9 +309,9 @@ describe('computeWeekSummary new fields', () => {
   it('populates pain_days only for pain_level > 0', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(dbMock.getDailyLogsByWeek).mockReturnValue([
-      { date: '2026-03-17', workout_completed: 0, core_work_done: 0, rug_protocol_done: 0, vampire_bedtime: null, hydration_tracked: 0, kitchen_cutoff_hit: 0, is_sick_day: 0, notes: null, energy_level: null, pain_level: 0, pain_area: null, sleep_disruption: null, session_summary: null, session_log_id: null },
-      { date: '2026-03-18', workout_completed: 0, core_work_done: 0, rug_protocol_done: 0, vampire_bedtime: null, hydration_tracked: 0, kitchen_cutoff_hit: 0, is_sick_day: 0, notes: null, energy_level: null, pain_level: 2, pain_area: 'left knee', sleep_disruption: null, session_summary: null, session_log_id: null },
-      { date: '2026-03-19', workout_completed: 0, core_work_done: 0, rug_protocol_done: 0, vampire_bedtime: null, hydration_tracked: 0, kitchen_cutoff_hit: 0, is_sick_day: 0, notes: null, energy_level: null, pain_level: null, pain_area: null, sleep_disruption: null, session_summary: null, session_log_id: null },
+      { date: '2026-03-17', workout_completed: 0, rug_protocol_done: 0, vampire_bedtime: null, hydration_tracked: 0, kitchen_cutoff_hit: 0, is_sick_day: 0, notes: null, energy_level: null, pain_level: 0, pain_area: null, sleep_disruption: null, session_summary: null, session_log_id: null },
+      { date: '2026-03-18', workout_completed: 0, rug_protocol_done: 0, vampire_bedtime: null, hydration_tracked: 0, kitchen_cutoff_hit: 0, is_sick_day: 0, notes: null, energy_level: null, pain_level: 2, pain_area: 'left knee', sleep_disruption: null, session_summary: null, session_log_id: null },
+      { date: '2026-03-19', workout_completed: 0, rug_protocol_done: 0, vampire_bedtime: null, hydration_tracked: 0, kitchen_cutoff_hit: 0, is_sick_day: 0, notes: null, energy_level: null, pain_level: null, pain_area: null, sleep_disruption: null, session_summary: null, session_log_id: null },
     ] as any);
 
     const summary = computeWeekSummary(12);
@@ -324,8 +324,8 @@ describe('computeWeekSummary new fields', () => {
   it('populates sleep_disruptions from non-null logs', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(dbMock.getDailyLogsByWeek).mockReturnValue([
-      { date: '2026-03-17', workout_completed: 0, core_work_done: 0, rug_protocol_done: 0, vampire_bedtime: null, hydration_tracked: 0, kitchen_cutoff_hit: 0, is_sick_day: 0, notes: null, energy_level: null, pain_level: null, pain_area: null, sleep_disruption: 'newborn', session_summary: null, session_log_id: null },
-      { date: '2026-03-18', workout_completed: 0, core_work_done: 0, rug_protocol_done: 0, vampire_bedtime: null, hydration_tracked: 0, kitchen_cutoff_hit: 0, is_sick_day: 0, notes: null, energy_level: null, pain_level: null, pain_area: null, sleep_disruption: null, session_summary: null, session_log_id: null },
+      { date: '2026-03-17', workout_completed: 0, rug_protocol_done: 0, vampire_bedtime: null, hydration_tracked: 0, kitchen_cutoff_hit: 0, is_sick_day: 0, notes: null, energy_level: null, pain_level: null, pain_area: null, sleep_disruption: 'newborn', session_summary: null, session_log_id: null },
+      { date: '2026-03-18', workout_completed: 0, rug_protocol_done: 0, vampire_bedtime: null, hydration_tracked: 0, kitchen_cutoff_hit: 0, is_sick_day: 0, notes: null, energy_level: null, pain_level: null, pain_area: null, sleep_disruption: null, session_summary: null, session_log_id: null },
     ] as any);
 
     const summary = computeWeekSummary(12);
@@ -488,7 +488,7 @@ describe('computeStreak', () => {
         hydration_tracked: 1,
         vampire_bedtime: '22:00',
         // other fields irrelevant on sick day
-        core_work_done: 0,
+    
         rug_protocol_done: 0,
         kitchen_cutoff_hit: 0,
       }),

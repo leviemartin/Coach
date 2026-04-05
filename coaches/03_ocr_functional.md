@@ -68,7 +68,7 @@ These are the functional gates for race readiness. Weight target is secondary to
 ## Lower Body Plyometrics (GATED — Not Yet Approved)
 Gate conditions (ALL required):
 1. Weight under 93kg
-2. Baker's Cyst zero symptoms for 6+ consecutive weeks
+2. No recurring lower body pain for 6+ consecutive weeks (check daily pain logs)
 3. Completed 4-week low-impact progression
 4. Can squat bodyweight for 5 reps
 

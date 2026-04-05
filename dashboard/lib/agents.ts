@@ -114,7 +114,6 @@ function buildSharedContextLegacy(
   context += buildDexaSection(garminData);
 
   context += `## Subjective Check-In\n`;
-  context += `- Baker's Cyst pain: ${formData.bakerCystPain}/10\n`;
   context += `- Lower back fatigue: ${formData.lowerBackFatigue}/10\n`;
   context += `- Perceived readiness: ${formData.perceivedReadiness}/5 (1=wrecked, 3=normal, 5=peaked)\n`;
   context += `- Sessions completed: ${formData.sessionsCompleted} / ${formData.sessionsPlanned} planned\n`;
@@ -250,8 +249,8 @@ function buildDailyLogsTable(logs: DailyLog[], weekNumber: number): string {
   }
 
   let table = `### Daily Logs (7-day detail)\n`;
-  table += `| Day | Energy | Pain | Pain Area | Sleep Disruption | Bedtime | Compliant | Kitchen | Core | Mobility | Hydration | Session |\n`;
-  table += `|-----|--------|------|-----------|-----------------|---------|-----------|---------|------|----------|-----------|---------|\n`;
+  table += `| Day | Energy | Pain | Pain Area | Sleep Disruption | Bedtime | Compliant | Kitchen | Mobility | Hydration | Session |\n`;
+  table += `|-----|--------|------|-----------|-----------------|---------|-----------|---------|----------|-----------|---------|\n`;
 
   for (const log of logs) {
     const dayAbbr = getDayAbbrev(log.date);
@@ -262,12 +261,11 @@ function buildDailyLogsTable(logs: DailyLog[], weekNumber: number): string {
     const bedtime = log.vampire_bedtime ? fromBedtimeStorage(log.vampire_bedtime) : '-';
     const compliant = log.vampire_bedtime ? (isBedtimeCompliant(log.vampire_bedtime) ? 'Y' : 'N') : '-';
     const kitchen = log.kitchen_cutoff_hit ? 'Y' : 'N';
-    const core = log.core_work_done ? 'Y' : 'N';
     const rug = log.rug_protocol_done ? 'Y' : 'N';
     const hydration = log.hydration_tracked ? 'Y' : 'N';
     const session = log.session_summary || (log.workout_completed ? 'Completed' : '-');
 
-    table += `| ${dayAbbr} | ${energy} | ${pain} | ${painArea} | ${sleepDisrupt} | ${bedtime} | ${compliant} | ${kitchen} | ${core} | ${rug} | ${hydration} | ${session} |\n`;
+    table += `| ${dayAbbr} | ${energy} | ${pain} | ${painArea} | ${sleepDisrupt} | ${bedtime} | ${compliant} | ${kitchen} | ${rug} | ${hydration} | ${session} |\n`;
   }
 
   return table + `\n`;

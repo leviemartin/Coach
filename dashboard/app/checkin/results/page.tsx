@@ -1,12 +1,11 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { Typography, Box, Button, Alert } from '@mui/material';
+import { Typography, Box, Button, Alert, CircularProgress } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import AgentBriefing from '@/components/AgentBriefing';
 import PlanPreview from '@/components/checkin/PlanPreview';
 import HeadCoachDialogue from '@/components/checkin/HeadCoachDialogue';
-import { parseScheduleTable } from '@/lib/parse-schedule';
 import { getPlanWeekNumber } from '@/lib/week';
 import type { PlanItem, PlanExercise } from '@/lib/types';
 interface SpecialistOutput {
@@ -21,16 +20,25 @@ export default function CheckInResultsPage() {
   const [specialists, setSpecialists] = useState<SpecialistOutput[]>([]);
   const [synthesis, setSynthesis] = useState('');
   const [phase, setPhase] = useState<string>('init');
+  const [statusMessage, setStatusMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [planItems, setPlanItems] = useState<PlanItem[]>([]);
   const [planExercises, setPlanExercises] = useState<Record<number, PlanExercise[]>>({});
   const [showDialogue, setShowDialogue] = useState(false);
   const [planModifiedByDialogue, setPlanModifiedByDialogue] = useState(false);
   const [currentSynthesis, setCurrentSynthesis] = useState('');
+  // Compute week number once on client to avoid server/client mismatch (React 418)
+  const [weekNumber, setWeekNumber] = useState<number | null>(null);
   const startedRef = useRef(false);
   const planFetchedRef = useRef(false);
+  const synthesisTextRef = useRef('');
 
-  // Fetch plan when synthesis completes — separate from SSE loop to avoid blocking re-render
+  // Compute week number on client only (avoids hydration mismatch)
+  useEffect(() => {
+    setWeekNumber(getPlanWeekNumber());
+  }, []);
+
+  // Fetch plan when pipeline completes
   useEffect(() => {
     if (phase !== 'done' || planFetchedRef.current) return;
     planFetchedRef.current = true;
@@ -43,14 +51,6 @@ export default function CheckInResultsPage() {
           if (planData.items?.length > 0) {
             setPlanItems(planData.items);
             setPlanExercises(planData.exercises || {});
-          } else {
-            // Fallback: parse from synthesis text
-            const stored = sessionStorage.getItem('checkin_synthesis');
-            if (stored) {
-              const weekNum = getPlanWeekNumber();
-              const parsed = parseScheduleTable(stored, weekNum);
-              if (parsed.length > 0) setPlanItems(parsed);
-            }
           }
         }
       } catch {
@@ -83,7 +83,6 @@ export default function CheckInResultsPage() {
       return;
     }
 
-    // Send as-is — the API route detects new vs legacy format
     runCheckIn(payload);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -110,7 +109,6 @@ export default function CheckInResultsPage() {
 
       const decoder = new TextDecoder();
       let buffer = '';
-      // Persist eventType across chunks so event:/data: pairs that span chunks work
       let currentEventType = '';
 
       while (true) {
@@ -118,11 +116,8 @@ export default function CheckInResultsPage() {
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
-
-        // SSE events are delimited by double newlines
-        // Process complete events (split on \n\n)
         const events = buffer.split('\n\n');
-        buffer = events.pop() || ''; // Keep incomplete event in buffer
+        buffer = events.pop() || '';
 
         for (const eventBlock of events) {
           if (!eventBlock.trim()) continue;
@@ -136,27 +131,37 @@ export default function CheckInResultsPage() {
               try {
                 data = JSON.parse(line.slice(6));
               } catch {
-                continue; // Skip malformed data lines
+                continue;
               }
 
               switch (currentEventType) {
                 case 'status':
                   setPhase(data.phase);
+                  if (data.message) setStatusMessage(data.message);
                   break;
                 case 'specialist':
                   setSpecialists((prev) => [...prev, data]);
                   break;
                 case 'synthesis_chunk':
-                  setSynthesis((prev) => prev + data.text);
+                  synthesisTextRef.current += data.text;
+                  setSynthesis(synthesisTextRef.current);
                   break;
-                case 'synthesis_complete':
+                case 'synthesis_done':
+                  // Synthesis text is complete — Discuss button can activate now
                   try {
                     sessionStorage.setItem('checkin_synthesis', data.fullText);
                   } catch {
                     // ignore storage errors
                   }
-                  // Set phase LAST and don't await inside the SSE loop —
-                  // plan fetch happens in a separate useEffect to avoid blocking re-render
+                  setPhase('synthesis_complete');
+                  break;
+                case 'synthesis_complete':
+                  // Full pipeline done (plan built + data saved)
+                  try {
+                    sessionStorage.setItem('checkin_synthesis', data.fullText);
+                  } catch {
+                    // ignore storage errors
+                  }
                   setPhase('done');
                   break;
                 case 'error':
@@ -172,21 +177,36 @@ export default function CheckInResultsPage() {
     }
   }
 
+  // synthesis_complete or done — synthesis text is available for discussion
+  const synthesisReady = phase === 'synthesis_complete' || phase === 'done';
+  // Plan building is happening between synthesis_complete and done
+  const planBuilding = phase === 'synthesis_complete' || phase === 'plan_builder';
+
   const handleLockIn = async () => {
+    const wk = weekNumber ?? getPlanWeekNumber();
+
     if (planModifiedByDialogue && planItems.length > 0) {
       try {
         await fetch('/api/plan', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            weekNumber: getPlanWeekNumber(),
-            items: planItems,
-          }),
+          body: JSON.stringify({ weekNumber: wk, items: planItems }),
         });
       } catch {
-        // Non-fatal — plan was already saved from synthesis, dialogue changes just didn't persist
+        // Non-fatal
       }
     }
+
+    try {
+      await fetch('/api/plan/lock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ weekNumber: wk }),
+      });
+    } catch {
+      // Non-fatal
+    }
+
     router.push('/log');
   };
 
@@ -223,40 +243,30 @@ export default function CheckInResultsPage() {
         synthesisStreaming={phase === 'synthesis'}
       />
 
-      {phase === 'done' && planItems.length > 0 && (
+      {/* Plan building progress indicator */}
+      {planBuilding && (
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, mt: 3, py: 2 }}>
+          <CircularProgress size={18} sx={{ color: '#18181b' }} />
+          <Typography variant="body2" sx={{ color: '#71717a' }}>
+            {statusMessage || 'Building structured plan...'}
+          </Typography>
+        </Box>
+      )}
+
+      {/* Plan preview — shows once plan is built and fetched */}
+      {phase === 'done' && planItems.length > 0 && weekNumber != null && (
         <PlanPreview
           items={planItems}
           exercises={planExercises}
-          weekNumber={getPlanWeekNumber()}
+          weekNumber={weekNumber}
           onLockIn={handleLockIn}
           onDiscuss={handleDiscuss}
         />
       )}
 
-      {phase === 'done' && planItems.length === 0 && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-          <Button
-            variant="contained"
-            size="large"
-            onClick={handleLockIn}
-            sx={{ px: 6, py: 1.5, fontSize: '1.1rem' }}
-          >
-            Lock In
-          </Button>
-        </Box>
-      )}
-
-      {/* Fallback: always show Lock In when synthesis text exists, even if phase state is stuck */}
-      {phase !== 'done' && synthesis.length > 200 && (
+      {/* Action buttons when synthesis is ready but no plan preview yet */}
+      {synthesisReady && (phase !== 'done' || planItems.length === 0) && (
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4, gap: 2 }}>
-          <Button
-            variant="contained"
-            size="large"
-            onClick={handleLockIn}
-            sx={{ px: 6, py: 1.5, fontSize: '1.1rem' }}
-          >
-            Lock In
-          </Button>
           <Button
             variant="outlined"
             size="large"
@@ -265,14 +275,23 @@ export default function CheckInResultsPage() {
           >
             Discuss with Coach
           </Button>
+          <Button
+            variant="contained"
+            size="large"
+            onClick={handleLockIn}
+            sx={{ px: 6, py: 1.5, fontSize: '1.1rem' }}
+          >
+            Lock In
+          </Button>
         </Box>
       )}
 
-      {phase === 'done' && showDialogue && (
+      {/* Head Coach dialogue — available once synthesis text exists */}
+      {synthesisReady && showDialogue && weekNumber != null && (
         <HeadCoachDialogue
           specialistOutputs={specialists}
           synthesis={currentSynthesis || synthesis}
-          weekNumber={getPlanWeekNumber()}
+          weekNumber={weekNumber}
           onLockIn={handleLockIn}
           onPlanUpdate={handlePlanUpdate}
         />

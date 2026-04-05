@@ -53,7 +53,7 @@ function getTodayStr(): string {
 
 interface LogData {
   workout_completed: number;
-  core_work_done: number;
+
   rug_protocol_done: number;
   vampire_bedtime: string | null;
   hydration_tracked: number;
@@ -79,7 +79,7 @@ interface WeekLog {
   date: string;
   day: string;
   workout_completed: number;
-  core_work_done: number;
+
   rug_protocol_done: number;
   vampire_bedtime: string | null;
   hydration_tracked: number;
@@ -95,7 +95,6 @@ interface TrendPoint {
 
 const DEFAULT_LOG: LogData = {
   workout_completed: 0,
-  core_work_done: 0,
   rug_protocol_done: 0,
   vampire_bedtime: null,
   hydration_tracked: 0,
@@ -246,14 +245,12 @@ export default function DailyLogPage() {
         !!wl.vampire_bedtime &&
         !!wl.hydration_tracked &&
         (!!wl.workout_completed || true) && // workout is optional if rest day
-        !!wl.core_work_done &&
         !!wl.rug_protocol_done &&
         !!wl.kitchen_cutoff_hit;
     }
 
     const anyFilled =
       !!wl.workout_completed ||
-      !!wl.core_work_done ||
       !!wl.rug_protocol_done ||
       !!wl.vampire_bedtime ||
       !!wl.hydration_tracked ||

@@ -42,7 +42,6 @@ export async function POST() {
       rugProtocolDays: null,
       sessionsPlanned: null,
       sessionsCompleted: null,
-      bakerCystPain: null,
       pullupCount: null,
       perceivedReadiness: null,
       planSatisfaction: null,

@@ -711,17 +711,17 @@ export function upsertWeeklyMetrics(m: WeeklyMetrics): void {
       avg_sleep_score, avg_training_readiness, avg_rhr, avg_hrv,
       calories_avg, protein_avg, hydration_tracked, vampire_compliance_pct,
       rug_protocol_days, sessions_planned, sessions_completed,
-      baker_cyst_pain, pullup_count, perceived_readiness, plan_satisfaction, model_used,
+      pullup_count, perceived_readiness, plan_satisfaction, model_used,
       kitchen_cutoff_compliance, avg_energy, pain_days, sleep_disruption_count,
       avg_rpe, hard_exercise_count, week_reflection, next_week_conflicts,
       questions_for_coaches, sick_days, pain_areas_summary, sleep_disruption_breakdown
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     m.weekNumber, m.checkInDate, m.weightKg, m.bodyFatPct, m.muscleMassKg,
     m.avgSleepScore, m.avgTrainingReadiness, m.avgRhr, m.avgHrv,
     m.caloriesAvg, m.proteinAvg, m.hydrationTracked ? 1 : 0,
     m.vampireCompliancePct, m.rugProtocolDays, m.sessionsPlanned,
-    m.sessionsCompleted, m.bakerCystPain, m.pullupCount, m.perceivedReadiness, m.planSatisfaction, m.modelUsed,
+    m.sessionsCompleted, m.pullupCount, m.perceivedReadiness, m.planSatisfaction, m.modelUsed,
     m.kitchenCutoffCompliance ?? null, m.avgEnergy ?? null, m.painDays ?? null, m.sleepDisruptionCount ?? null,
     m.avgRpe ?? null, m.hardExerciseCount ?? null, m.weekReflection ?? null, m.nextWeekConflicts ?? null,
     m.questionsForCoaches ?? null, m.sickDays ?? null, m.painAreasSummary ?? null, m.sleepDisruptionBreakdown ?? null
@@ -763,7 +763,6 @@ function mapMetricsRow(row: unknown): WeeklyMetrics {
     rugProtocolDays: r.rug_protocol_days as number | null,
     sessionsPlanned: r.sessions_planned as number | null,
     sessionsCompleted: r.sessions_completed as number | null,
-    bakerCystPain: (r.baker_cyst_pain as number | null) ?? null,
     pullupCount: r.pullup_count as number | null,
     perceivedReadiness: r.perceived_readiness as number | null,
     planSatisfaction: r.plan_satisfaction as number | null,
@@ -1012,7 +1011,6 @@ export interface DailyLog {
   week_number: number;
   workout_completed: number;
   workout_plan_item_id: number | null;
-  core_work_done: number;
   rug_protocol_done: number;
   vampire_bedtime: string | null;
   hydration_tracked: number;
@@ -1025,6 +1023,8 @@ export interface DailyLog {
   sleep_disruption: string | null;
   session_summary: string | null;
   session_log_id: number | null;
+  /** @deprecated Column still exists in DB for backwards compatibility but is no longer populated */
+  core_work_done?: number;
   created_at: string;
   updated_at: string;
 }
@@ -1107,7 +1107,7 @@ export function upsertDailyLog(log: Omit<DailyLog, 'id' | 'created_at' | 'update
     _db.prepare(`
       UPDATE daily_logs SET
         week_number = ?, workout_completed = ?, workout_plan_item_id = ?,
-        core_work_done = ?, rug_protocol_done = ?, vampire_bedtime = ?,
+        rug_protocol_done = ?, vampire_bedtime = ?,
         hydration_tracked = ?, kitchen_cutoff_hit = ?, is_sick_day = ?,
         notes = ?, energy_level = ?, pain_level = ?, pain_area = ?,
         sleep_disruption = ?, session_summary = ?, session_log_id = ?,
@@ -1115,7 +1115,7 @@ export function upsertDailyLog(log: Omit<DailyLog, 'id' | 'created_at' | 'update
       WHERE date = ?
     `).run(
       log.week_number, log.workout_completed, log.workout_plan_item_id,
-      log.core_work_done, log.rug_protocol_done, log.vampire_bedtime,
+      log.rug_protocol_done, log.vampire_bedtime,
       log.hydration_tracked, log.kitchen_cutoff_hit, log.is_sick_day,
       log.notes, log.energy_level, log.pain_level, log.pain_area,
       log.sleep_disruption, log.session_summary, log.session_log_id,
@@ -1125,15 +1125,15 @@ export function upsertDailyLog(log: Omit<DailyLog, 'id' | 'created_at' | 'update
     _db.prepare(`
       INSERT INTO daily_logs (
         date, week_number, workout_completed, workout_plan_item_id,
-        core_work_done, rug_protocol_done, vampire_bedtime,
+        rug_protocol_done, vampire_bedtime,
         hydration_tracked, kitchen_cutoff_hit, is_sick_day,
         notes, energy_level, pain_level, pain_area,
         sleep_disruption, session_summary, session_log_id,
         created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       log.date, log.week_number, log.workout_completed, log.workout_plan_item_id,
-      log.core_work_done, log.rug_protocol_done, log.vampire_bedtime,
+      log.rug_protocol_done, log.vampire_bedtime,
       log.hydration_tracked, log.kitchen_cutoff_hit, log.is_sick_day,
       log.notes, log.energy_level, log.pain_level, log.pain_area,
       log.sleep_disruption, log.session_summary, log.session_log_id,

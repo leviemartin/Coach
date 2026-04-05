@@ -23,7 +23,6 @@ export interface DailyDetail {
   sleepDisruption: string | null;
   bedtime: string | null;
   workoutCompleted: boolean;
-  coreWorkDone: boolean;
   rugProtocolDone: boolean;
   hydrationTracked: boolean;
   kitchenCutoffHit: boolean;
@@ -40,7 +39,6 @@ export interface WeekDetail {
 export interface WeekSummaryTier {
   weekNumber: number;
   workoutCompliancePct: number | null;  // completed / planned
-  coreCompliancePct: number;            // done / 7
   rugCompliancePct: number;             // done / 7
   kitchenCutoffPct: number;             // hit / 7
   hydrationPct: number;                 // tracked / 7
@@ -74,8 +72,7 @@ export interface InjuryFlag {
   weekNumber: number;
   area: string;
   level: number;
-  /** 'baker-cyst' = from weekly_metrics.bakerCystPain; 'daily-log' = recurring pain area from daily logs */
-  source: 'baker-cyst' | 'daily-log';
+  source: 'daily-log';
   /** For 'daily-log' source: number of distinct weeks this area appeared with pain_level > 0 */
   occurrenceCount?: number;
 }
@@ -155,7 +152,6 @@ function buildWeekDetail(weekNumber: number, deps: TieredHistoryDeps): WeekDetai
     sleepDisruption: log.sleep_disruption,
     bedtime: log.vampire_bedtime ? displayBedtime(log.vampire_bedtime) : null,
     workoutCompleted: log.workout_completed === 1,
-    coreWorkDone: log.core_work_done === 1,
     rugProtocolDone: log.rug_protocol_done === 1,
     hydrationTracked: log.hydration_tracked === 1,
     kitchenCutoffHit: log.kitchen_cutoff_hit === 1,
@@ -180,7 +176,6 @@ function buildWeekSummary(
   const metric = metrics.length > 0 ? metrics[0] : null;
 
   const workoutsCompleted = logs.filter((l) => l.workout_completed).length;
-  const coreDone = logs.filter((l) => l.core_work_done).length;
   const rugDone = logs.filter((l) => l.rug_protocol_done).length;
   const hydrationTracked = logs.filter((l) => l.hydration_tracked).length;
   const kitchenHit = logs.filter((l) => l.kitchen_cutoff_hit).length;
@@ -219,7 +214,6 @@ function buildWeekSummary(
   return {
     weekNumber,
     workoutCompliancePct: sessionsPlanned != null && sessionsPlanned > 0 ? pct(workoutsCompleted, sessionsPlanned) : null,
-    coreCompliancePct: pct(coreDone, 7),
     rugCompliancePct: pct(rugDone, 7),
     kitchenCutoffPct: pct(kitchenHit, 7),
     hydrationPct: pct(hydrationTracked, 7),
@@ -264,18 +258,9 @@ function buildTrends(upToWeek: number, deps: TieredHistoryDeps): TrendData {
   }
   const ceilingProgression = Array.from(exerciseMap.values());
 
-  // Recurring injury flags — baker's cyst from weekly_metrics + general pain areas from daily logs
-  const injuryFlags: InjuryFlag[] = [];
-
-  // Baker's cyst flags (predates daily pain tracking)
-  for (const m of trendWeeks) {
-    if (m.bakerCystPain != null && m.bakerCystPain > 0) {
-      injuryFlags.push({ weekNumber: m.weekNumber, area: 'knee/baker-cyst', level: m.bakerCystPain, source: 'baker-cyst' });
-    }
-  }
-
-  // General pain areas from daily logs — count occurrences per body area across trend weeks
+  // Recurring injury flags from daily logs — count occurrences per body area across trend weeks
   // An area is "recurring" if it appears with pain_level > 0 in 2+ distinct weeks
+  const injuryFlags: InjuryFlag[] = [];
   const areaWeekSet = new Map<string, Set<number>>(); // area → set of week numbers
   const areaMaxLevel = new Map<string, number>();      // area → highest pain level seen
   for (const m of trendWeeks) {
@@ -293,19 +278,14 @@ function buildTrends(upToWeek: number, deps: TieredHistoryDeps): TrendData {
   }
   for (const [area, weekSet] of areaWeekSet.entries()) {
     if (weekSet.size >= 2) {
-      // Skip if this is already covered by the baker-cyst flag from metrics
-      const isBakerCystArea = area === 'knee/baker-cyst';
-      if (!isBakerCystArea) {
-        // Report the first week this area appeared
-        const firstWeek = Math.min(...weekSet);
-        injuryFlags.push({
-          weekNumber: firstWeek,
-          area,
-          level: areaMaxLevel.get(area) ?? 1,
-          source: 'daily-log',
-          occurrenceCount: weekSet.size,
-        });
-      }
+      const firstWeek = Math.min(...weekSet);
+      injuryFlags.push({
+        weekNumber: firstWeek,
+        area,
+        level: areaMaxLevel.get(area) ?? 1,
+        source: 'daily-log',
+        occurrenceCount: weekSet.size,
+      });
     }
   }
 
@@ -349,12 +329,11 @@ function formatRecentDetail(detail: WeekDetail[]): string {
       continue;
     }
 
-    md += `| Day | Workout | Core | Rug | Bedtime | Hydration | Kitchen | Energy | Pain | Sick | Session / Notes |\n`;
-    md += `|-----|---------|------|-----|---------|-----------|---------|--------|------|------|-----------------|\n`;
+    md += `| Day | Workout | Rug | Bedtime | Hydration | Kitchen | Energy | Pain | Sick | Session / Notes |\n`;
+    md += `|-----|---------|-----|---------|-----------|---------|--------|------|------|-----------------|\n`;
 
     for (const d of week.days) {
       const workout = d.workoutCompleted ? '✓' : '✗';
-      const core = d.coreWorkDone ? '✓' : '✗';
       const rug = d.rugProtocolDone ? '✓' : '✗';
       const bedtime = d.bedtime ?? '—';
       const hydration = d.hydrationTracked ? '✓' : '✗';
@@ -366,12 +345,12 @@ function formatRecentDetail(detail: WeekDetail[]): string {
       const sick = d.isSickDay ? '🤒' : '—';
 
       const noteParts: string[] = [];
-      if (d.sessionSummary) noteParts.push(d.sessionSummary.split('\n')[0]); // first line only
+      if (d.sessionSummary) noteParts.push(d.sessionSummary.split('\n')[0]);
       if (d.sleepDisruption) noteParts.push(`Sleep: ${d.sleepDisruption}`);
       for (const n of d.notes) noteParts.push(`[${n.category}] ${n.text}`);
       const notes = noteParts.join(' | ') || '—';
 
-      md += `| ${d.dayAbbrev} ${d.date} | ${workout} | ${core} | ${rug} | ${bedtime} | ${hydration} | ${kitchen} | ${energy} | ${painStr} | ${sick} | ${notes} |\n`;
+      md += `| ${d.dayAbbrev} ${d.date} | ${workout} | ${rug} | ${bedtime} | ${hydration} | ${kitchen} | ${energy} | ${painStr} | ${sick} | ${notes} |\n`;
     }
 
     md += '\n';
@@ -408,7 +387,7 @@ function formatWeeklySummaries(summaries: WeekSummaryTier[]): string {
 
     md += `**Week ${s.weekNumber}**\n`;
     md += `- Workouts: ${workoutStr}\n`;
-    md += `- Core: ${s.coreCompliancePct}% | Rug: ${s.rugCompliancePct}% | Kitchen: ${s.kitchenCutoffPct}% | Hydration: ${s.hydrationPct}%\n`;
+    md += `- Rug: ${s.rugCompliancePct}% | Kitchen: ${s.kitchenCutoffPct}% | Hydration: ${s.hydrationPct}%\n`;
     md += `- Bedtime compliance: ${bedtimeStr}\n`;
     md += `- Weight: ${weightStr} | Avg energy: ${energyStr}\n`;
     md += `- Pain flags: ${painStr}\n`;

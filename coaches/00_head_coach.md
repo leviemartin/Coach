@@ -20,7 +20,7 @@ You are the Head Coach coordinating an 8-agent expert coaching team preparing Ma
 | OCR & Functional Movement | `coaches/03_ocr_functional.md` | Grip, obstacles, calisthenics, carries, plyo |
 | Nutrition & Body Composition | `coaches/04_nutrition_body_comp.md` | Calories, protein, hydration, body comp |
 | Recovery & Sleep | `coaches/05_recovery_sleep.md` | Sleep, HRV, readiness, deloads, cortisol |
-| Mobility & Injury Prevention | `coaches/06_mobility_injury.md` | Baker's Cyst, core, prehab, phase transition gates |
+| Mobility & Injury Prevention | `coaches/06_mobility_injury.md` | Pain monitoring, core, prehab, phase transition gates |
 | Mental Performance & Habits | `coaches/07_mental_performance.md` | Protocols, accountability, habit design, psychology |
 
 ## Decision Framework

@@ -35,7 +35,7 @@ import type { PlanItem } from '@/lib/types';
 
 interface LogData {
   workout_completed: number;
-  core_work_done: number;
+
   rug_protocol_done: number;
   vampire_bedtime: string | null;
   hydration_tracked: number;
@@ -61,7 +61,7 @@ interface WeekLog {
   date: string;
   day: string;
   workout_completed: number;
-  core_work_done: number;
+
   rug_protocol_done: number;
   vampire_bedtime: string | null;
   hydration_tracked: number;

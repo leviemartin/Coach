@@ -99,7 +99,7 @@ function makeMetric(weekNumber: number, overrides: Partial<WeeklyMetrics> = {}):
     rugProtocolDays: null,
     sessionsPlanned: 4,
     sessionsCompleted: 3,
-    bakerCystPain: null,
+
     pullupCount: null,
     perceivedReadiness: null,
     planSatisfaction: null,
@@ -153,7 +153,6 @@ describe('tiered history', () => {
       const day1 = week9.days[0];
       expect(day1.date).toBe('2026-02-23');
       expect(day1.workoutCompleted).toBe(true);
-      expect(day1.coreWorkDone).toBe(true);
       expect(day1.energyLevel).toBe(4);
       expect(day1.bedtime).toBe('22:30');
       expect(day1.sessionSummary).toBe('Upper A (95% compliance)');
@@ -256,8 +255,6 @@ describe('tiered history', () => {
       const week2 = result.weeklySummaries.find((s) => s.weekNumber === 2)!;
       expect(week2).toBeDefined();
 
-      // 3 core / 7 total days = 43%
-      expect(week2.coreCompliancePct).toBe(43);
       // 2 kitchen / 7 = 29%
       expect(week2.kitchenCutoffPct).toBe(29);
     });
@@ -406,26 +403,6 @@ describe('tiered history', () => {
       expect(below100!.weekNumber).toBe(3);
     });
 
-    it('detects baker cyst injury flags from weekly_metrics', () => {
-      const db = createTestDb();
-      const currentWeek = 12;
-
-      const metrics = [
-        makeMetric(1, { bakerCystPain: 2 }),
-        makeMetric(2, { bakerCystPain: null }),
-        makeMetric(3, { bakerCystPain: 0 }),
-      ];
-
-      const result = buildTieredHistory(currentWeek, makeDeps(db, metrics));
-
-      const flags = result.trends.recurringInjuryFlags;
-      expect(flags.length).toBe(1);
-      expect(flags[0].weekNumber).toBe(1);
-      expect(flags[0].area).toBe('knee/baker-cyst');
-      expect(flags[0].level).toBe(2);
-      expect(flags[0].source).toBe('baker-cyst');
-    });
-
     it('detects recurring pain areas from daily logs (2+ weeks)', () => {
       const db = createTestDb();
       const currentWeek = 12;
@@ -469,29 +446,29 @@ describe('tiered history', () => {
       expect(knee).toBeUndefined();
     });
 
-    it('combines baker-cyst flags and daily-log recurring flags', () => {
+    it('detects multiple recurring pain areas from daily logs', () => {
       const db = createTestDb();
       const currentWeek = 12;
 
-      const metrics = [
-        makeMetric(1, { bakerCystPain: 2 }),
-        makeMetric(2),
-        makeMetric(3),
-      ];
+      const metrics = [makeMetric(1), makeMetric(2), makeMetric(3)];
 
-      // Shoulder pain in weeks 1 and 2 → recurring daily-log flag
+      // Shoulder pain in weeks 1 and 2 → recurring
       insertLog(db, '2026-01-05', 1, { pain_level: 1, pain_area: 'shoulder' });
       insertLog(db, '2026-01-12', 2, { pain_level: 2, pain_area: 'shoulder' });
+      // Knee pain in weeks 1 and 3 → recurring
+      insertLog(db, '2026-01-06', 1, { pain_level: 1, pain_area: 'knee' });
+      insertLog(db, '2026-01-19', 3, { pain_level: 2, pain_area: 'knee' });
 
       const result = buildTieredHistory(currentWeek, makeDeps(db, metrics));
       const flags = result.trends.recurringInjuryFlags;
 
-      const bakerCyst = flags.find((f) => f.source === 'baker-cyst');
       const shoulder = flags.find((f) => f.area === 'shoulder');
+      const knee = flags.find((f) => f.area === 'knee');
 
-      expect(bakerCyst).toBeDefined();
       expect(shoulder).toBeDefined();
       expect(shoulder!.source).toBe('daily-log');
+      expect(knee).toBeDefined();
+      expect(knee!.source).toBe('daily-log');
     });
   });
 

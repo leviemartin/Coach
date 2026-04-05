@@ -152,7 +152,6 @@ export interface CheckInFormData {
   // Hevy
   hevyCsv: string;
   // Subjective
-  bakerCystPain: number;
   lowerBackFatigue: number;
   sessionsCompleted: number;
   sessionsPlanned: number;
@@ -260,7 +259,6 @@ export interface WeeklyMetrics {
   rugProtocolDays: number | null;
   sessionsPlanned: number | null;
   sessionsCompleted: number | null;
-  bakerCystPain: number | null;
   pullupCount: number | null;
   perceivedReadiness: number | null;
   planSatisfaction: number | null;
