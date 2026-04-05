@@ -23,12 +23,21 @@ export function buildPlanBuilderPrompt(
   prompt += `## Periodization\n${periodization}\n\n`;
 
   prompt += `## Rules\n`;
+  prompt += `- Exercise type MUST be one of: "strength", "carry", "timed", "cardio_intervals", "cardio_steady", "ruck", "mobility"\n`;
+  prompt += `  - strength: weight × reps exercises (squats, presses, rows, pulldowns, curls, raises, pull-ups, push-ups, deadlifts)\n`;
+  prompt += `  - carry: loaded carries with weight + duration (farmer carry, suitcase carry)\n`;
+  prompt += `  - timed: duration-only exercises (planks, dead hangs, wall sits, bear crawls)\n`;
+  prompt += `  - cardio_intervals: interval cardio (rower sprints, StairMaster intervals, treadmill run/walk intervals)\n`;
+  prompt += `  - cardio_steady: steady-state cardio (Zone 2 bike, StairMaster steady, treadmill walk/jog)\n`;
+  prompt += `  - ruck: outdoor weighted ruck\n`;
+  prompt += `  - mobility: stretches, foam rolling, GOWOD\n`;
   prompt += `- Every loaded exercise MUST have a weightKg value\n`;
+  prompt += `- Bodyweight exercises (pull-ups, push-ups, dips, bear crawls, burpees, med ball slams) use type "strength" with weightKg = 0\n`;
   prompt += `- exerciseName must be a standard gym exercise name\n`;
   prompt += `- Supersets: same supersetGroup letter (A, B, C). Standalone exercises: supersetGroup = null\n`;
   prompt += `- Never superset two machines. Pair machine + portable/bodyweight.\n`;
   prompt += `- Pull-up bar is in the free weight area, NOT near cable machines. Never superset pull-ups with cable exercises.\n`;
-  prompt += `- Session duration 50-60 min (main work only, excluding warm_up and cool_down)\n`;
+  prompt += `- Session duration 60-70 min (cardio + main work, excluding warm_up and cool_down)\n`;
   prompt += `- Minimum session length 40 min total\n`;
   prompt += `- Sunday = outdoor ruck with dog. No gym equipment.\n`;
   prompt += `- Saturday = family day. No training. Use sessionType "family_day".\n`;
