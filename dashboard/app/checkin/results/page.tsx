@@ -97,8 +97,20 @@ export default function CheckInResultsPage() {
       setSpecialists(cached.specialists);
       setSynthesis(cached.synthesis);
       synthesisTextRef.current = cached.synthesis;
-      setPhase(cached.phase);
-      // Plan will be fetched by the phase useEffect above
+
+      // Check if plan already exists in DB (plan builder may have completed server-side)
+      fetch('/api/plan').then(res => res.ok ? res.json() : null).then(planData => {
+        if (planData?.items?.length > 0) {
+          setPlanItems(planData.items);
+          setPlanExercises(planData.exercises || {});
+          planFetchedRef.current = true;
+          setPhase('done');
+        } else {
+          setPhase(cached.phase);
+        }
+      }).catch(() => {
+        setPhase(cached.phase);
+      });
       return;
     }
 
