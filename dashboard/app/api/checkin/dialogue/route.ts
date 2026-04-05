@@ -1,13 +1,7 @@
 import { NextResponse } from 'next/server';
 import { streamDialogueResponse } from '@/lib/dialogue';
-import { streamDialogueAfterToolResult } from '@/lib/dialogue';
-import type { DialogueRequest, DialogueMessage, DialogueStreamEvent } from '@/lib/dialogue';
-import { runPlanBuilder } from '@/lib/plan-builder';
-import { validatePlanRules, formatViolationsForFix } from '@/lib/plan-validator';
-import { persistWeekPlan, getPlanExercises } from '@/lib/plan-db';
-import { deletePlanItems, getPlanItems } from '@/lib/db';
-import { getPlanWeekNumber } from '@/lib/week';
-import type { AgentOutput, PlanExercise } from '@/lib/types';
+import type { DialogueRequest, DialogueMessage } from '@/lib/dialogue';
+import type { AgentOutput } from '@/lib/types';
 
 function isValidDialogueRequest(body: unknown): body is DialogueRequest {
   if (typeof body !== 'object' || body === null) return false;
@@ -24,10 +18,7 @@ function isValidDialogueRequest(body: unknown): body is DialogueRequest {
   }
   if (typeof b.sharedContext !== 'string') return false;
   if (typeof b.draftPlan !== 'string') return false;
-  if (b.synthesisNotes !== undefined && typeof b.synthesisNotes !== 'string') return false;
-  if (b.weekNumber !== undefined && typeof b.weekNumber !== 'number') return false;
 
-  // Validate conversation history entries
   for (const msg of b.conversationHistory as unknown[]) {
     if (typeof msg !== 'object' || msg === null) return false;
     const m = msg as Record<string, unknown>;
@@ -56,7 +47,7 @@ export async function POST(request: Request) {
   if (!isValidDialogueRequest(body)) {
     return NextResponse.json(
       { error: 'Invalid request. Required: message (non-empty string), conversationHistory, specialistOutputs, sharedContext, draftPlan.' },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -66,8 +57,6 @@ export async function POST(request: Request) {
     specialistOutputs: body.specialistOutputs as AgentOutput[],
     sharedContext: body.sharedContext,
     draftPlan: body.draftPlan,
-    synthesisNotes: (body.synthesisNotes as string | undefined) ?? '',
-    weekNumber: (body.weekNumber as number | undefined) ?? getPlanWeekNumber(),
   };
 
   const encoder = new TextEncoder();
@@ -84,7 +73,6 @@ export async function POST(request: Request) {
         }
       }
 
-      // Heartbeat every 30s to prevent proxy idle timeout
       const heartbeat = setInterval(() => {
         try {
           controller.enqueue(encoder.encode(': heartbeat\n\n'));
@@ -95,86 +83,12 @@ export async function POST(request: Request) {
 
       try {
         let fullText = '';
-        let toolWasCalled = false;
-
-        for await (const event of streamDialogueResponse(dialogueRequest)) {
-          if (event.type === 'text') {
-            fullText += event.text;
-            send('dialogue_chunk', { text: event.text });
-          } else if (event.type === 'tool_use' && event.toolName === 'request_plan_update') {
-            toolWasCalled = true;
-
-            // Send the coach's explanation text
-            send('dialogue_complete', { fullText });
-
-            // Signal plan rebuild
-            send('plan_rebuilding', {});
-
-            // Run plan builder
-            const instructions = event.toolInput?.instructions ?? '';
-            const weekNumber = dialogueRequest.weekNumber ?? getPlanWeekNumber();
-
-            let planResult = await runPlanBuilder(
-              dialogueRequest.synthesisNotes ?? '',
-              dialogueRequest.sharedContext,
-              weekNumber,
-              instructions,
-            );
-
-            // Validate and retry once
-            if (planResult.success) {
-              const violations = validatePlanRules(planResult.data);
-              if (violations.length > 0) {
-                const fixInstructions = instructions + '\n\nALSO FIX:\n' + formatViolationsForFix(violations);
-                planResult = await runPlanBuilder(
-                  dialogueRequest.synthesisNotes ?? '',
-                  dialogueRequest.sharedContext,
-                  weekNumber,
-                  fixInstructions,
-                );
-              }
-            }
-
-            if (planResult.success) {
-              // Persist
-              deletePlanItems(weekNumber);
-              persistWeekPlan(planResult.data);
-
-              // Fetch from DB with IDs
-              const items = getPlanItems(weekNumber);
-              const exercises: Record<number, PlanExercise[]> = {};
-              for (const item of items) {
-                if (item.id) {
-                  exercises[item.id] = getPlanExercises(item.id);
-                }
-              }
-
-              send('plan_updated', { items, exercises, weekNumber });
-
-              // Coach confirms
-              let confirmText = '';
-              const resultMsg = `Plan updated: ${items.length} sessions saved.`;
-              for await (const contEvent of streamDialogueAfterToolResult(
-                dialogueRequest, resultMsg
-              )) {
-                if (contEvent.type === 'text') {
-                  confirmText += contEvent.text;
-                  send('dialogue_chunk', { text: contEvent.text });
-                }
-              }
-              if (confirmText) {
-                send('dialogue_complete', { fullText: confirmText });
-              }
-            } else {
-              send('error', { message: `Plan rebuild failed: ${planResult.error}` });
-            }
-          }
+        for await (const chunk of streamDialogueResponse(dialogueRequest)) {
+          fullText += chunk;
+          send('dialogue_chunk', { text: chunk });
         }
 
-        // No tool call — send dialogue_complete normally
-        if (!toolWasCalled) {
-          send('dialogue_complete', { fullText });
-        }
+        send('dialogue_complete', { fullText });
       } catch (error) {
         send('error', {
           message: error instanceof Error ? error.message : 'Unknown error',

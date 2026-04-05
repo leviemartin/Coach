@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import LockIcon from '@mui/icons-material/Lock';
+import BuildIcon from '@mui/icons-material/Build';
 import type { DialogueMessage } from '@/lib/dialogue';
 import type { PlanItem, PlanExercise } from '@/lib/types';
 
@@ -30,7 +31,6 @@ interface HeadCoachDialogueProps {
   weekNumber: number;
   onLockIn: () => void;
   onPlanUpdate?: (items: PlanItem[], exercises: Record<number, PlanExercise[]>) => void;
-  onPlanRebuilding?: () => void;
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -41,26 +41,26 @@ export default function HeadCoachDialogue({
   weekNumber,
   onLockIn,
   onPlanUpdate,
-  onPlanRebuilding,
 }: HeadCoachDialogueProps) {
   const [messages, setMessages] = useState<DialogueMessage[]>([]);
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
   const [streamingText, setStreamingText] = useState('');
-  // Track the evolving draft plan — starts as original synthesis, updates when coach modifies it
+  const [rebuilding, setRebuilding] = useState(false);
+  const [rebuildError, setRebuildError] = useState<string | null>(null);
   const [currentDraftPlan, setCurrentDraftPlan] = useState(synthesis);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Auto-scroll to bottom when messages change or streaming text updates
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamingText]);
 
-  // Focus input on mount
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  // ── Send chat message (text-only streaming) ────────────────────────────
 
   const sendMessage = useCallback(async () => {
     const trimmed = input.trim();
@@ -89,8 +89,6 @@ export default function HeadCoachDialogue({
           })),
           sharedContext: '',
           draftPlan: currentDraftPlan,
-          synthesisNotes: synthesis,
-          weekNumber,
         }),
       });
 
@@ -114,7 +112,6 @@ export default function HeadCoachDialogue({
       let buffer = '';
       let currentEventType = '';
       let fullCoachText = '';
-      let rebuilding = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -144,40 +141,14 @@ export default function HeadCoachDialogue({
                   fullCoachText += data.text;
                   setStreamingText(fullCoachText);
                   break;
-                case 'plan_rebuilding':
-                  rebuilding = true;
-                  // Commit coach text so far, show rebuild status
-                  if (fullCoachText) {
-                    setMessages((prev) => [
-                      ...prev,
-                      { role: 'assistant', content: fullCoachText },
-                    ]);
-                    fullCoachText = '';
-                  }
-                  setStreamingText('Rebuilding plan...');
-                  if (onPlanRebuilding) onPlanRebuilding();
-                  break;
-                case 'plan_updated': {
-                  rebuilding = false;
-                  setStreamingText('');
-                  if (onPlanUpdate) {
-                    onPlanUpdate(data.items, data.exercises ?? {});
-                  }
-                  break;
-                }
                 case 'dialogue_complete': {
                   const coachText: string = data.fullText;
-                  if (coachText) {
-                    setMessages((prev) => [
-                      ...prev,
-                      { role: 'assistant', content: coachText },
-                    ]);
-                  }
-                  // Only stop streaming if we're not in the middle of a rebuild
-                  if (!rebuilding) {
-                    setStreamingText('');
-                    setStreaming(false);
-                  }
+                  setMessages((prev) => [
+                    ...prev,
+                    { role: 'assistant', content: coachText },
+                  ]);
+                  setStreamingText('');
+                  setStreaming(false);
                   break;
                 }
                 case 'error':
@@ -187,7 +158,6 @@ export default function HeadCoachDialogue({
                   ]);
                   setStreamingText('');
                   setStreaming(false);
-                  rebuilding = false;
                   break;
               }
             }
@@ -195,9 +165,15 @@ export default function HeadCoachDialogue({
         }
       }
 
-      // Stream ended — ensure streaming state is cleared
-      setStreamingText('');
-      setStreaming(false);
+      // Stream ended without dialogue_complete — commit whatever we have
+      if (fullCoachText && streaming) {
+        setMessages((prev) => [
+          ...prev,
+          { role: 'assistant', content: fullCoachText },
+        ]);
+        setStreamingText('');
+        setStreaming(false);
+      }
     } catch (err) {
       setMessages((prev) => [
         ...prev,
@@ -209,7 +185,50 @@ export default function HeadCoachDialogue({
       setStreamingText('');
       setStreaming(false);
     }
-  }, [input, streaming, messages, specialistOutputs, currentDraftPlan, weekNumber, onPlanUpdate, synthesis, onPlanRebuilding]);
+  }, [input, streaming, messages, specialistOutputs, currentDraftPlan]);
+
+  // ── Rebuild plan (separate API call) ───────────────────────────────────
+
+  const handleRebuildPlan = useCallback(async () => {
+    if (rebuilding || messages.length === 0) return;
+
+    setRebuilding(true);
+    setRebuildError(null);
+
+    // Build change instructions from the dialogue history
+    const changeInstructions = messages
+      .map((m) => `${m.role === 'user' ? 'Athlete' : 'Coach'}: ${m.content}`)
+      .join('\n\n');
+
+    try {
+      const response = await fetch('/api/plan/rebuild', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          synthesisNotes: synthesis,
+          changeInstructions: `The following dialogue contains agreed changes to the training plan. Apply ALL changes discussed:\n\n${changeInstructions}`,
+          weekNumber,
+        }),
+      });
+
+      if (!response.ok) {
+        const errBody = await response.json().catch(() => ({ error: 'Unknown error' }));
+        setRebuildError(errBody.error || `Failed: ${response.status}`);
+        setRebuilding(false);
+        return;
+      }
+
+      const data = await response.json();
+      if (data.items && onPlanUpdate) {
+        onPlanUpdate(data.items, data.exercises ?? {});
+        setCurrentDraftPlan(JSON.stringify(data.items));
+      }
+      setRebuilding(false);
+    } catch (err) {
+      setRebuildError(err instanceof Error ? err.message : 'Network error');
+      setRebuilding(false);
+    }
+  }, [rebuilding, messages, synthesis, weekNumber, onPlanUpdate]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -217,6 +236,8 @@ export default function HeadCoachDialogue({
       sendMessage();
     }
   };
+
+  const hasMessages = messages.length > 0;
 
   return (
     <Box sx={{ mt: 4 }}>
@@ -231,8 +252,8 @@ export default function HeadCoachDialogue({
         variant="body2"
         sx={{ color: '#71717a', mb: 3 }}
       >
-        Challenge the plan, ask why, request changes. The Head Coach will explain
-        trade-offs and adjust within safety bounds.
+        Challenge the plan, ask why, request changes. When you&apos;re done discussing,
+        click &quot;Rebuild Plan&quot; to apply agreed changes.
       </Typography>
 
       {/* Chat messages */}
@@ -344,7 +365,7 @@ export default function HeadCoachDialogue({
           </Box>
         )}
 
-        {/* Streaming indicator (before any text arrives) */}
+        {/* Streaming indicator */}
         {streaming && !streamingText && (
           <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 2 }}>
             <Box
@@ -381,7 +402,7 @@ export default function HeadCoachDialogue({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          disabled={streaming}
+          disabled={streaming || rebuilding}
           size="small"
           sx={{
             '& .MuiOutlinedInput-root': {
@@ -392,7 +413,7 @@ export default function HeadCoachDialogue({
         />
         <IconButton
           onClick={sendMessage}
-          disabled={streaming || !input.trim()}
+          disabled={streaming || rebuilding || !input.trim()}
           sx={{
             bgcolor: '#18181b',
             color: '#fafaf7',
@@ -407,12 +428,41 @@ export default function HeadCoachDialogue({
         </IconButton>
       </Box>
 
-      {/* Lock In button */}
-      <Box sx={{ textAlign: 'center' }}>
+      {/* Rebuild error */}
+      {rebuildError && (
+        <Typography variant="body2" sx={{ color: '#dc2626', mb: 2, textAlign: 'center' }}>
+          Rebuild failed: {rebuildError}
+        </Typography>
+      )}
+
+      {/* Action buttons */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5 }}>
+        {hasMessages && (
+          <Button
+            variant="outlined"
+            size="large"
+            onClick={handleRebuildPlan}
+            disabled={streaming || rebuilding}
+            startIcon={rebuilding ? <CircularProgress size={16} sx={{ color: '#71717a' }} /> : <BuildIcon />}
+            sx={{
+              borderColor: '#18181b',
+              color: '#18181b',
+              borderRadius: 0,
+              '&:hover': {
+                borderColor: '#3f3f46',
+                bgcolor: '#f0f0eb',
+              },
+            }}
+          >
+            {rebuilding ? 'Rebuilding...' : 'Rebuild Plan'}
+          </Button>
+        )}
+
         <Button
           variant="contained"
           size="large"
           onClick={onLockIn}
+          disabled={rebuilding}
           startIcon={<LockIcon />}
           sx={{
             bgcolor: '#22c55e',
@@ -421,6 +471,7 @@ export default function HeadCoachDialogue({
             py: 1.5,
             fontSize: '1rem',
             fontWeight: 700,
+            borderRadius: 0,
             '&:hover': { bgcolor: '#16a34a' },
           }}
         >

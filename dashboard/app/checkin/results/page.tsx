@@ -56,7 +56,7 @@ export default function CheckInResultsPage() {
   const [planItems, setPlanItems] = useState<PlanItem[]>([]);
   const [planExercises, setPlanExercises] = useState<Record<number, PlanExercise[]>>({});
   const [showDialogue, setShowDialogue] = useState(false);
-  const [planRebuilding, setPlanRebuilding] = useState(false);
+  const [planRebuilding] = useState(false);
   const [weekNumber, setWeekNumber] = useState<number | null>(null);
   const startedRef = useRef(false);
   const planFetchedRef = useRef(false);
@@ -266,11 +266,6 @@ export default function CheckInResultsPage() {
   const handlePlanUpdate = (items: PlanItem[], exercises: Record<number, PlanExercise[]>) => {
     setPlanItems(items);
     setPlanExercises(exercises);
-    setPlanRebuilding(false);
-  };
-
-  const handlePlanRebuilding = () => {
-    setPlanRebuilding(true);
   };
 
   const handleDiscuss = () => {
@@ -352,7 +347,6 @@ export default function CheckInResultsPage() {
           weekNumber={weekNumber}
           onLockIn={handleLockIn}
           onPlanUpdate={handlePlanUpdate}
-          onPlanRebuilding={handlePlanRebuilding}
         />
       )}
     </Box>
