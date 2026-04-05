@@ -114,6 +114,7 @@ export default function HeadCoachDialogue({
       let buffer = '';
       let currentEventType = '';
       let fullCoachText = '';
+      let rebuilding = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -144,9 +145,21 @@ export default function HeadCoachDialogue({
                   setStreamingText(fullCoachText);
                   break;
                 case 'plan_rebuilding':
+                  rebuilding = true;
+                  // Commit coach text so far, show rebuild status
+                  if (fullCoachText) {
+                    setMessages((prev) => [
+                      ...prev,
+                      { role: 'assistant', content: fullCoachText },
+                    ]);
+                    fullCoachText = '';
+                  }
+                  setStreamingText('Rebuilding plan...');
                   if (onPlanRebuilding) onPlanRebuilding();
                   break;
                 case 'plan_updated': {
+                  rebuilding = false;
+                  setStreamingText('');
                   if (onPlanUpdate) {
                     onPlanUpdate(data.items, data.exercises ?? {});
                   }
@@ -154,12 +167,17 @@ export default function HeadCoachDialogue({
                 }
                 case 'dialogue_complete': {
                   const coachText: string = data.fullText;
-                  setMessages((prev) => [
-                    ...prev,
-                    { role: 'assistant', content: coachText },
-                  ]);
-                  setStreamingText('');
-                  setStreaming(false);
+                  if (coachText) {
+                    setMessages((prev) => [
+                      ...prev,
+                      { role: 'assistant', content: coachText },
+                    ]);
+                  }
+                  // Only stop streaming if we're not in the middle of a rebuild
+                  if (!rebuilding) {
+                    setStreamingText('');
+                    setStreaming(false);
+                  }
                   break;
                 }
                 case 'error':
@@ -169,6 +187,7 @@ export default function HeadCoachDialogue({
                   ]);
                   setStreamingText('');
                   setStreaming(false);
+                  rebuilding = false;
                   break;
               }
             }
@@ -176,15 +195,9 @@ export default function HeadCoachDialogue({
         }
       }
 
-      // If stream ended without dialogue_complete, commit whatever we have
-      if (fullCoachText) {
-        setMessages((prev) => [
-          ...prev,
-          { role: 'assistant', content: fullCoachText },
-        ]);
-        setStreamingText('');
-        setStreaming(false);
-      }
+      // Stream ended — ensure streaming state is cleared
+      setStreamingText('');
+      setStreaming(false);
     } catch (err) {
       setMessages((prev) => [
         ...prev,
