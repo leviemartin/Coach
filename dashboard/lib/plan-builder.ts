@@ -1,6 +1,6 @@
 import { getClient } from './agents';
 import { readCeilings, readPeriodization } from './state';
-import { OPUS_MODEL } from './constants';
+import { DEFAULT_MODEL } from './constants';
 import { WeekPlanSchema, WEEK_PLAN_TOOL } from './plan-schema';
 import type { WeekPlan } from './plan-schema';
 
@@ -89,7 +89,7 @@ export async function runPlanBuilder(
   );
 
   const response = await client.messages.create({
-    model: OPUS_MODEL,
+    model: DEFAULT_MODEL,
     max_tokens: 8000,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     tools: [WEEK_PLAN_TOOL as any],
