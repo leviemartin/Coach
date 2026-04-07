@@ -283,6 +283,41 @@ function checkCore3xWeek(
   }
 }
 
+function checkCardioIntervalsComplete(
+  sessions: SessionPlan[],
+  violations: PlanViolation[],
+): void {
+  sessions.forEach((session, idx) => {
+    const exercises = allExercises(session);
+    for (const ex of exercises) {
+      if (ex.type === 'cardio_intervals') {
+        const missing: string[] = [];
+        if (ex.rounds == null) missing.push('rounds');
+        if (ex.intervalWorkSeconds == null) missing.push('intervalWorkSeconds');
+        if (ex.intervalRestSeconds == null) missing.push('intervalRestSeconds');
+        if (missing.length > 0) {
+          violations.push({
+            rule: 'cardio_intervals_complete',
+            sessionIndex: idx,
+            sessionFocus: session.focus,
+            message: `Cardio intervals exercise "${ex.exerciseName}" in "${session.focus}" is missing required fields: ${missing.join(', ')}. All interval exercises must have rounds, intervalWorkSeconds, and intervalRestSeconds set — do not put this info in coachCue.`,
+          });
+        }
+      }
+      if (ex.type === 'cardio_steady') {
+        if (ex.durationSeconds == null) {
+          violations.push({
+            rule: 'cardio_steady_duration',
+            sessionIndex: idx,
+            sessionFocus: session.focus,
+            message: `Cardio steady exercise "${ex.exerciseName}" in "${session.focus}" is missing durationSeconds. Steady-state cardio must have a duration.`,
+          });
+        }
+      }
+    }
+  });
+}
+
 // ── Main validator ────────────────────────────────────────────────────────
 
 export function validatePlanRules(plan: WeekPlan): PlanViolation[] {
@@ -296,6 +331,7 @@ export function validatePlanRules(plan: WeekPlan): PlanViolation[] {
   checkPullupsInUpper(sessions, violations);
   checkLoadedExerciseNeedsWeight(sessions, violations);
   checkNoDuplicateExercise(sessions, violations);
+  checkCardioIntervalsComplete(sessions, violations);
 
   return violations;
 }

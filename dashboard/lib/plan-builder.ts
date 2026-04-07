@@ -50,7 +50,14 @@ export function buildPlanBuilderPrompt(
   prompt += `  - "bilateral" = both sides work together (Squat, Pull-Up, Plank)\n`;
   prompt += `  - "unilateral_each" = full set per side, reps = count PER SIDE (Pallof Press, DB Row, Side Plank, Single-Arm Carry, Bulgarian Split Squat)\n`;
   prompt += `  - "alternating" = alternate sides each rep, reps = TOTAL count across both sides (Dead Bugs, Bird Dogs, Walking Lunges, Box Step-ups)\n`;
-  prompt += `  - When in doubt: if the exercise involves one limb at a time, it is NOT bilateral\n\n`;
+  prompt += `  - When in doubt: if the exercise involves one limb at a time, it is NOT bilateral\n`;
+  prompt += `- Cardio interval exercises (type "cardio_intervals") MUST have ALL structured fields set:\n`;
+  prompt += `  - rounds: number of intervals (e.g., 5 for "5x3 min")\n`;
+  prompt += `  - intervalWorkSeconds: work duration per round in seconds (e.g., 180 for 3 min)\n`;
+  prompt += `  - intervalRestSeconds: rest duration between rounds in seconds (e.g., 60 for 1 min)\n`;
+  prompt += `  - targetIntensity: zone or effort target (e.g., "Zone 4", ">300W")\n`;
+  prompt += `  - Do NOT put interval structure in coachCue — it MUST go in the structured fields\n`;
+  prompt += `- Cardio steady exercises (type "cardio_steady") MUST have durationSeconds set\n\n`;
 
   if (fixInstructions) {
     prompt += `## FIXES REQUIRED\nThe Validator found these violations in your previous output. Fix them:\n${fixInstructions}\n\n`;
