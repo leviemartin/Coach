@@ -688,6 +688,26 @@ export function initTablesOn(db: Database.Database) {
     db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('fix_session_69_summary', ?)").run(new Date().toISOString());
     console.log('[db] fix_session_69_summary: cleared stale summary for April 3');
   }
+  // One-time fix: plan_exercises id 492 (StairMaster cardio_intervals) has null rounds/intervals
+  const fixStair = db.prepare("SELECT value FROM settings WHERE key = 'fix_stairmaster_492'").get();
+  if (!fixStair) {
+    const row = db.prepare('SELECT id FROM plan_exercises WHERE id = 492').get();
+    if (row) {
+      db.prepare(`
+        UPDATE plan_exercises
+        SET rounds = 5, interval_work_seconds = 180, interval_rest_seconds = 60, target_intensity = 'Zone 4'
+        WHERE id = 492
+      `).run();
+      // Also fix session_cardio if a session was already created from this plan exercise
+      db.prepare(`
+        UPDATE session_cardio
+        SET prescribed_rounds = 5, interval_work_seconds = 180, interval_rest_seconds = 60, target_intensity = 'Zone 4'
+        WHERE plan_exercise_id = 492
+      `).run();
+      console.log('[db] fix_stairmaster_492: set rounds=5, work=180s, rest=60s, target=Zone 4');
+    }
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('fix_stairmaster_492', ?)").run(new Date().toISOString());
+  }
 }
 
 // Settings
